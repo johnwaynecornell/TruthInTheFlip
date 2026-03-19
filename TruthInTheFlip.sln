@@ -1,0 +1,16 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TruthInTheFlip", "TruthInTheFlip\TruthInTheFlip.csproj", "{F2BCA929-F388-456F-87DA-A80BEBD164EC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F2BCA929-F388-456F-87DA-A80BEBD164EC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F2BCA929-F388-456F-87DA-A80BEBD164EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F2BCA929-F388-456F-87DA-A80BEBD164EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F2BCA929-F388-456F-87DA-A80BEBD164EC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
