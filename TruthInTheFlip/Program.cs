@@ -29,6 +29,7 @@ public class Program
     public static Tracker allTime;
 
     public static bool log = false;
+    public static bool record = false;
 
     public static void LogWrite(string text)
     {
@@ -102,6 +103,13 @@ public class Program
                     args.RemoveAt(cur);
                     continue;
                 }
+                
+                if (args[cur] == "-record")
+                {
+                    record = true;
+                    args.RemoveAt(cur);
+                    continue;
+                }
 
                 if (args[cur] == "-help" || args[cur] == "-h" || args[cur] == "/?" || args[cur] == "/h" ||
                     args[cur] == "/help")
@@ -136,6 +144,7 @@ public class Program
             Console.WriteLine("  -log                Enable detailed logging output");
             Console.WriteLine("  -show               show stats or log tail");
             Console.WriteLine("  -create             Create the state file if it doesn't exist");
+            Console.WriteLine("  -record             Append records to the state file");
             Console.WriteLine("  -help, -h, /?, /h, /help");
             Console.WriteLine("                      Display this help message");
             Console.WriteLine();
@@ -153,7 +162,13 @@ public class Program
             allTime = new Tracker();
             if (File.Exists(fileName))
             {
-                allTime = Tracker.SafeLoad(fileName);
+                // foreach (var t in Tracker.Enumerate(fileName))
+                // {
+                //     string threadTime = $"threadTime: {new TimeSpan(t.cumulativeTicks):G}";
+                //     Console.WriteLine(t.ToString() + $" | {threadTime}");
+                // }
+                
+                allTime = Tracker.SafeLoad(fileName, record);
             }
             else if (!createIfDoesntExsist)
             {
@@ -175,17 +190,17 @@ public class Program
                 return 1;
             }
             
-            List<string> lines = new();
+            Queue<string> lines = new();
             using (var stream = new StreamReader(fileName+".log"))
             {
                 string line;
                 while ((line =stream.ReadLine()) != null)
                 {
-                    lines.Add(line);
-                    while (lines.Count > 20) lines.RemoveAt(0);
+                    lines.Enqueue(line);
+                    if (lines.Count > 20) lines.Dequeue();
                 }
                 
-                for (int i=0; i<lines.Count; i++) Console.WriteLine(lines[i]);
+                foreach (var l in lines) Console.WriteLine(l);
                 return 0;
             }
             
@@ -230,7 +245,7 @@ public class Program
             DateTime end = DateTime.Now;
             long end_count = allTime.total;
             
-            allTime.Save(fileName);
+            allTime.Save(fileName, record);
             
             var proof1 = allTime.EstimateRemainingFlipsForZScore(1.96);
             var proof2 = allTime.EstimateRemainingFlipsForZScore(3.00);

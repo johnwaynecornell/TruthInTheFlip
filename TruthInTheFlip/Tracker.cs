@@ -158,45 +158,83 @@ public class Tracker
         }
     }
 
-    public void Save(string path)
-    {int retries = 5;
-        while (retries > 0)
-        {
-            try
-            {
-                using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None))
-                using (BinaryWriter writer = new BinaryWriter(fs))
-                {
-                    writer.Write("TruthInTheFlip.v1.0");
-                    
-                    for (Tracker current = this; current != null; current = current.trackerInner)
-                    {
-                        writer.Write(current.positive);
-                        writer.Write(current.negative);
-                        writer.Write(current.anticipated);
-                        writer.Write(current.baseAnticipated);
-                        writer.Write(current.total);
-                        writer.Write(current.anticipatedPositive);
-                        writer.Write(current.anticipatedNegative);
+    public void WriteRecord(BinaryWriter writer)
+    {
+        long loc = writer.Seek(0, SeekOrigin.Current);
+        long loc2;
+                
+        writer.Write((int)0);
 
-                        writer.Write(current.priorFlip);
-                        writer.Write(current.guessAnticipateChange);
-                        writer.Write(current.cumulativeTicks);
-                        writer.Write(current.trackerInner != null);
-                    }
-                }
-                break; // Success, exit the retry loop
-            }
-            catch (IOException)
-            {
-                retries--;
-                if (retries == 0) throw; // Rethrow if we run out of retries
-                Thread.Sleep(50); // Give the OS/Antivirus a moment to release the file
-            }
+        writer.Write("TrackerRecord");
+        
+        for (Tracker current = this; current != null; current = current.trackerInner)
+        {
+            writer.Write(current.positive);
+            writer.Write(current.negative);
+            writer.Write(current.anticipated);
+            writer.Write(current.baseAnticipated);
+            writer.Write(current.total);
+            writer.Write(current.anticipatedPositive);
+            writer.Write(current.anticipatedNegative);
+
+            writer.Write(current.priorFlip);
+            writer.Write(current.guessAnticipateChange);
+            writer.Write(current.cumulativeTicks);
+            writer.Write(current.trackerInner != null);
         }
+                
+        loc2 = writer.Seek(0, SeekOrigin.Current);
+        int size = (int)(loc2 - loc);
+        writer.Seek(-size, SeekOrigin.Current);
+        writer.Write((int)(size));
+        writer.Seek(size - 4, SeekOrigin.Current);
+        writer.Write((int)(size));
     }
 
-    public static Tracker SafeLoad(string path)
+    public void Save(string path, bool record = false)
+    {
+        if (record == false || !File.Exists(path))
+        {
+            using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None))
+            using (BinaryWriter writer = new BinaryWriter(fs))
+            {
+                writer.Write("TruthInTheFlip.v1.0.1");
+                writer.Write(record);
+                WriteRecord(writer);
+            }
+
+            return;
+        }
+        
+        using (FileStream fs = new FileStream(path, FileMode.Open))
+        using (BinaryReader reader = new BinaryReader(fs))
+        {
+            string version = reader.ReadString();
+
+            switch (version)
+            {
+                case "TruthInTheFlip.v1.0":
+                    if (record) throw new IOException("File version v1.0 does not support record");
+                    break;
+                case "TruthInTheFlip.v1.0.1":
+                    if (reader.ReadBoolean() !=record) throw new IOException("record mode mismatch between args and file");
+                    break;
+                default:
+                    throw new IOException($"\"{version}\" unknown format");
+            }
+        }
+        
+        using (FileStream fs = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.None))
+        using (BinaryWriter writer = new BinaryWriter(fs))
+        {
+            WriteRecord(writer);
+        }
+
+
+    }
+
+
+    public static Tracker SafeLoad(string path, bool record=false)
     {
         if (!File.Exists(path)) return new Tracker();
 
@@ -206,38 +244,177 @@ public class Tracker
         using (FileStream fs = new FileStream(path, FileMode.Open))
         using (BinaryReader reader = new BinaryReader(fs))
         {
-            string s;
-            if ((s = reader.ReadString()) != "TruthInTheFlip.v1.0") throw new IOException($"\"{s}\" unknown format"); 
-            
-            while (tracker != null)
+            string version;
+            version = reader.ReadString();
+            switch (version)
             {
-                tracker.positive = reader.ReadInt64();
-                tracker.negative = reader.ReadInt64();
-                tracker.anticipated = reader.ReadInt64();
-                tracker.baseAnticipated = reader.ReadInt64();
+                case "TruthInTheFlip.v1.0":
+                    if (record) throw new IOException($"\"{path}\" record mode mismatch");
+                    
+                    while (tracker != null)
+                    {
+                        tracker.positive = reader.ReadInt64();
+                        tracker.negative = reader.ReadInt64();
+                        tracker.anticipated = reader.ReadInt64();
+                        tracker.baseAnticipated = reader.ReadInt64();
 
-                tracker.total = reader.ReadInt64();
-                tracker.anticipatedPositive = reader.ReadInt64();
-                tracker.anticipatedNegative = reader.ReadInt64();
+                        tracker.total = reader.ReadInt64();
+                        tracker.anticipatedPositive = reader.ReadInt64();
+                        tracker.anticipatedNegative = reader.ReadInt64();
 
-                tracker.priorFlip = reader.ReadBoolean();
-                tracker.guessAnticipateChange = reader.ReadBoolean();
-                tracker.cumulativeTicks = reader.ReadInt64();
+                        tracker.priorFlip = reader.ReadBoolean();
+                        tracker.guessAnticipateChange = reader.ReadBoolean();
+                        tracker.cumulativeTicks = reader.ReadInt64();
 
-                if (tracker.positive + tracker.negative != tracker.total)
-                    throw new IOException($"{path} is damaged or incorrect");
-                if (tracker.anticipatedPositive + tracker.anticipatedNegative != tracker.baseAnticipated)
-                    throw new IOException($"{path} is damaged or incorrect");
-                
-                if (reader.ReadBoolean()) tracker = tracker.trackerInner = new Tracker();
-                else tracker = null;
+                        if (tracker.positive + tracker.negative != tracker.total)
+                            throw new IOException($"{path} is damaged or incorrect");
+                        if (tracker.anticipatedPositive + tracker.anticipatedNegative != tracker.baseAnticipated)
+                            throw new IOException($"{path} is damaged or incorrect");
 
+                        if (reader.ReadBoolean()) tracker = tracker.trackerInner = new Tracker();
+                        else tracker = null;
+
+                    }
+
+                    break;
+                case "TruthInTheFlip.v1.0.1":
+                    if (reader.ReadBoolean() != record) throw new IOException($"\"{path}\" record mode mismatch");
+                    
+                    fs.Seek(-4, SeekOrigin.End);
+                    fs.Seek(-reader.ReadInt32() - 4, SeekOrigin.End);
+                    reader.ReadInt32();
+                    if (reader.ReadString() != "TrackerRecord") throw new IOException("IOerror expected TrackerRecord");
+                    while (tracker != null)
+                    {
+                        tracker.positive = reader.ReadInt64();
+                        tracker.negative = reader.ReadInt64();
+                        tracker.anticipated = reader.ReadInt64();
+                        tracker.baseAnticipated = reader.ReadInt64();
+
+                        tracker.total = reader.ReadInt64();
+                        tracker.anticipatedPositive = reader.ReadInt64();
+                        tracker.anticipatedNegative = reader.ReadInt64();
+
+                        tracker.priorFlip = reader.ReadBoolean();
+                        tracker.guessAnticipateChange = reader.ReadBoolean();
+                        tracker.cumulativeTicks = reader.ReadInt64();
+
+                        if (tracker.positive + tracker.negative != tracker.total)
+                            throw new IOException($"{path} is damaged or incorrect");
+                        if (tracker.anticipatedPositive + tracker.anticipatedNegative != tracker.baseAnticipated)
+                            throw new IOException($"{path} is damaged or incorrect");
+
+                        if (reader.ReadBoolean()) tracker = tracker.trackerInner = new Tracker();
+                        else tracker = null;
+
+                    }
+
+                    break;
+                default:
+                    throw new IOException("version \"{version}\" not suppored");
             }
+
+
         }
 
         return outer;
     }
 
+    public static IEnumerable<Tracker> Enumerate(string path)
+    {
+        if (!File.Exists(path)) yield break;
+
+        using (FileStream fs = new FileStream(path, FileMode.Open))
+        using (BinaryReader reader = new BinaryReader(fs))
+        {
+            Tracker tracker;
+            Tracker outer;
+
+
+            string version;
+            version = reader.ReadString();
+            switch (version)
+            {
+                case "TruthInTheFlip.v1.0":
+                    tracker = new Tracker();
+                    outer = tracker;
+
+                    while (tracker != null)
+                    {
+                        tracker.positive = reader.ReadInt64();
+                        tracker.negative = reader.ReadInt64();
+                        tracker.anticipated = reader.ReadInt64();
+                        tracker.baseAnticipated = reader.ReadInt64();
+
+                        tracker.total = reader.ReadInt64();
+                        tracker.anticipatedPositive = reader.ReadInt64();
+                        tracker.anticipatedNegative = reader.ReadInt64();
+
+                        tracker.priorFlip = reader.ReadBoolean();
+                        tracker.guessAnticipateChange = reader.ReadBoolean();
+                        tracker.cumulativeTicks = reader.ReadInt64();
+
+                        if (tracker.positive + tracker.negative != tracker.total)
+                            throw new IOException($"{path} is damaged or incorrect");
+                        if (tracker.anticipatedPositive + tracker.anticipatedNegative != tracker.baseAnticipated)
+                            throw new IOException($"{path} is damaged or incorrect");
+
+                        if (reader.ReadBoolean()) tracker = tracker.trackerInner = new Tracker();
+                        else tracker = null;
+
+                    }
+
+                    yield return outer;
+                    break;
+                case "TruthInTheFlip.v1.0.1":
+                    bool _record = reader.ReadBoolean();
+
+                    while (fs.Position != fs.Length)
+                    {
+                        tracker = new Tracker();
+                        outer = tracker;
+
+
+                        int sz = reader.ReadInt32();
+                        string recordType =reader.ReadString(); 
+                        if (recordType != "TrackerRecord")
+                            throw new IOException("IOerror expected TrackerRecord");
+                        while (tracker != null)
+                        {
+                            tracker.positive = reader.ReadInt64();
+                            tracker.negative = reader.ReadInt64();
+                            tracker.anticipated = reader.ReadInt64();
+                            tracker.baseAnticipated = reader.ReadInt64();
+
+                            tracker.total = reader.ReadInt64();
+                            tracker.anticipatedPositive = reader.ReadInt64();
+                            tracker.anticipatedNegative = reader.ReadInt64();
+
+                            tracker.priorFlip = reader.ReadBoolean();
+                            tracker.guessAnticipateChange = reader.ReadBoolean();
+                            tracker.cumulativeTicks = reader.ReadInt64();
+
+                            if (tracker.positive + tracker.negative != tracker.total)
+                                throw new IOException($"{path} is damaged or incorrect");
+                            if (tracker.anticipatedPositive + tracker.anticipatedNegative != tracker.baseAnticipated)
+                                throw new IOException($"{path} is damaged or incorrect");
+
+                            if (reader.ReadBoolean()) tracker = tracker.trackerInner = new Tracker();
+                            else tracker = null;
+
+                        }
+                        if (sz != reader.ReadInt32()) throw new IOException("tail size mismatch");
+                        yield return outer;
+                        
+                    }
+
+                    break;
+                default:
+                    throw new IOException("version \"{version}\" not suppored");
+            }
+        }
+    }
+    
     /*
         Guessed ⊂ total
         Positive ⊂ Anticipated ∩ (next == last)
