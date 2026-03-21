@@ -1,5 +1,6 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
+using TruthInTheFlip.Format;
 using System.Diagnostics;
 using TruthInTheFlip;
 

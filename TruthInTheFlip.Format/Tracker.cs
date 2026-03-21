@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace TruthInTheFlip;
+namespace TruthInTheFlip.Format;
 
 public class Tracker
 {

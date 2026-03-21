@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace TruthInTheFlip;
+namespace TruthInTheFlip.Format;
 
 /*
 public static class QuantisInterop

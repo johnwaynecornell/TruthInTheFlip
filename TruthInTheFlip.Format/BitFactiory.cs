@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace TruthInTheFlip;
+namespace TruthInTheFlip.Format;
 
 public class BitFactory
 {
