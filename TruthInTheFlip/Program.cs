@@ -163,11 +163,25 @@ public class Program
             allTime = new Tracker();
             if (File.Exists(fileName))
             {
+                long cnt=0;
+                long good=0;
+                
                 // foreach (var t in Tracker.Enumerate(fileName))
                 // {
                 //     string threadTime = $"threadTime: {new TimeSpan(t.cumulativeTicks):G}";
-                //     Console.WriteLine(t.ToString() + $" | {threadTime}");
+                //     Console.WriteLine($"{t.total} flips → " +
+                //                       $"positive: {Tracker.FormatOffset(t.PositivePercentage, "F6")} | " +
+                //                       $"negative: {Tracker.FormatOffset(t.NegativePercentage, "F6")} | " +
+                //                       $"anticipatedPositive: {Tracker.FormatOffset(t.AnticipatedPositivePercentage, "g2")} | " +
+                //                       $"anticipatedNegative: {Tracker.FormatOffset(t.AnticipatedNegativePercentage, "g2")} | " +
+                //                       $"anticipated: {Tracker.FormatOffset(t.AnticipatedPercentage, "g2")} | " +
+                //                       $"base: {Tracker.FormatOffset(t.BaseAnticipatedPercentage, "g2")} | " +
+                //                       $"Z: {t.GetCurrentZScore():F6} | {threadTime}");Console.WriteLine($"positive={t.positive}, negative={t.negative}, anticipated={t.anticipated}, baseAnticipated={t.baseAnticipated}, anticipatedPositive={t.anticipatedPositive}, anticipatedNegative={t.anticipatedNegative}, total={t.total}");
+                //     cnt++;
+                //     if (t.anticipated<<1 >= t.total) good++;
                 // }
+                // Console.WriteLine($"{(good/(double)cnt * 100)}% of the time above 50%");
+                // return 0;
                 
                 allTime = Tracker.SafeLoad(fileName, record);
             }

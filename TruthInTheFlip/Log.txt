@@ -1,0 +1,11 @@
+20260321_111034
+6809400000000 flips → positive: 50% -0.000017% | negative: 50% +0.000017% | anticipatedPositive: 50% +1.9e-05% | anticipatedNegative: 50% -1.5e-05% | anticipated: 50% +1.9e-06% | base: 50% +1.9e-06% | Z: 0.097468 | threadTime: 26:05:24:13.3095592
+positive=3404698848892, negative=3404701151108, anticipated=3404700127171, baseAnticipated=3404700127171, anticipatedPositive=1702350063172, anticipatedNegative=1702350063999, total=6809400000000
+69.44224160719006% of the time above 50%
+
+20260321_133648
+7247800000000 flips → positive: 50% -0.000011% | negative: 50% +0.000011% | anticipatedPositive: 50% +1.5e-05% | anticipatedNegative: 50% -6.8e-06% | anticipated: 50% +4.2e-06% | base: 50% +4.2e-06% | Z: 0.228362 | threadTime: 28:06:05:12.6893334
+positive=3623899200291, negative=3623900799709, anticipated=3623900307395, baseAnticipated=3623900307395, anticipatedPositive=1811950153138, anticipatedNegative=1811950154257, total=7247800000000
+70.24200447032203% of the time above 50%
+
+Updating repo
