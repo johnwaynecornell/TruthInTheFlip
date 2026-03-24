@@ -59,7 +59,7 @@ public class TrackerStore : ITrackerStore
     public string? Path { get; set; }
 
     public string? Version { get; set; }
-    
+
     public bool concise { get; set; }
 
     public virtual ITracker NewTracker()
@@ -174,36 +174,36 @@ public class TrackerStore : ITrackerStore
         store.writeRecord_delegate = StockWriteRecord;
 
         store.Path = fileName;
-        
+
         if (File.Exists(store.Path))
-                using (FileStream fs = new FileStream(store.Path, FileMode.Open))
-                        using (BinaryReader reader = new BinaryReader(fs))
-                        {
-                            string version;
-                            version = reader.ReadString();
-                
-                            int[]? ver = ReadVersion("TruthInTheFlip.v", version);
-                            if (ver == null || VersionCompare(ver, 1, 0, 0) < 0)
-                                throw new IOException($"version \"{version}\" not handled");
-                            if (VersionCompare(ver, 1, 1, 0) > 0)
-                                throw new Exception($"\"{store.Path}\" \"{version}\" is a newer than {latest}");
-                
-                
-                            if (version == "TruthInTheFlip.v1.0")
-                            {
-                                store.Record = false;
-                                store.Version = "TruthInTheFlip.v1.0.1";
-                                               
-                                return store;
-                            }
-                            
-                            if (VersionCompare(ver, 1, 1, 0) > 0)
-                                throw new Exception($"\"{store.Path}\" \"{version}\" is a newer than {latest}");
-                
-                            
-                            store.Version = version;
-                        }
-        
+            using (FileStream fs = new FileStream(store.Path, FileMode.Open))
+            using (BinaryReader reader = new BinaryReader(fs))
+            {
+                string version;
+                version = reader.ReadString();
+
+                int[]? ver = ReadVersion("TruthInTheFlip.v", version);
+                if (ver == null || VersionCompare(ver, 1, 0, 0) < 0)
+                    throw new IOException($"version \"{version}\" not handled");
+                if (VersionCompare(ver, 1, 1, 0) > 0)
+                    throw new Exception($"\"{store.Path}\" \"{version}\" is a newer than {latest}");
+
+
+                if (version == "TruthInTheFlip.v1.0")
+                {
+                    store.Record = false;
+                    store.Version = "TruthInTheFlip.v1.0.1";
+
+                    return store;
+                }
+
+                if (VersionCompare(ver, 1, 1, 0) > 0)
+                    throw new Exception($"\"{store.Path}\" \"{version}\" is a newer than {latest}");
+
+
+                store.Version = version;
+            }
+
         return store;
     }
 
@@ -212,9 +212,9 @@ public class TrackerStore : ITrackerStore
         if (tracker == null) throw new NullReferenceException("You cannot print nothing.");
         Tracker? t = tracker as Tracker;
         if (t == null) return tracker.ToString() ?? "";
-        
+
         if (store.Version == null) throw new Exception("TrackerStore 'store.Version' not initialized");
-        
+
         int[]? ver = ReadVersion("TruthInTheFlip.v", store.Version);
         if (ver == null || VersionCompare(ver, 1, 0, 0) < 0)
             throw new IOException($"version \"{store.Version}\" not handled");
@@ -222,7 +222,7 @@ public class TrackerStore : ITrackerStore
         string projectText = "";
 
         TrackerStore s = (TrackerStore)store;
-        
+
         if (t.batchTotal != 0)
         {
             var proof1 = t.EstimateRemainingFlipsForZScore(1.96);
@@ -235,7 +235,7 @@ public class TrackerStore : ITrackerStore
 
             string project1 = proof1 == -1 ? "unreachable" : $"in {ts1:G}";
             string project2 = proof2 == -1 ? "unreachable" : $"in {ts2:G}";
-            
+
             projectText = $" | flips/sec: {fps:F4} | Z(1.96) {project1} | Z(3.00) {project2}";
         }
 
@@ -243,8 +243,11 @@ public class TrackerStore : ITrackerStore
         {
             TimeSpan wallclockSpan = new TimeSpan(t.wallclockTimeNs / 100);
 
-            string insert = s.concise ? "" : ($"[RATE] H/T: {Tracker.FormatOffset(t.BetHeadsWinRate, "0.0e+00")}/ {Tracker.FormatOffset(t.BetTailsWinRate, "0.0e+00")} " +
-                                              $"S/D: {Tracker.FormatOffset(t.BetSameWinRate, "0.0e+00")}/ {Tracker.FormatOffset(t.BetDiffWinRate, "0.0e+00")} | ");
+            string insert = s.concise
+                ? ""
+                : (
+                    $"[RATE] H/T: {Tracker.FormatOffset(t.BetHeadsWinRate, "0.0e+00")}/ {Tracker.FormatOffset(t.BetTailsWinRate, "0.0e+00")} " +
+                    $"S/D: {Tracker.FormatOffset(t.BetSameWinRate, "0.0e+00")}/ {Tracker.FormatOffset(t.BetDiffWinRate, "0.0e+00")} | ");
 
             return $"{t.total} flips → " +
                    $"heads: {Tracker.FormatOffset(t.HeadsPercentage, "0.0e+00")} | " +
@@ -254,11 +257,11 @@ public class TrackerStore : ITrackerStore
                    $"aDiff: {Tracker.FormatOffset(t.AnticipatedDiffPercentage, "0.0e+00")} | " +
                    $"a: {Tracker.FormatOffset(t.AnticipatedPercentage, "0.0e+00")} | " +
                    $"base: {Tracker.FormatOffset(t.BaseAnticipatedPercentage, "0.0e+00")} | " +
-                   $"Z: {t.GetCurrentZScore():F6} | " 
+                   $"Z: {t.GetCurrentZScore():F6} | "
                    + insert +
                    //$"[BETS] H/T: {Tracker.FormatOffset(t.BetHeadsPercentage, "0.0e+00")}/{Tracker.FormatOffset(t.BetTailsPercentage, "0.0e+00")} " +
                    //$"S/D: {Tracker.FormatOffset(t.BetSamePercentage, "0.0e+00")}/{Tracker.FormatOffset(t.BetDiffPercentage, "0.0e+00")} | " +
-                                      
+
                    $"threadTime: {new TimeSpan(t.cumulativeTicks):G} | " +
                    $"wallclock: {wallclockSpan:G}" +
                    projectText;
@@ -523,17 +526,17 @@ public class TrackerStore : ITrackerStore
                 tracker = (Tracker)((TrackerStore)store).ReadRecord(version, reader);
                 store.Record = false;
                 store.Version = "TruthInTheFlip.v1.0.1";
-                               
+
                 yield return tracker;
                 yield break;
             }
-            
+
             if (VersionCompare(ver, 1, 1, 0) > 0)
                 throw new Exception($"\"{store.Path}\" \"{version}\" is a newer than {latest}");
 
-            
+
             store.Version = version;
-                               
+
 
             store.Record = reader.ReadBoolean();
 

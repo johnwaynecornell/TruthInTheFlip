@@ -54,7 +54,7 @@ public class Tracker : ITracker
     protected long wallclockStartTimestamp;
 
 
-    public void WallclockBegin()
+    public virtual void WallclockBegin()
     {
         // Absolute time for external reference (CSV, charting, Python)
         utcBeginTimeMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -65,7 +65,7 @@ public class Tracker : ITracker
         totalBegin = total;
     }
 
-    public void WallclockEnd()
+    public virtual void WallclockEnd()
     {
         utcEndTimeMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
@@ -78,12 +78,12 @@ public class Tracker : ITracker
         wallclockTimeNs += batchWallclockTimeNs;
     }
 
-    public void BatchMemberBegin()
+    public virtual void BatchMemberBegin()
     {
         batchMemberStartTimestamp = Stopwatch.GetTimestamp();
     }
 
-    public void BatchMemberEnd()
+    public virtual void BatchMemberEnd()
     {
         var elapsed = Stopwatch.GetElapsedTime(batchMemberStartTimestamp);
         cumulativeTicks += elapsed.Ticks;
@@ -96,7 +96,7 @@ public class Tracker : ITracker
         this.Store = store;
     }
 
-    public void Reset()
+    public virtual void Reset()
     {
         heads = 0;
         tails = 0;
@@ -177,7 +177,7 @@ public class Tracker : ITracker
         return remaining > 0 ? remaining : 0;
     }
 
-    public bool Anticipate(bool currentFlip)
+    public virtual bool Anticipate(bool currentFlip)
     {
         // If anticipating change, expect !priorFlip. If anticipating same, expect priorFlip.
 
@@ -203,14 +203,15 @@ public class Tracker : ITracker
         }
 
         total++;
-
+      
         // Anticipate the relation, not the value.
         guessAnticipateChange = currentFlip == priorFlip;
 
         if (currentFlip)
             heads++;
         else
-            tails++;
+            tails++
+       ;
 
         priorFlip = currentFlip;
 
@@ -237,7 +238,7 @@ public class Tracker : ITracker
                (trackerInner != null ? $" | INNER | {trackerInner}" : "");
     }
 
-    public void Merge(ITracker otherTracker)
+    public virtual void Merge(ITracker otherTracker)
     {
         // Timing falls under external management, so no timing fields are aggregated here with the exception of 
         //  cumulative ticks which are emerged by nature.
