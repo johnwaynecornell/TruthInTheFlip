@@ -1,33 +1,9 @@
-﻿// See https://aka.ms/new-console-template for more information
-
-using TruthInTheFlip.Format;
+﻿using TruthInTheFlip.Format;
 using System.Diagnostics;
 using TruthInTheFlip;
 
 public class Program
 {
-    public class ForScope
-    {
-        public TrackerStore store;
-        public BitFactory bitFactory;
-        public BitFactory.Consumer consume;
-        public ITracker run;
-
-        public ForScope(TrackerStore store, BitFactory bitFactory)
-        {
-            this.store = store;
-            this.bitFactory = bitFactory;
-            consume = new BitFactory.Consumer(bitFactory);
-
-            run = store.NewTracker();
-            //initialize the tracker to get the first valid guess to be fair statistically.
-            run.Anticipate(consume.getBit());
-            run.Anticipate(consume.getBit());
-            run.Reset(); // This deliberately does not reset the prior flip memory or guess.
-
-        }
-    }
-
     public static string? fileName = null;
     public static TrackerStore? store = null;
     public static ITracker? allTime = null;
@@ -264,46 +240,12 @@ public class Program
 
         }
 
+        TrackerRunner runner = new TrackerRunner(store, bitFactory);
+
         while (true)
         {
-            DateTime begin = DateTime.Now;
-            long begin_count = allTime.total;
-
-            allTime.WallclockBegin();
-
-            Parallel.For(
-                0, 20,
-                () => new ForScope(store, bitFactory), // 1. localInit: Runs once per thread to initialize the state
-                (index, loopState, scope) =>
-                {
-                    // 2. body: Runs for each iteration, using the thread-local state
-
-                    scope.run.BatchMemberBegin();
-
-                    try
-                    {
-                        for (int i = 0; i < 10000000; i++)
-                        {
-                            bool current = scope.consume.getBit();
-                            scope.run.Anticipate(current);
-                        }
-                    }
-                    finally
-                    {
-                        scope.run.BatchMemberEnd();
-                    }
-
-                    return scope; // Pass the state to the next iteration on this thread
-                },
-                (scope) =>
-                {
-                    // 3. localFinally: Runs once per thread after all its iterations are done
-                    lock (allTime) allTime.Merge(scope.run);
-                });
-            allTime.WallclockEnd();
-
+            runner.Run(allTime, 20, 10000000);
             store.Save(allTime, record);
-
             LogWriteLine(Program.RecordText(""));
         }
     }
