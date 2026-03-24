@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TruthInTheFlip", "TruthInTh
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TruthInTheFlip.Format", "TruthInTheFlip.Format\TruthInTheFlip.Format.csproj", "{4636C577-9261-4286-9B47-100D869E339B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TruthInTheFlip_sample_csv", "TruthInTheFlip_sample_csv\TruthInTheFlip_sample_csv.csproj", "{B4E9BB58-F594-4D52-AF04-D3B117147F8F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{4636C577-9261-4286-9B47-100D869E339B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4636C577-9261-4286-9B47-100D869E339B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4636C577-9261-4286-9B47-100D869E339B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B4E9BB58-F594-4D52-AF04-D3B117147F8F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B4E9BB58-F594-4D52-AF04-D3B117147F8F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B4E9BB58-F594-4D52-AF04-D3B117147F8F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B4E9BB58-F594-4D52-AF04-D3B117147F8F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

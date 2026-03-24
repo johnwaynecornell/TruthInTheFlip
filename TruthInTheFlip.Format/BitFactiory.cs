@@ -36,7 +36,7 @@ public class BitFactory
     {
         public BitFactory factory;
 
-        public byte[] source = null;
+        public byte[]? source = null;
         
         public int Index;
         public int Index2;
@@ -51,6 +51,7 @@ public class BitFactory
         public bool getBit()
         {
             if (source == null || Index >= source.Length) factory.Provide(this);
+            if (source == null) throw new Exception("provider failure.");
             if (Index2 < 0)
             {
                 Index2 = 7;
