@@ -20,30 +20,30 @@ public class Tracker : ITracker
 {
     //fields begin
     public long total { get; set; } = 0;
-    public long heads = 0;
-    public long tails = 0;
+    public long heads { get; set; }= 0;
+    public long tails { get; set; }= 0;
 
-    public long anticipated = 0;
-    public long baseAnticipated = 0;
-    public long anticipatedHeads = 0;
-    public long anticipatedTails = 0;
+    public long anticipated{ get; set; } = 0;
+    public long baseAnticipated{ get; set; } = 0;
+    public long anticipatedHeads { get; set; }= 0;
+    public long anticipatedTails { get; set; }= 0;
     
     public bool priorFlip = false;
     public bool guessAnticipateChange = false;
 
     public Tracker? trackerInner = null;
-    public long cumulativeTicks = 0;
+    public long cumulativeTicks { get; set; }= 0;
 
     //v1.1.0 additions
-    public long batchTotal = 0;
-    public long wallclockTimeNs = 0;
-    public long batchWallclockTimeNs = 0;
-    public long utcBeginTimeMs = 0;
-    public long utcEndTimeMs = 0;
+    public long batchTotal { get; set; }= 0;
+    public long wallclockTimeNs { get; set; }= 0;
+    public long batchWallclockTimeNs { get; set; }= 0;
+    public long utcBeginTimeMs { get; set; }= 0;
+    public long utcEndTimeMs { get; set; }= 0;
 
-    public long betHeads = 0;
-    public long betSame = 0;
-    public long anticipatedSame = 0;
+    public long betHeads { get; set; }= 0;
+    public long betSame { get; set; }= 0;
+    public long anticipatedSame { get; set; }= 0;
 
     //fields end
 
