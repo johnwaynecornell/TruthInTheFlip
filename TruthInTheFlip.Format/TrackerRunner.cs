@@ -43,7 +43,7 @@ public class TrackerRunner : ITrackerRunner
         }
     }
 
-    public double Run(ITracker master, int threads = 20, int stride = 10000000)
+    public virtual double Run(ITracker master, int threads = 20, int stride = 10000000)
     {
         DateTime start = DateTime.Now;
         
