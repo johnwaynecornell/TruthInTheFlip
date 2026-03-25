@@ -21,13 +21,6 @@ public class TrackerRunner : ITrackerRunner
         this.store = store;
         this.bitFactory = bitFactory;
     }
-
-    public virtual bool RunAnticipate(ITracker tracker, bool currentFlip)
-    {
-        if (anticipate_delegate != null) return anticipate_delegate(this, tracker, currentFlip);
-        return tracker.Anticipate(currentFlip);
-    }
-
     public class ForScope
     {
         public ITrackerStore store;
@@ -55,36 +48,73 @@ public class TrackerRunner : ITrackerRunner
         DateTime start = DateTime.Now;
         
         master.WallclockBegin();
-        
-        Parallel.For(
-            0, threads,
-            () => new ForScope(store, bitFactory), // 1. localInit: Runs once per thread to initialize the state
-            (index, loopState, scope) =>
-            {
-                // 2. body: Runs for each iteration, using the thread-local state
 
-                scope.run.BatchMemberBegin();
-
-                try
+        if (anticipate_delegate != null)
+        {
+            Parallel.For(
+                0, threads,
+                () => new ForScope(store, bitFactory), // 1. localInit: Runs once per thread to initialize the state
+                (index, loopState, scope) =>
                 {
-                    for (int i = 0; i < stride; i++)
+                    // 2. body: Runs for each iteration, using the thread-local state
+
+                    scope.run.BatchMemberBegin();
+
+                    try
                     {
-                        bool current = scope.consume.getBit();
-                        RunAnticipate(scope.run, current);
+                        for (int i = 0; i < stride; i++)
+                        {
+                            bool current = scope.consume.getBit();
+                            anticipate_delegate(this, scope.run, current);
+                        }
                     }
-                }
-                finally
-                {
-                    scope.run.BatchMemberEnd();
-                }
+                    finally
+                    {
+                        scope.run.BatchMemberEnd();
+                    }
 
-                return scope; // Pass the state to the next iteration on this thread
-            },
-            (scope) =>
-            {
-                // 3. localFinally: Runs once per thread after all its iterations are done
-                lock (master) master.Merge(scope.run);
-            });
+                    return scope; // Pass the state to the next iteration on this thread
+                },
+                (scope) =>
+                {
+                    // 3. localFinally: Runs once per thread after all its iterations are done
+                    lock (master) master.Merge(scope.run);
+                });
+        }
+        else
+        {
+            Parallel.For(
+                0, threads,
+                () => new ForScope(store, bitFactory), // 1. localInit: Runs once per thread to initialize the state
+                (index, loopState, scope) =>
+                {
+                    // 2. body: Runs for each iteration, using the thread-local state
+
+                    scope.run.BatchMemberBegin();
+
+                    try
+                    {
+                        for (int i = 0; i < stride; i++)
+                        {
+                            bool current = scope.consume.getBit();
+                            scope.run.Anticipate(current);
+                        }
+                    }
+                    finally
+                    {
+                        scope.run.BatchMemberEnd();
+                    }
+
+                    return scope; // Pass the state to the next iteration on this thread
+                },
+                (scope) =>
+                {
+                    // 3. localFinally: Runs once per thread after all its iterations are done
+                    lock (master) master.Merge(scope.run);
+                });
+            
+        }
+
         master.WallclockEnd();
 
         return (start - DateTime.Now).TotalSeconds;
