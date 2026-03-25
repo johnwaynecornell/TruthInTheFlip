@@ -28,30 +28,54 @@ public interface ITracker
 public class Tracker : ITracker
 {
     //fields begin
+    [IsRecord("TruthInTheFlip.v1.0")]
     public long total { get; set; } = 0;
+    [IsRecord("TruthInTheFlip.v1.0")]
     public long heads { get; set; }= 0;
+    [IsRecord("TruthInTheFlip.v1.0")]
     public long tails { get; set; }= 0;
 
+    [IsRecord("TruthInTheFlip.v1.0")]
     public long anticipated{ get; set; } = 0;
+    [IsRecord("TruthInTheFlip.v1.0")]
     public long baseAnticipated{ get; set; } = 0;
+    [IsRecord("TruthInTheFlip.v1.0")]
     public long anticipatedHeads { get; set; }= 0;
+    [IsRecord("TruthInTheFlip.v1.0")]
     public long anticipatedTails { get; set; }= 0;
     
+    //Although included in the file, in a batch scenario it is always false in the file
+    //  And with serial use it's effect is microscopic
     public bool priorFlip = false;
+    
+    //Although included in the file, in a batch scenario it is always false in the file
+    //  And with serial use it's effect is microscopic
     public bool guessAnticipateChange = false;
 
     public Tracker? trackerInner = null;
+    [IsRecord("TruthInTheFlip.v1.0")]
     public long cumulativeTicks { get; set; }= 0;
 
     //v1.1.0 additions
+    [IsRecord("TruthInTheFlip.v1.1.0")]
     public long batchTotal { get; set; }= 0;
+    [IsRecord("TruthInTheFlip.v1.1.0")]
     public long wallclockTimeNs { get; set; }= 0;
+    
+    [IsRecord("TruthInTheFlip.v1.1.0")]
     public long batchWallclockTimeNs { get; set; }= 0;
+    [IsRecord("TruthInTheFlip.v1.1.0")]
     public long utcBeginTimeMs { get; set; }= 0;
+    [IsRecord("TruthInTheFlip.v1.1.0")]
     public long utcEndTimeMs { get; set; }= 0;
 
+    [IsRecord("TruthInTheFlip.v1.1.0")]
     public long betHeads { get; set; }= 0;
+    
+    [IsRecord("TruthInTheFlip.v1.1.0")]
     public long betSame { get; set; }= 0;
+    
+    [IsRecord("TruthInTheFlip.v1.1.0")]
     public long anticipatedSame { get; set; }= 0;
 
     //fields end
@@ -146,6 +170,9 @@ public class Tracker : ITracker
 
         return (actualWinRate - ExpectedWinRate) / standardError;
     }
+
+    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    public double ZScore => GetCurrentZScore();
 
     // Add these right below your GetCurrentZScore() method
 
@@ -251,7 +278,7 @@ public class Tracker : ITracker
                $"anticipatedNegative: {AnticipatedTailsPercentage:F6}% | " +
                $"anticipated: {AnticipatedPercentage:F6}% | " +
                $"base: {BaseAnticipatedPercentage:F6}% | " +
-               $"Z: {GetCurrentZScore():F6}" +
+               $"Z: {ZScore:F6}" +
                (trackerInner != null ? $" | INNER | {trackerInner}" : "");
     }
 
@@ -288,37 +315,100 @@ public class Tracker : ITracker
      */
     public static double Percentage(long parts, long whole) => (double)parts / whole * 100;
 
+    [IsMetric("TruthInTheFlip.v1.0")]
+    [MetricType("Percentage")]
     public double HeadsPercentage => Percentage(heads, total);
+    
+    [IsMetric("TruthInTheFlip.v1.0")] 
+    [MetricType("Percentage")]
     public double TailsPercentage => Percentage(tails, total);
+    
+    [IsMetric("TruthInTheFlip.v1.0")] 
+    [MetricType("Percentage")]
     public double AnticipatedPercentage => Percentage(anticipated, total);
+    
+    [IsMetric("TruthInTheFlip.v1.0")] 
+    [MetricType("Percentage")]
     public double BaseAnticipatedPercentage => Percentage(baseAnticipated, total);
+    
+    [IsMetric("TruthInTheFlip.v1.0")] 
+    [MetricType("Percentage")]
     public double AnticipatedHeadsPercentage => Percentage(anticipatedHeads, heads);
+    
+    [IsMetric("TruthInTheFlip.v1.0")] 
+    [MetricType("Percentage")]
     public double AnticipatedTailsPercentage => Percentage(anticipatedTails, tails);
+    
+    [IsMetric("TruthInTheFlip.v1.0")] 
+    [MetricType("Percentage")]
     public double BiasDelta => AnticipatedPercentage - BaseAnticipatedPercentage;
+    
+    [IsMetric("TruthInTheFlip.v1.0")] 
+    [MetricType("PercentageDelta")]
     public double InversionGain => AnticipatedPercentage - 50.0;
     
     // 1. Bet Distribution (The existing ones - Proves our guesses are 50/50 balanced)
+    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    [MetricType("Percentage")]
     public double BetHeadsPercentage => Percentage(betHeads, total);
+    
+    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    [MetricType("Percentage")]
     public double BetTailsPercentage => Percentage(total - betHeads, total);
+    
+    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    [MetricType("Percentage")]
     public double BetSamePercentage => Percentage(betSame, total);
+    
+    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    [MetricType("Percentage")]
     public double BetDiffPercentage => Percentage(total - betSame, total);
+    
 
     // 2. Bet Win Rates (Precision - "When we bet X, how often did X win?")
+    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    [MetricType("Percentage")]
     public double BetHeadsWinRate => Percentage(anticipatedHeads, betHeads);
+    
+    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    [MetricType("Percentage")]
     public double BetTailsWinRate => Percentage(anticipatedTails, total - betHeads);
+    
+    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    [MetricType("Percentage")]
     public double BetSameWinRate => Percentage(anticipatedSame, betSame);
+    
+    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    [MetricType("Percentage")]
     public double BetDiffWinRate => Percentage(anticipated - anticipatedSame, total - betSame);
 
     // 3. Win Distribution ("Of all our wins, what percentage were X?")
+    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    [MetricType("Percentage")]
     public double WinDistributionHeads => Percentage(anticipatedHeads, anticipated);
+    
+    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    [MetricType("Percentage")]
     public double WinDistributionTails => Percentage(anticipatedTails, anticipated);
+    
+    [MetricType("Percentage")]
+    [IsMetric("TruthInTheFlip.v1.1.0")] 
     public double WinDistributionSame => Percentage(anticipatedSame, anticipated);
+    
+    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    [MetricType("Percentage")]
     public double WinDistributionDiff => Percentage(anticipated - anticipatedSame, anticipated);
     
+    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    [MetricType("Percentage")]
     public double AnticipatedSamePercentage => Percentage(anticipatedSame, betSame);
+    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    [MetricType("Percentage")]
     public double AnticipatedDiffPercentage => Percentage(anticipated - anticipatedSame, total - betSame);
 
+    [IsMetric("TruthInTheFlip.v1.1.0")] 
     public DateTime UtcBeginTime => DateTimeOffset.FromUnixTimeMilliseconds(utcBeginTimeMs).UtcDateTime;
+    [IsMetric("TruthInTheFlip.v1.1.0")] 
     public DateTime UtcEndTime => DateTimeOffset.FromUnixTimeMilliseconds(utcEndTimeMs).UtcDateTime;
 
 }

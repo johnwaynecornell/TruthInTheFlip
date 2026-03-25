@@ -257,7 +257,7 @@ public class TrackerStore : ITrackerStore
                    $"aDiff: {Tracker.FormatOffset(t.AnticipatedDiffPercentage, "0.0e+00")} | " +
                    $"a: {Tracker.FormatOffset(t.AnticipatedPercentage, "0.0e+00")} | " +
                    $"base: {Tracker.FormatOffset(t.BaseAnticipatedPercentage, "0.0e+00")} | " +
-                   $"Z: {t.GetCurrentZScore():F6} | "
+                   $"Z: {t.ZScore:F6} | "
                    + insert +
                    //$"[BETS] H/T: {Tracker.FormatOffset(t.BetHeadsPercentage, "0.0e+00")}/{Tracker.FormatOffset(t.BetTailsPercentage, "0.0e+00")} " +
                    //$"S/D: {Tracker.FormatOffset(t.BetSamePercentage, "0.0e+00")}/{Tracker.FormatOffset(t.BetDiffPercentage, "0.0e+00")} | " +
@@ -273,7 +273,7 @@ public class TrackerStore : ITrackerStore
                $"anticipatedTails: {Tracker.FormatOffset(t.AnticipatedTailsPercentage, "0.0e+00")} | " +
                $"anticipated: {Tracker.FormatOffset(t.AnticipatedPercentage, "0.0e+00")} | " +
                $"base: {Tracker.FormatOffset(t.BaseAnticipatedPercentage, "0.0e+00")} | " +
-               $"Z: {t.GetCurrentZScore():F6} | " +
+               $"Z: {t.ZScore:F6} | " +
                $"threadTime: {new TimeSpan(t.cumulativeTicks):G}" +
                projectText;
 

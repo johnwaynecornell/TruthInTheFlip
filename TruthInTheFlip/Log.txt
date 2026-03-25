@@ -26,3 +26,9 @@ total,heads,tails,anticipated,baseAnticipated,anticipatedHeads,anticipatedTails,
 38.40759075907591% of the time above 50% minZ=-0.7687498808593585 maxZ=2.1328526609669614
 
 The quest continues...
+
+v1.1.0.TrackerRecord : 20260325_190223.21 | 1678000000000 flips → heads: 50-1.6e-05% | aHeads: 50+2.6e-05% | aTails: 50-6.3e-06% | aSame: 50+4.7e-05% | aDiff: 50-2.7e-05% | a: 50+1.0e-05% | base: 50+1.0e-05% | Z: 0.258143 | [RATE] H/T: 50-6.3e-06%/ 50+2.6e-05% S/D: 50+4.7e-05%/ 50-2.7e-05% | threadTime: 14:06:17:41.7360158 | wallclock: 0:19:30:32.1662894 | flips/sec: 19546520.7193 | Z(1.96) in 56:06:52:03.6663026 | Z(3.00) in 133:04:47:51.3346406
+total,heads,tails,anticipated,baseAnticipated,anticipatedHeads,anticipatedTails,cumulativeTicks,batchTotal,wallclockTimeNs,batchWallclockTimeNs,utcBeginTimeMs,utcEndTimeMs,betHeads,betSame,anticipatedSame
+1678000000000,838999726538,839000273462,839000167196,839000167196,419500083577,419500083619,12322617360158,200000000,70232166289400,10231728400,1774465332981,1774465343213,839000273420,838999385621,419500083540
+45.68533969010727% of the time above 50% minZ=-0.7687498808593585 maxZ=2.1328526609669614
+
