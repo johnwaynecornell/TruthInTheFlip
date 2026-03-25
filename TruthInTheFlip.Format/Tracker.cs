@@ -6,6 +6,15 @@ public interface ITracker
 {
     ITrackerStore Store { get; }
     void Reset();
+    
+    /// <summary>
+    /// Core anticipation logic that evaluates whether the next flip matches the predicted pattern.
+    /// This method serves as the fallback implementation used by TrackerRunner when no custom
+    /// anticipation strategy is provided. It tracks consecutive flip relationships (same vs. different)
+    /// and maintains statistics on prediction accuracy, bet distribution, and cumulative performance.
+    /// </summary>
+    /// <param name="currentFlip">The current flip result (true = heads, false = tails)</param>
+    /// <returns>True if the anticipation was correct, false otherwise</returns>
     bool Anticipate(bool currentFlip);
     void Merge(ITracker otherTracker); //Merge a tracker from the same store.
     long total { get; set; }
@@ -177,6 +186,14 @@ public class Tracker : ITracker
         return remaining > 0 ? remaining : 0;
     }
 
+    /// <summary>
+    /// Core anticipation logic that evaluates whether the next flip matches the predicted pattern.
+    /// This method serves as the fallback implementation used by TrackerRunner when no custom
+    /// anticipation strategy is provided. It tracks consecutive flip relationships (same vs. different)
+    /// and maintains statistics on prediction accuracy, bet distribution, and cumulative performance.
+    /// </summary>
+    /// <param name="currentFlip">The current flip result (true = heads, false = tails)</param>
+    /// <returns>True if the anticipation was correct, false otherwise</returns>
     public virtual bool Anticipate(bool currentFlip)
     {
         // If anticipating change, expect !priorFlip. If anticipating same, expect priorFlip.

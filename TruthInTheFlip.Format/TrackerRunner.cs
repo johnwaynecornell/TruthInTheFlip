@@ -12,11 +12,20 @@ public class TrackerRunner : ITrackerRunner
 {
     public ITrackerStore store { get; }
     public BitFactory bitFactory { get; }
-
+    
+    public delegate bool AnticipateDelegate(ITrackerRunner store, ITracker tracker, bool currentFlip);
+    public AnticipateDelegate? anticipate_delegate;
+    
     public TrackerRunner(ITrackerStore store, BitFactory bitFactory)
     {
         this.store = store;
         this.bitFactory = bitFactory;
+    }
+
+    public virtual bool RunAnticipate(ITracker tracker, bool currentFlip)
+    {
+        if (anticipate_delegate != null) return anticipate_delegate(this, tracker, currentFlip);
+        return tracker.Anticipate(currentFlip);
     }
 
     public class ForScope
@@ -61,7 +70,7 @@ public class TrackerRunner : ITrackerRunner
                     for (int i = 0; i < stride; i++)
                     {
                         bool current = scope.consume.getBit();
-                        scope.run.Anticipate(current);
+                        RunAnticipate(scope.run, current);
                     }
                 }
                 finally
