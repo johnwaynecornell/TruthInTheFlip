@@ -44,8 +44,9 @@ public class Program
         }
         
         int[]? ver = TrackerStore.ReadVersion("TruthInTheFlip.v", store.Version);
-        // ver does not have to be verified here. That was done in Default.       
+        // ver does not have to be verified here. That was done in Default. Just make sure it's a version we can handle.
         if (ver == null) throw new NullReferenceException();
+        if (TrackerStore.VersionCompare(ver, 1, 1, 0) > 0) throw new Exception($"{store.Path} Version {ver} newer than program");
         
         Console.Write("total,heads,tails,anticipated,baseAnticipated,anticipatedHeads,anticipatedTails,cumulativeTicks");
         if (TrackerStore.VersionCompare(ver,1,1,0) >= 0)
