@@ -8,7 +8,7 @@ public class Program
         List<String> args = new(command_line_args);
 
         bool showHelp = false;
-        if (args.Count() != 1 || args[0].StartsWith("-") || args[0].StartsWith("/"))
+        if (args.Count() != 1 || args[0].StartsWith("-"))
         {
             Console.Error.WriteLine("expected one file path");
             showHelp = true;

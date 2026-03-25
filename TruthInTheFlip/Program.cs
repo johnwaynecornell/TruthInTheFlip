@@ -109,8 +109,7 @@ public class Program
                     continue;
                 }
 
-                if (args[cur] == "-help" || args[cur] == "-h" || args[cur] == "/?" || args[cur] == "/h" ||
-                    args[cur] == "/help")
+                if (args[cur] == "-help" || args[cur] == "-h")
                 {
                     args.RemoveAt(cur);
                     showHelp = true;

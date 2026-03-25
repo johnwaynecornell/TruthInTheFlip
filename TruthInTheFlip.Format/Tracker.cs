@@ -318,5 +318,7 @@ public class Tracker : ITracker
     public double AnticipatedSamePercentage => Percentage(anticipatedSame, betSame);
     public double AnticipatedDiffPercentage => Percentage(anticipated - anticipatedSame, total - betSame);
 
+    public DateTime UtcBeginTime => DateTimeOffset.FromUnixTimeMilliseconds(utcBeginTimeMs).UtcDateTime;
+    public DateTime UtcEndTime => DateTimeOffset.FromUnixTimeMilliseconds(utcEndTimeMs).UtcDateTime;
 
 }

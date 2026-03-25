@@ -19,3 +19,10 @@ Updating repo
 69.72622086318817% of the time above 50%
 
 Retiring version 1.0.1 continuous run 'quality.TrackerRecord' in favor of richer v1.1.0 format for features like wallclock time and more stats.
+
+v1.1.0.TrackerRecord : 20260325_154357.86 | 1454400000000 flips → heads: 50-1.5e-05% | aHeads: 50+2.3e-05% | aTails: 50-6.4e-06% | aSame: 50+5.1e-05% | aDiff: 50-3.5e-05% | a: 50+8.3e-06% | base: 50+8.3e-06% | Z: 0.199550 | [RATE] H/T: 50-6.4e-06%/ 50+2.3e-05% S/D: 50+5.1e-05%/ 50-3.5e-05% | threadTime: 11:19:23:42.8832262 | wallclock: 0:16:12:07.7754534 | flips/sec: 21607605.8773 | Z(1.96) in 74:09:05:13.1297458 | Z(3.00) in 175:07:09:39.9285247
+total,heads,tails,anticipated,baseAnticipated,anticipatedHeads,anticipatedTails,cumulativeTicks,batchTotal,wallclockTimeNs,batchWallclockTimeNs,utcBeginTimeMs,utcEndTimeMs,betHeads,betSame,anticipatedSame
+1454400000000,727199786277,727200213723,727200120327,727200120327,363600060170,363600060157,10202228832262,200000000,58327775453400,9256410100,1774453428604,1774453437860,727200213736,727199376797,363600060042
+38.40759075907591% of the time above 50% minZ=-0.7687498808593585 maxZ=2.1328526609669614
+
+The quest continues...
