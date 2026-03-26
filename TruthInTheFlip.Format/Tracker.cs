@@ -157,18 +157,22 @@ public class Tracker : ITracker
         trackerInner?.Reset();
     }
 
-    public double GetCurrentZScore()
+    public double CalculateZScore(long measure, long count, double expectedRate)
     {
-        if (total == 0) return 0;
+        if (count == 0) return 0;
 
-        double actualWinRate = (double)anticipated / total;
+        double actualWinRate = (double)measure / count;
 
         // Standard error formula: sqrt((p * (1 - p)) / n)
-        double standardError = Math.Sqrt((ExpectedWinRate * (1.0 - ExpectedWinRate)) / total);
+        double standardError = Math.Sqrt((expectedRate * (1.0 - expectedRate)) / count);
 
         if (standardError == 0) return 0;
 
-        return (actualWinRate - ExpectedWinRate) / standardError;
+        return (actualWinRate - expectedRate) / standardError;
+    }
+    public double GetCurrentZScore()
+    {
+        return CalculateZScore(anticipated , total, ExpectedWinRate);
     }
 
     [IsMetric("TruthInTheFlip.v1.1.0")] 
