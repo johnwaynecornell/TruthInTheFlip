@@ -53,5 +53,5 @@ cd TruthInTheFlip
 dotnet build
 
 # Run the simulation (requires a file path to store/load state)
-dotnet run -- session_data.tkr -create -record -log
+dotnet run -- session_data.tkr -create -record
 ```
