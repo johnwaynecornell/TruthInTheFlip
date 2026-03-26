@@ -268,6 +268,12 @@ public class Tracker : ITracker
         string sign = offset >= 0 ? "+" : ""; // Negative numbers already include the '-' sign
         return $"50{sign}{offset.ToString(format)}%";
     }
+    
+    public static string FormatWithPlus(double v, string format)
+    {
+        string s = v.ToString(format);
+        return (v>=0 ? "+" : "") + s;
+    }
 
     public override string ToString()
     {
@@ -410,5 +416,11 @@ public class Tracker : ITracker
     public DateTime UtcBeginTime => DateTimeOffset.FromUnixTimeMilliseconds(utcBeginTimeMs).UtcDateTime;
     [IsMetric("TruthInTheFlip.v1.1.0")] 
     public DateTime UtcEndTime => DateTimeOffset.FromUnixTimeMilliseconds(utcEndTimeMs).UtcDateTime;
+    
+    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    public TimeSpan WallclockTime => new TimeSpan(wallclockTimeNs / 100);
+    
+    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    public TimeSpan BatchWallclockTime => new TimeSpan(batchWallclockTimeNs / 100);
 
 }

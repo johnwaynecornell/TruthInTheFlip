@@ -12,23 +12,27 @@ The algorithm explores the natural properties of randomness—specifically, the 
 
 The goal is to measure whether this meta-anticipation yields a success rate statistically greater than 50% over a massive dataset, evaluated via continuous Z-score calculation.
 
+The goal is to measure whether this meta-anticipation yields a success rate statistically greater than 50% over a massive dataset, evaluated via continuous Z-score calculation.
+
 ## Architecture & Performance
 
-To achieve the massive sample sizes required for statistical proof (100+ billion iterations), the harness is heavily optimized for CPU-bound parallel processing.
+To achieve the massive sample sizes required for statistical proof (100+ billion iterations), the harness is heavily optimized for CPU-bound parallel processing and decoupled for maximum extensibility.
+
+### Core Domain: `TruthInTheFlip.Format`
+The core logic has been isolated into its own namespace to allow for easy integration with external client utilities (like CSV exporters or Python data pipelines).
+
+* **`TrackerStore`:** Decouples all binary serialization, file locks, and version checking from the domain model. It safely manages state accumulation across restarts and provides lazy file-reading capabilities (`Enumerate()`) so downstream clients can stream massive history files without memory bloat. Supports legacy v1.0 state migration.
+* **`TrackerRunner`:** A pluggable, parallel execution engine. It allows you to inject custom anticipation logic via delegates, making it trivial to test entirely new guessing strategies across all CPU cores without modifying the underlying multithreading architecture.
 
 ### `BitFactory` & `Consumer`
 Instead of multiple threads competing for individual random bits (which would cause severe lock contention), the system uses a `BitFactory` to serve massive, 1-Megabyte byte arrays to worker threads.
-* **Source-Agnostic:** The random source is injected via a `Action<byte[]>` delegate, making it trivial to swap `System.Random` for a Quantis QRNG API or file stream.
-* **Thread-Safe Pooling:** A `Consumer` class manages the bitwise extraction locally per thread, only returning to the `BitFactory` lock when its 1MB buffer is exhausted.
+* **Source-Agnostic:** The random source is injected via an `Action<byte[]>` delegate, making it trivial to swap `System.Random` for a Quantis QRNG API or file stream.
+* **Thread-Safe Pooling:** A `Consumer` class manages the bitwise extraction locally per thread, only returning to the `BitFactory` lock when its buffer is exhausted.
 
 ### `Tracker`
-The `Tracker` handles the logic evaluation and mathematical logging.
-* **External 2-Flip Prime:** To keep the hot loop free of branching and purely focused on logic, the `Tracker` is primed externally by the worker thread. Two initial flips are processed to establish the state (`priorFlip` and `guessAnticipateChange`), and then the scores are immediately wiped via `Reset()`. This ensures a mathematically pure guess rate without complicating the tracker's internal logic.
-* **Real-Time Z-Score:** Calculates standard error and Z-scores on the fly (`(actualWinRate - 0.5) / standardError`) to track statistical significance without bottlenecking the processing loop.
-* **Binary Serialization:** Safely saves and loads states (`allTime.TrackerRecord`) across program restarts, allowing continuous accumulation of billions of flips.
-
-### `Program` (The Multithreaded Engine)
-Utilizes `Parallel.For` with thread-local state initialization. Each core receives its own `Consumer` and `Tracker`, processes 10,000,000 flips independently, and then safely aggregates the results into the master state using a lightweight `lock`.
+The `Tracker` handles the logic evaluation, mathematical logging, and high-precision telemetry.
+* **External 2-Flip Prime:** To keep the hot loop free of branching, the `Tracker` is primed externally by the worker thread. Two initial flips establish the state, ensuring a mathematically pure guess rate.
+* **Real-Time Z-Score & Telemetry:** Calculates standard error and Z-scores on the fly. It tracks highly specific metrics, including bet distributions (proving the 50/50 baseline), nanosecond-resolution batch durations, and Unix Epoch timestamps for exact real-world data anchoring.
 
 ## Getting Started
 
@@ -38,8 +42,10 @@ Utilizes `Parallel.For` with thread-local state initialization. Each core receiv
 ### Running the Simulation
 1. Clone the repository.
 2. Build the project: `dotnet build`
-3. Run the simulation: `dotnet run`
-   The program will immediately begin processing utilizing all available CPU cores, periodically printing the current aggregate Z-score and win percentages to the console.
+3. Run the simulation using the command-line interface:
 
+```bash
+dotnet run -- [file_path] [options]
+```
 ### Swapping the Random Source
 To test against a physical QRNG or a static file, simply update the `initRandom_Net()` delegate in `BitFactory.cs` to pipe your byte stream directly into the buffers.
