@@ -40,3 +40,12 @@ last 2hr | 100.0000% time above 50% | minZ= +0.492787 | maxZ= +0.882266 | a= 50+
 last 4hr | 100.0000% time above 50% | minZ= +0.492787 | maxZ= +0.938356 | a= 50+2.1e-05% | z= +0.744052
 last 8hr | 100.0000% time above 50% | minZ= +0.342169 | maxZ= +0.938356 | a= 50+2.0e-05% | z= +0.710677
 lifetime |  63.0070% time above 50% | minZ= -0.768750 | maxZ= +2.132853 | a= 50+1.5e-05% | z= +0.205334
+
+v1.1.0.TrackerRecord : 20260326_225202.56 | 3888800000000 flips → heads: 50-2.9e-05% | aHeads: 50+5.6e-05% | aTails: 50-1.3e-06% | aSame: 50+8.5e-05% | aDiff: 50-3.0e-05% | a: 50+2.7e-05% | base: 50+2.7e-05% | Z: 1.076820 | [RATE] H/T: 50-1.3e-06%/ 50+5.6e-05% S/D: 50+8.5e-05%/ 50-3.0e-05% | threadTime: 34:17:58:24.7792103 | wallclock: 1:23:20:03.9695268 | flips/sec: 17611835.1532 | Z(1.96) in 5:21:52:11.5653914 | Z(3.00) in 17:06:43:41.1602093
+total,heads,tails,anticipated,baseAnticipated,anticipatedHeads,anticipatedTails,cumulativeTicks,batchTotal,wallclockTimeNs,batchWallclockTimeNs,utcBeginTimeMs,utcEndTimeMs,betHeads,betSame,anticipatedSame
+3888800000000,1944398887845,1944401112155,1944401061747,1944401061747,972200530625,972200531122,30023047792103,200000000,170403969526800,11356285700,1774565511205,1774565522561,1944401111658,1944397772214,972200530341
+last 1hr | 100.0000% time above 50% | minZ= +0.936726 | maxZ= +1.124165 | a= 50+2.7e-05% | z= +1.056945
+last 2hr | 100.0000% time above 50% | minZ= +0.935702 | maxZ= +1.124165 | a= 50+2.6e-05% | z= +1.029198
+last 4hr | 100.0000% time above 50% | minZ= +0.876311 | maxZ= +1.124165 | a= 50+2.6e-05% | z= +1.013532
+last 8hr | 100.0000% time above 50% | minZ= +0.492787 | maxZ= +1.124165 | a= 50+2.3e-05% | z= +0.875003
+lifetime |  67.4913% time above 50% | minZ= -0.768750 | maxZ= +2.132853 | a= 50+1.6e-05% | z= +0.292237
