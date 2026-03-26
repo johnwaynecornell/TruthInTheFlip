@@ -178,7 +178,39 @@ public class Tracker : ITracker
     [IsMetric("TruthInTheFlip.v1.1.0")] 
     public double ZScore => GetCurrentZScore();
 
-    // Add these right below your GetCurrentZScore() method
+    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    public double ZScoreHeads => CalculateZScore(heads, total, ExpectedWinRate);
+
+    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    public double ZScoreTails => CalculateZScore(tails, total, ExpectedWinRate);
+
+    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    public double ZScoreBaseAnticipated => CalculateZScore(baseAnticipated, total, ExpectedWinRate);
+
+    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    public double ZScoreAnticipatedHeads => CalculateZScore(anticipatedHeads, heads, ExpectedWinRate);
+
+    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    public double ZScoreAnticipatedTails => CalculateZScore(anticipatedTails, tails, ExpectedWinRate);
+
+    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    public double ZScoreBetHeads => CalculateZScore(betHeads, total, ExpectedWinRate);
+
+    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    public double ZScoreBetTails => CalculateZScore(total - betHeads, total, ExpectedWinRate);
+
+    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    public double ZScoreBetSame => CalculateZScore(betSame, total, ExpectedWinRate);
+
+    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    public double ZScoreBetDiff => CalculateZScore(total - betSame, total, ExpectedWinRate);
+
+    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    public double ZScoreAnticipatedSame => CalculateZScore(anticipatedSame, betSame, ExpectedWinRate);
+
+    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    public double ZScoreAnticipatedDiff => CalculateZScore(anticipated - anticipatedSame, total - betSame, ExpectedWinRate);
+    
 
     public long EstimateTotalFlipsForZScore(double targetZScore)
     {
