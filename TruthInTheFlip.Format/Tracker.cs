@@ -28,55 +28,39 @@ public interface ITracker
 public class Tracker : ITracker
 {
     //fields begin
-    [IsRecord("TruthInTheFlip.v1.0")]
-    public long total { get; set; } = 0;
-    [IsRecord("TruthInTheFlip.v1.0")]
-    public long heads { get; set; }= 0;
-    [IsRecord("TruthInTheFlip.v1.0")]
-    public long tails { get; set; }= 0;
+    [IsRecord("TruthInTheFlip.v1.0")] public long total { get; set; } = 0;
+    [IsRecord("TruthInTheFlip.v1.0")] public long heads { get; set; } = 0;
+    [IsRecord("TruthInTheFlip.v1.0")] public long tails { get; set; } = 0;
 
-    [IsRecord("TruthInTheFlip.v1.0")]
-    public long anticipated{ get; set; } = 0;
-    [IsRecord("TruthInTheFlip.v1.0")]
-    public long baseAnticipated{ get; set; } = 0;
-    [IsRecord("TruthInTheFlip.v1.0")]
-    public long anticipatedHeads { get; set; }= 0;
-    [IsRecord("TruthInTheFlip.v1.0")]
-    public long anticipatedTails { get; set; }= 0;
-    
+    [IsRecord("TruthInTheFlip.v1.0")] public long anticipated { get; set; } = 0;
+    [IsRecord("TruthInTheFlip.v1.0")] public long baseAnticipated { get; set; } = 0;
+    [IsRecord("TruthInTheFlip.v1.0")] public long anticipatedHeads { get; set; } = 0;
+    [IsRecord("TruthInTheFlip.v1.0")] public long anticipatedTails { get; set; } = 0;
+
     //Although included in the file, in a batch scenario it is always false in the file
     //  And with serial use it's effect is microscopic
     public bool priorFlip = false;
-    
+
     //Although included in the file, in a batch scenario it is always false in the file
     //  And with serial use it's effect is microscopic
     public bool guessAnticipateChange = false;
 
     public Tracker? trackerInner = null;
-    [IsRecord("TruthInTheFlip.v1.0")]
-    public long cumulativeTicks { get; set; }= 0;
+    [IsRecord("TruthInTheFlip.v1.0")] public long cumulativeTicks { get; set; } = 0;
 
     //v1.1.0 additions
-    [IsRecord("TruthInTheFlip.v1.1.0")]
-    public long batchTotal { get; set; }= 0;
-    [IsRecord("TruthInTheFlip.v1.1.0")]
-    public long wallclockTimeNs { get; set; }= 0;
-    
-    [IsRecord("TruthInTheFlip.v1.1.0")]
-    public long batchWallclockTimeNs { get; set; }= 0;
-    [IsRecord("TruthInTheFlip.v1.1.0")]
-    public long utcBeginTimeMs { get; set; }= 0;
-    [IsRecord("TruthInTheFlip.v1.1.0")]
-    public long utcEndTimeMs { get; set; }= 0;
+    [IsRecord("TruthInTheFlip.v1.1.0")] public long batchTotal { get; set; } = 0;
+    [IsRecord("TruthInTheFlip.v1.1.0")] public long wallclockTimeNs { get; set; } = 0;
 
-    [IsRecord("TruthInTheFlip.v1.1.0")]
-    public long betHeads { get; set; }= 0;
-    
-    [IsRecord("TruthInTheFlip.v1.1.0")]
-    public long betSame { get; set; }= 0;
-    
-    [IsRecord("TruthInTheFlip.v1.1.0")]
-    public long anticipatedSame { get; set; }= 0;
+    [IsRecord("TruthInTheFlip.v1.1.0")] public long batchWallclockTimeNs { get; set; } = 0;
+    [IsRecord("TruthInTheFlip.v1.1.0")] public long utcBeginTimeMs { get; set; } = 0;
+    [IsRecord("TruthInTheFlip.v1.1.0")] public long utcEndTimeMs { get; set; } = 0;
+
+    [IsRecord("TruthInTheFlip.v1.1.0")] public long betHeads { get; set; } = 0;
+
+    [IsRecord("TruthInTheFlip.v1.1.0")] public long betSame { get; set; } = 0;
+
+    [IsRecord("TruthInTheFlip.v1.1.0")] public long anticipatedSame { get; set; } = 0;
 
     //fields end
 
@@ -170,47 +154,46 @@ public class Tracker : ITracker
 
         return (actualWinRate - expectedRate) / standardError;
     }
+
     public double GetCurrentZScore()
     {
-        return CalculateZScore(anticipated , total, ExpectedWinRate);
+        return CalculateZScore(anticipated, total, ExpectedWinRate);
     }
 
-    [IsMetric("TruthInTheFlip.v1.1.0")] 
-    public double ZScore => GetCurrentZScore();
+    [IsMetric("TruthInTheFlip.v1.1.0")] public double ZScore => GetCurrentZScore();
 
-    [IsMetric("TruthInTheFlip.v1.1.0")] 
-    public double ZScoreHeads => CalculateZScore(heads, total, ExpectedWinRate);
+    [IsMetric("TruthInTheFlip.v1.1.0")] public double ZScoreHeads => CalculateZScore(heads, total, ExpectedWinRate);
 
-    [IsMetric("TruthInTheFlip.v1.1.0")] 
-    public double ZScoreTails => CalculateZScore(tails, total, ExpectedWinRate);
+    [IsMetric("TruthInTheFlip.v1.1.0")] public double ZScoreTails => CalculateZScore(tails, total, ExpectedWinRate);
 
-    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    [IsMetric("TruthInTheFlip.v1.1.0")]
     public double ZScoreBaseAnticipated => CalculateZScore(baseAnticipated, total, ExpectedWinRate);
 
-    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    [IsMetric("TruthInTheFlip.v1.1.0")]
     public double ZScoreAnticipatedHeads => CalculateZScore(anticipatedHeads, heads, ExpectedWinRate);
 
-    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    [IsMetric("TruthInTheFlip.v1.1.0")]
     public double ZScoreAnticipatedTails => CalculateZScore(anticipatedTails, tails, ExpectedWinRate);
 
-    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    [IsMetric("TruthInTheFlip.v1.1.0")]
     public double ZScoreBetHeads => CalculateZScore(betHeads, total, ExpectedWinRate);
 
-    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    [IsMetric("TruthInTheFlip.v1.1.0")]
     public double ZScoreBetTails => CalculateZScore(total - betHeads, total, ExpectedWinRate);
 
-    [IsMetric("TruthInTheFlip.v1.1.0")] 
-    public double ZScoreBetSame => CalculateZScore(betSame, total, ExpectedWinRate);
+    [IsMetric("TruthInTheFlip.v1.1.0")] public double ZScoreBetSame => CalculateZScore(betSame, total, ExpectedWinRate);
 
-    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    [IsMetric("TruthInTheFlip.v1.1.0")]
     public double ZScoreBetDiff => CalculateZScore(total - betSame, total, ExpectedWinRate);
 
-    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    [IsMetric("TruthInTheFlip.v1.1.0")]
     public double ZScoreAnticipatedSame => CalculateZScore(anticipatedSame, betSame, ExpectedWinRate);
 
-    [IsMetric("TruthInTheFlip.v1.1.0")] 
-    public double ZScoreAnticipatedDiff => CalculateZScore(anticipated - anticipatedSame, total - betSame, ExpectedWinRate);
-    
+    [IsMetric("TruthInTheFlip.v1.1.0")]
+    public double ZScoreAnticipatedDiff =>
+        CalculateZScore(anticipated - anticipatedSame, total - betSame, ExpectedWinRate);
+
+
 
     public long EstimateTotalFlipsForZScore(double targetZScore)
     {
@@ -250,6 +233,68 @@ public class Tracker : ITracker
     }
 
     /// <summary>
+    /// Mathematically estimates the total number of attempts (n) required to achieve a specific target Z-Score, 
+    /// assuming the current observed win rate remains constant.
+    /// </summary>
+    /// <param name="measure">The number of successful outcomes (e.g., total correct guesses).</param>
+    /// <param name="count">The total number of attempts or events processed so far (the sample size).</param>
+    /// <param name="expectedRate">The theoretical win rate if the system were perfectly random (typically 0.5).</param>
+    /// <param name="targetZScore">The statistical Z-Score threshold to reach (e.g., 1.96 for 95% confidence, 3.0 for 99.7%).</param>
+    /// <returns>
+    /// The estimated total number of events required to reach the target Z-Score. 
+    /// Returns -1 if the current win rate is less than or equal to the expected rate, 
+    /// making a positive Z-Score mathematically unreachable with the current trend.
+    /// </returns>
+    public static long EstimateTotalFlipsForZScore(long measure, long count, double expectedRate, double targetZScore)
+    {
+        if (count == 0) return 0;
+
+        double actualWinRate = (double)measure / count;
+
+        // If the win rate drops to exactly the baseline or lower, a positive Z-score 
+        // is mathematically unreachable with the current trend.
+        if (actualWinRate <= expectedRate) return -1;
+
+        double zSquared = targetZScore * targetZScore;
+
+        double variance = expectedRate * (1.0 - expectedRate);
+
+        double edge = actualWinRate - expectedRate;
+        double edgeSquared = edge * edge;
+
+        // n = (Z^2 * variance) / edge^2
+        double estimatedTotal = (zSquared * variance) / edgeSquared;
+
+        return (long)Math.Ceiling(estimatedTotal);
+    }
+
+    /// <summary>
+    /// Calculates how many *additional* attempts are required to reach a specific target Z-Score, 
+    /// based on the current win rate trajectory.
+    /// </summary>
+    /// <param name="measure">The number of successful outcomes observed so far.</param>
+    /// <param name="count">The total number of attempts processed so far.</param>
+    /// <param name="expectedRate">The theoretical win rate if the system were perfectly random (typically 0.5).</param>
+    /// <param name="targetZScore">The statistical Z-Score threshold to reach.</param>
+    /// <returns>
+    /// The estimated number of remaining events needed to hit the target. 
+    /// Returns 0 if the target is already reached. 
+    /// Returns -1 if the current trajectory makes the target unreachable.
+    /// </returns>
+    public static long EstimateRemainingFlipsForZScore(long measure, long count, double expectedRate, double targetZScore)
+    {
+        long estimatedTotal = EstimateTotalFlipsForZScore(measure, count, expectedRate, targetZScore);
+
+        // Return -1 if the target is currently unreachable
+        if (estimatedTotal <= 0) return -1;
+
+        long remaining = estimatedTotal - count;
+
+        // If the target is already reached, remaining is 0
+        return remaining > 0 ? remaining : 0;
+    }
+
+    /// <summary>
     /// Core anticipation logic that evaluates whether the next flip matches the predicted pattern.
     /// This method serves as the fallback implementation used by TrackerRunner when no custom
     /// anticipation strategy is provided. It tracks consecutive flip relationships (same vs. different)
@@ -283,7 +328,7 @@ public class Tracker : ITracker
         }
 
         total++;
-      
+
         // Anticipate the relation, not the value.
         guessAnticipateChange = currentFlip == priorFlip;
 
@@ -291,7 +336,7 @@ public class Tracker : ITracker
             heads++;
         else
             tails++
-       ;
+                ;
 
         priorFlip = currentFlip;
 
@@ -304,11 +349,11 @@ public class Tracker : ITracker
         string sign = offset >= 0 ? "+" : ""; // Negative numbers already include the '-' sign
         return $"50{sign}{offset.ToString(format)}%";
     }
-    
+
     public static string FormatWithPlus(double v, string format)
     {
         string s = v.ToString(format);
-        return (v>=0 ? "+" : "") + s;
+        return (v >= 0 ? "+" : "") + s;
     }
 
     public override string ToString()
@@ -360,103 +405,103 @@ public class Tracker : ITracker
     [IsMetric("TruthInTheFlip.v1.0")]
     [MetricType("Percentage")]
     public double HeadsPercentage => Percentage(heads, total);
-    
-    [IsMetric("TruthInTheFlip.v1.0")] 
+
+    [IsMetric("TruthInTheFlip.v1.0")]
     [MetricType("Percentage")]
     public double TailsPercentage => Percentage(tails, total);
-    
-    [IsMetric("TruthInTheFlip.v1.0")] 
+
+    [IsMetric("TruthInTheFlip.v1.0")]
     [MetricType("Percentage")]
     public double AnticipatedPercentage => Percentage(anticipated, total);
-    
-    [IsMetric("TruthInTheFlip.v1.0")] 
+
+    [IsMetric("TruthInTheFlip.v1.0")]
     [MetricType("Percentage")]
     public double BaseAnticipatedPercentage => Percentage(baseAnticipated, total);
-    
-    [IsMetric("TruthInTheFlip.v1.0")] 
+
+    [IsMetric("TruthInTheFlip.v1.0")]
     [MetricType("Percentage")]
     public double AnticipatedHeadsPercentage => Percentage(anticipatedHeads, heads);
-    
-    [IsMetric("TruthInTheFlip.v1.0")] 
+
+    [IsMetric("TruthInTheFlip.v1.0")]
     [MetricType("Percentage")]
     public double AnticipatedTailsPercentage => Percentage(anticipatedTails, tails);
-    
-    [IsMetric("TruthInTheFlip.v1.0")] 
+
+    [IsMetric("TruthInTheFlip.v1.0")]
     [MetricType("Percentage")]
     public double BiasDelta => AnticipatedPercentage - BaseAnticipatedPercentage;
-    
-    [IsMetric("TruthInTheFlip.v1.0")] 
+
+    [IsMetric("TruthInTheFlip.v1.0")]
     [MetricType("PercentageDelta")]
     public double InversionGain => AnticipatedPercentage - 50.0;
-    
+
     // 1. Bet Distribution (The existing ones - Proves our guesses are 50/50 balanced)
-    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    [IsMetric("TruthInTheFlip.v1.1.0")]
     [MetricType("Percentage")]
     public double BetHeadsPercentage => Percentage(betHeads, total);
-    
-    [IsMetric("TruthInTheFlip.v1.1.0")] 
+
+    [IsMetric("TruthInTheFlip.v1.1.0")]
     [MetricType("Percentage")]
     public double BetTailsPercentage => Percentage(total - betHeads, total);
-    
-    [IsMetric("TruthInTheFlip.v1.1.0")] 
+
+    [IsMetric("TruthInTheFlip.v1.1.0")]
     [MetricType("Percentage")]
     public double BetSamePercentage => Percentage(betSame, total);
-    
-    [IsMetric("TruthInTheFlip.v1.1.0")] 
+
+    [IsMetric("TruthInTheFlip.v1.1.0")]
     [MetricType("Percentage")]
     public double BetDiffPercentage => Percentage(total - betSame, total);
-    
+
 
     // 2. Bet Win Rates (Precision - "When we bet X, how often did X win?")
-    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    [IsMetric("TruthInTheFlip.v1.1.0")]
     [MetricType("Percentage")]
     public double BetHeadsWinRate => Percentage(anticipatedHeads, betHeads);
-    
-    [IsMetric("TruthInTheFlip.v1.1.0")] 
+
+    [IsMetric("TruthInTheFlip.v1.1.0")]
     [MetricType("Percentage")]
     public double BetTailsWinRate => Percentage(anticipatedTails, total - betHeads);
-    
-    [IsMetric("TruthInTheFlip.v1.1.0")] 
+
+    [IsMetric("TruthInTheFlip.v1.1.0")]
     [MetricType("Percentage")]
     public double BetSameWinRate => Percentage(anticipatedSame, betSame);
-    
-    [IsMetric("TruthInTheFlip.v1.1.0")] 
+
+    [IsMetric("TruthInTheFlip.v1.1.0")]
     [MetricType("Percentage")]
     public double BetDiffWinRate => Percentage(anticipated - anticipatedSame, total - betSame);
 
     // 3. Win Distribution ("Of all our wins, what percentage were X?")
-    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    [IsMetric("TruthInTheFlip.v1.1.0")]
     [MetricType("Percentage")]
     public double WinDistributionHeads => Percentage(anticipatedHeads, anticipated);
-    
-    [IsMetric("TruthInTheFlip.v1.1.0")] 
+
+    [IsMetric("TruthInTheFlip.v1.1.0")]
     [MetricType("Percentage")]
     public double WinDistributionTails => Percentage(anticipatedTails, anticipated);
-    
+
     [MetricType("Percentage")]
-    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    [IsMetric("TruthInTheFlip.v1.1.0")]
     public double WinDistributionSame => Percentage(anticipatedSame, anticipated);
-    
-    [IsMetric("TruthInTheFlip.v1.1.0")] 
+
+    [IsMetric("TruthInTheFlip.v1.1.0")]
     [MetricType("Percentage")]
     public double WinDistributionDiff => Percentage(anticipated - anticipatedSame, anticipated);
-    
-    [IsMetric("TruthInTheFlip.v1.1.0")] 
+
+    [IsMetric("TruthInTheFlip.v1.1.0")]
     [MetricType("Percentage")]
     public double AnticipatedSamePercentage => Percentage(anticipatedSame, betSame);
-    [IsMetric("TruthInTheFlip.v1.1.0")] 
+
+    [IsMetric("TruthInTheFlip.v1.1.0")]
     [MetricType("Percentage")]
     public double AnticipatedDiffPercentage => Percentage(anticipated - anticipatedSame, total - betSame);
 
-    [IsMetric("TruthInTheFlip.v1.1.0")] 
+    [IsMetric("TruthInTheFlip.v1.1.0")]
     public DateTime UtcBeginTime => DateTimeOffset.FromUnixTimeMilliseconds(utcBeginTimeMs).UtcDateTime;
-    [IsMetric("TruthInTheFlip.v1.1.0")] 
+
+    [IsMetric("TruthInTheFlip.v1.1.0")]
     public DateTime UtcEndTime => DateTimeOffset.FromUnixTimeMilliseconds(utcEndTimeMs).UtcDateTime;
-    
-    [IsMetric("TruthInTheFlip.v1.1.0")] 
-    public TimeSpan WallclockTime => new TimeSpan(wallclockTimeNs / 100);
-    
-    [IsMetric("TruthInTheFlip.v1.1.0")] 
-    public TimeSpan BatchWallclockTime => new TimeSpan(batchWallclockTimeNs / 100);
+
+    [IsMetric("TruthInTheFlip.v1.1.0")] public TimeSpan WallclockTime => new TimeSpan(wallclockTimeNs / 100);
+
+    [IsMetric("TruthInTheFlip.v1.1.0")] public TimeSpan BatchWallclockTime => new TimeSpan(batchWallclockTimeNs / 100);
 
 }
