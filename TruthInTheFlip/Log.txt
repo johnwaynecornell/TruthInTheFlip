@@ -49,3 +49,29 @@ last 2hr | 100.0000% time above 50% | minZ= +0.935702 | maxZ= +1.124165 | a= 50+
 last 4hr | 100.0000% time above 50% | minZ= +0.876311 | maxZ= +1.124165 | a= 50+2.6e-05% | z= +1.013532
 last 8hr | 100.0000% time above 50% | minZ= +0.492787 | maxZ= +1.124165 | a= 50+2.3e-05% | z= +0.875003
 lifetime |  67.4913% time above 50% | minZ= -0.768750 | maxZ= +2.132853 | a= 50+1.6e-05% | z= +0.292237
+
+This will be the last entry for v1.1.0.TrackerRecord the System.Random bit shortage fogs the reading. 
+v1.1.0.TrackerRecord : 20260327_173337.74 | 5333000000000 flips → heads: 50-3.1e-05% | aHeads: 50+5.5e-05% | aTails: 50-6.1e-06% | aSame: 50+6.1e-05% | aDiff: 50-1.2e-05% | a: 50+2.5e-05% | base: 50+2.5e-05% | Z: 1.132865 | [RATE] H/T: 50-6.1e-06%/ 50+5.5e-05% S/D: 50+6.1e-05%/ 50-1.2e-05% | threadTime: 48:14:28:25.8644917 | wallclock: 2:18:01:34.3561290 | flips/sec: 6630640.1883 | Z(1.96) in 18:13:20:34.7277975 | Z(3.00) in 55:23:20:04.5486633
+
+total,heads,tails,anticipated,baseAnticipated,anticipatedHeads,anticipatedTails,cumulativeTicks,batchTotal,wallclockTimeNs,batchWallclockTimeNs,utcBeginTimeMs,utcEndTimeMs,betHeads,betSame,anticipatedSame
+5333000000000,2666498366864,2666501633136,2666501308079,2666501308079,1333250653941,1333250654138,41993058644917,200000000,237694356129000,30163073900,1774632787581,1774632817744,2666501632939,2666498057979,1333250653277
+
+last 1hr  | 100.0000% time above 50% | minZ= +1.106894 | maxZ= +1.197393 | ZHeadsAtMaxZ= -1.440374 | z= +1.151000 | a= 50+2.495e-05%
+last 2hr  | 100.0000% time above 50% | minZ= +1.106894 | maxZ= +1.217153 | ZHeadsAtMaxZ= -1.524415 | z= +1.163999 | a= 50+2.529e-05%
+last 4hr  | 100.0000% time above 50% | minZ= +0.938509 | maxZ= +1.239267 | ZHeadsAtMaxZ= -1.558179 | z= +1.116658 | a= 50+2.441e-05%
+last 8hr  | 100.0000% time above 50% | minZ= +0.938509 | maxZ= +1.310858 | ZHeadsAtMaxZ= -1.356358 | z= +1.101156 | a= 50+2.444e-05%
+last 1day | 100.0000% time above 50% | minZ= +0.696196 | maxZ= +1.607681 | ZHeadsAtMaxZ= -1.603512 | z= +1.163752 | a= 50+2.775e-05%
+last 2day |  90.6135% time above 50% | minZ= -0.328412 | maxZ= +1.607681 | ZHeadsAtMaxZ= -1.603512 | z= +0.762580 | a= 50+1.929e-05%
+lifetime  |  76.2948% time above 50% | minZ= -0.768750 | maxZ= +2.132853 | ZHeadsAtMaxZ= -1.979554 | z= +0.543196 | a= 50+1.928e-05%
+File compute time: 2.18:01:34.3561290
+
+I am now recording with the System.Security.Cryptography.RandomNumberGenerator(-rsource NET2)
+The bit drought is officially over.
+crypto.tkr : 20260327_175943.67 | 128400000000 flips → heads: 50+1.8e-04% | aHeads: 50-2.2e-05% | aTails: 50+3.3e-04% | aSame: 50+1.2e-04% | aDiff: 50+1.9e-04% | a: 50+1.6e-04% | base: 50+1.6e-04% | Z: 1.119121 | [RATE] H/T: 50+3.3e-04%/ 50-2.2e-05% S/D: 50+1.2e-04%/ 50+1.9e-04% | threadTime: 1:08:50:36.3537295 | wallclock: 0:01:54:20.2009931 | flips/sec: 18229878.7713 | Z(1.96) in 0:04:02:40.8752567 | Z(3.00) in 0:12:06:10.5068250
+
+total,heads,tails,anticipated,baseAnticipated,anticipatedHeads,anticipatedTails,cumulativeTicks,batchTotal,wallclockTimeNs,batchWallclockTimeNs,utcBeginTimeMs,utcEndTimeMs,betHeads,betSame,anticipatedSame
+128400000000,64200229019,64199770981,64200200507,64200200507,32100100321,32100100186,1182363537295,200000000,6860200993100,10970585800,1774634372705,1774634383676,64199771116,64200045573,32100100272
+
+last 1hr | 100.0000% time above 50% | minZ= +0.946849 | maxZ= +1.905807 | ZHeadsAtMaxZ= -0.105915 | z= +1.337068 | a= 50+2.237e-04%
+lifetime |  99.6885% time above 50% | minZ= -0.077886 | maxZ= +2.284849 | ZHeadsAtMaxZ= -0.078929 | z= +1.313277 | a= 50+3.227e-04%
+File compute time: 01:54:20.2009931

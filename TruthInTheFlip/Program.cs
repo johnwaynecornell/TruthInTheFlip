@@ -60,7 +60,10 @@ public class Program
         bool concise = false;
 
         bool showHelp = false;
-
+        int rc = 0;
+        
+        string randomSource = "NET1";
+        
         int cur = 0;
         while (cur < args.Count)
         {
@@ -72,7 +75,24 @@ public class Program
                     args.RemoveAt(cur);
                     continue;
                 }
-                
+
+                if (args[cur] == "-rsource")
+                {
+                    args.RemoveAt(cur);
+                    if (cur >= args.Count || args[cur].StartsWith("-"))
+                    {
+                        Console.Error.WriteLine($"Expected random source string after -rsource");
+                        showHelp = true;
+                        rc = -1;
+                        continue;
+                    }
+
+                    randomSource = args[cur];
+                    args.RemoveAt(cur);
+
+                    continue;
+                }
+
                 if (args[cur] == "-concise")
                 {
                     concise = true;
@@ -118,6 +138,8 @@ public class Program
 
                 Console.Error.WriteLine($"Unknown argument: {args[cur]}");
                 args.RemoveAt(cur);
+                
+                rc = -1;
                 showHelp = true;
                 continue;
             }
@@ -128,9 +150,32 @@ public class Program
         {
             Console.Error.WriteLine("expected one file path");
             showHelp = true;
+            rc = -1;
         }
 
-        if (showHelp)
+        switch (randomSource)
+        {
+            case "list":
+                Console.WriteLine("Random sources:");
+                Console.WriteLine("  NET1            System.Random");
+                Console.WriteLine("  NET2            System.Security.Cryptography");
+                return rc;
+            case "NET1":
+                bitFactory.resetRandom = BitFactory.initRandom_Net;
+                bitFactory.Reset();
+                break;
+            case "NET2":
+                bitFactory.resetRandom = () => (arr) => System.Security.Cryptography.RandomNumberGenerator.Fill(arr);
+                bitFactory.Reset();
+                break;
+            default:
+            {
+                Console.Error.WriteLine($"random source \"{randomSource}\" UNKNOWN");
+                return -1;
+            }
+        }
+        
+        if (showHelp || rc != 0)
         {
             Console.WriteLine("Usage: TruthInTheFlip [options] <filepath>");
             Console.WriteLine();
@@ -144,6 +189,8 @@ public class Program
             Console.WriteLine("  -dump               verbose output");
             Console.WriteLine("  -record             Append records to the state file");
             Console.WriteLine("  -concise            Prefer skinier output");
+            Console.WriteLine("  -rsource <string>   Random source string (default: NET1)");
+            Console.WriteLine("  -rsource list       List random sources");
             Console.WriteLine("  -help, -h, /?, /h, /help");
             Console.WriteLine("                      Display this help message");
             Console.WriteLine();
@@ -153,10 +200,10 @@ public class Program
             Console.WriteLine("  It continuously processes billions of flips and tracks statistical significance");
             Console.WriteLine("  via Z-score calculations, saving state periodically to the specified file.");
             Console.WriteLine("  The recomended extension is .tkr or .TrackerRecord.");
-
-            return 0;
+            
+            return rc;
         }
-
+        
         fileName = args[0];
 
         store = TrackerStore.Default(fileName);

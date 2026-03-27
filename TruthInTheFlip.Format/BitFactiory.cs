@@ -7,6 +7,8 @@ public class BitFactory
     
     public int ServeSize = 1024 * 16;
     
+    
+    public Func<Action<byte[]>> resetRandom = null;
     public Action<byte[]> fillArray = initRandom_Net();
 
     public static Action<byte[]> initRandom_Net()
@@ -29,6 +31,16 @@ public class BitFactory
             fillArray(consumer.source); 
             consumer.Index = 0;
             consumer.Index2 = 7;
+        }
+    }
+
+    public void Reset()
+    {
+        if (resetRandom == null) throw new Exception("BitFactory.resetRandom has not been provided");
+        
+        lock (_guard)
+        {
+            fillArray = resetRandom();
         }
     }
     
