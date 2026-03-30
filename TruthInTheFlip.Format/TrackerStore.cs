@@ -81,6 +81,39 @@ public class TrackerStore : ITrackerStore
     }
 
     /// <summary>
+    /// Executes a file operation with a transient retry mechanism. 
+    /// Perfect for overcoming brief file locks caused by antivirus or concurrent readers.
+    /// </summary>
+    protected virtual T RetryIO<T>(Func<T> operation, int maxAttempts = 12, int delayMs = 500)
+    {
+        for (int i = 0; i < maxAttempts; i++)
+        {
+            try
+            {
+                return operation();
+            }
+            catch (IOException) // IOException specifically catches "File In Use" errors
+            {
+                if (i == maxAttempts - 1) 
+                    throw; // If we are on the last attempt, rethrow to preserve the stack trace
+                
+                System.Threading.Thread.Sleep(delayMs);
+            }
+        }
+        
+        return default!; // The compiler requires this, but we will always return or throw above.
+    }
+
+    /// <summary>
+    /// Safely opens a file stream using a retry mechanism and allows concurrent readers.
+    /// </summary>
+    public virtual Stream NewFileStream(string path, FileMode mode, FileAccess access = FileAccess.ReadWrite,
+        FileShare share = FileShare.Read)
+    {
+        return RetryIO(() => new FileStream(path, mode, access, share));
+    }
+
+    /// <summary>
     /// Lazily enumerates through the historical tracker records in the store.
     /// </summary>
     /// <remarks>
@@ -136,19 +169,36 @@ public class TrackerStore : ITrackerStore
         return version0;
     }
 
-    public static int VersionCompare(int[] version, int major, int minor, int patch)
+    public static int VersionCompare(int[] versionA, int major, int minor, int patch)
     {
-        if (version[2] < major) return -1;
-        if (version[2] > major) return 1;
+        if (versionA[2] < major) return -1;
+        if (versionA[2] > major) return 1;
 
-        if (version[1] < minor) return -1;
-        if (version[1] > minor) return 1;
+        if (versionA[1] < minor) return -1;
+        if (versionA[1] > minor) return 1;
 
-        if (version[0] < patch) return -1;
-        if (version[0] > patch) return 1;
+        if (versionA[0] < patch) return -1;
+        if (versionA[0] > patch) return 1;
 
         return 0;
     }
+
+    public static int VersionCompare(int[] versionA, int[] versionB)
+    {
+        for (int i = 2; i >= 0; i--)
+        {
+            if (versionA[i] < versionB[i]) return -1;
+            if (versionA[i] > versionB[i]) return 1;
+        }
+        
+        return 0;
+    }
+
+    public static string VersionPrint(int[] version)
+    {
+        return $"{version[2]}.{version[1]}.{version[0]}";
+    }
+
 
     public static bool VersionAtLeast(string title, string version, int major, int minor, int patch)
     {
@@ -176,7 +226,7 @@ public class TrackerStore : ITrackerStore
         store.Path = fileName;
 
         if (File.Exists(store.Path))
-            using (FileStream fs = new FileStream(store.Path, FileMode.Open))
+            using (var fs = ((TrackerStore)store).NewFileStream(store.Path, FileMode.Open))
             using (BinaryReader reader = new BinaryReader(fs))
             {
                 string version;
@@ -454,7 +504,7 @@ public class TrackerStore : ITrackerStore
 
         Tracker tracker;
 
-        using (FileStream fs = new FileStream(store.Path, FileMode.Open))
+        using (var fs = ((TrackerStore)store).NewFileStream(store.Path, FileMode.Open))
         using (BinaryReader reader = new BinaryReader(fs))
         {
             string version;
@@ -508,7 +558,7 @@ public class TrackerStore : ITrackerStore
 
         Tracker tracker;
 
-        using (FileStream fs = new FileStream(store.Path, FileMode.Open))
+        using (var fs = ((TrackerStore)store).NewFileStream(store.Path, FileMode.Open))
         using (BinaryReader reader = new BinaryReader(fs))
         {
             string version;
@@ -558,7 +608,7 @@ public class TrackerStore : ITrackerStore
 
         if (!File.Exists(store.Path))
         {
-            using (FileStream fs = new FileStream(store.Path, FileMode.Create, FileAccess.Write, FileShare.None))
+            using (var fs = ((TrackerStore)store).NewFileStream(store.Path, FileMode.Create, FileAccess.Write, FileShare.None))
             using (BinaryWriter writer = new BinaryWriter(fs))
             {
                 writer.Write("TruthInTheFlip.v1.1.0");
@@ -570,7 +620,7 @@ public class TrackerStore : ITrackerStore
             return;
         }
 
-        using (FileStream fs = new FileStream(store.Path, FileMode.Open))
+        using (var fs = ((TrackerStore)store).NewFileStream(store.Path, FileMode.Open))
         using (BinaryReader reader = new BinaryReader(fs))
         {
             string version = reader.ReadString();
@@ -595,7 +645,7 @@ public class TrackerStore : ITrackerStore
 
         if (!record)
         {
-            using (FileStream fs = new FileStream(store.Path, FileMode.Truncate, FileAccess.Write, FileShare.None))
+            using (var fs = ((TrackerStore)store).NewFileStream(store.Path, FileMode.Truncate, FileAccess.Write, FileShare.None))
             using (BinaryWriter writer = new BinaryWriter(fs))
             {
                 writer.Write(store.Version);
@@ -606,7 +656,7 @@ public class TrackerStore : ITrackerStore
         }
         else
         {
-            using (FileStream fs = new FileStream(store.Path, FileMode.Append, FileAccess.Write, FileShare.None))
+            using (var fs = ((TrackerStore)store).NewFileStream(store.Path, FileMode.Append, FileAccess.Write, FileShare.None))
             using (BinaryWriter writer = new BinaryWriter(fs))
             {
                 ((TrackerStore)store).WriteRecord(tracker, store.Version, writer);
