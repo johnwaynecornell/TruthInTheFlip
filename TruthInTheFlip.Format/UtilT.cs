@@ -1,8 +1,6 @@
-using TruthInTheFlip.Format;
+namespace TruthInTheFlip.Format;
 
-namespace TruthInTheFlip_sample_report2;
-
-public class Util
+public class UtilT
 {
     public class LinkNode<T>
     {
@@ -76,10 +74,10 @@ public class Util
             tail.Next = node;
             tail = node;
 
-            while (head != null && head.Next != null && !bound(t, Util.ThrowIfNull(head.Value, "head.Value"))) head = head.Next;
+            while (head != null && head.Next != null && !bound(t, UtilT.ThrowIfNull(head.Value, "head.Value"))) head = head.Next;
 
             // Yield both the isolated window AND the absolute lifetime state
-            yield return (Subtract(store, ver, t, Util.ThrowIfNull(head?.Value, "head.Value")), t);
+            yield return (Subtract(store, ver, t, UtilT.ThrowIfNull(head?.Value, "head.Value")), t);
         }
     }
 
@@ -92,6 +90,12 @@ public class Util
     public static T ThrowIfNull<T>(T? value, string message) where T : class
     {
         if (value == null) throw new ArgumentNullException(message);
+        return value;
+    }
+    
+    public static T ThrowIfNull<T>(T? value, Func<string> message) where T : class
+    {
+        if (value == null) throw new ArgumentNullException(message());
         return value;
     }
 }

@@ -54,6 +54,10 @@ public class Program
 
         List<String> cl_args = new(command_line_args);
 
+        Options O = new Options();
+        
+        Action<String> errorWriteLine = (s) => Console.Error.WriteLine(s);
+        
         bool show = false;
         bool dump = false;
         bool createIfDoesntExsist = false;
@@ -67,6 +71,10 @@ public class Program
         int cur = 0;
         while (cur < cl_args.Count)
         {
+            if (O.TryParse(cl_args, cur, ref rc, errorWriteLine)) continue;
+            if (cur >= cl_args.Count) continue;
+
+            
             if (cl_args[cur].StartsWith("-"))
             {
                 if (cl_args[cur] == "-log")
@@ -81,7 +89,7 @@ public class Program
                     cl_args.RemoveAt(cur);
                     if (cur >= cl_args.Count || cl_args[cur].StartsWith("-"))
                     {
-                        Console.Error.WriteLine($"Expected random source string after -rsource");
+                        errorWriteLine($"Expected random source string after -rsource");
                         showHelp = true;
                         rc = -1;
                         continue;
@@ -136,7 +144,7 @@ public class Program
                     continue;
                 }
 
-                Console.Error.WriteLine($"Unknown argument: {cl_args[cur]}");
+                errorWriteLine($"Unknown argument: {cl_args[cur]}");
                 cl_args.RemoveAt(cur);
                 
                 rc = -1;
@@ -148,7 +156,7 @@ public class Program
 
         if (cl_args.Count() != 1)
         {
-            Console.Error.WriteLine("expected one file path");
+            errorWriteLine("expected one file path");
             showHelp = true;
             rc = -1;
         }
@@ -170,7 +178,7 @@ public class Program
                 break;
             default:
             {
-                Console.Error.WriteLine($"random source \"{randomSource}\" UNKNOWN");
+                errorWriteLine($"random source \"{randomSource}\" UNKNOWN");
                 return -1;
             }
         }
@@ -207,6 +215,17 @@ public class Program
 
         store = TrackerStore.Default(fileName);
         store.concise = concise;
+        
+        int[] ver = UtilT.ThrowIfNull(TrackerStore.ReadVersion("TruthInTheFlip.v", store.Version), "unsupported version");
+        
+        bool validate_error = false;
+        foreach (Option o in O)
+        {
+            if (o is TrackerOption tracker_o) validate_error = !tracker_o.ValidateVersion(ver, errorWriteLine) || validate_error;
+        }
+
+        if (validate_error) return -1;
+
         
         //v1.0.1 compat
         // store.print_delegate = (store, tracker) =>
@@ -256,8 +275,8 @@ public class Program
             }
             else if (!createIfDoesntExsist)
             {
-                Console.Error.WriteLine($"File does not exist: {fileName}");
-                Console.Error.WriteLine("Use -create to create a new state file");
+                errorWriteLine($"File does not exist: {fileName}");
+                errorWriteLine("Use -create to create a new state file");
                 return 1;
             }
         }
@@ -265,7 +284,7 @@ public class Program
         {
             if (!File.Exists(fileName + ".log"))
             {
-                Console.Error.WriteLine($"the log file \"{fileName + ".log"}\" does not exist.");
+                errorWriteLine($"the log file \"{fileName + ".log"}\" does not exist.");
                 return 1;
             }
 

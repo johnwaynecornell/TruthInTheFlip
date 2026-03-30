@@ -18,13 +18,13 @@ InfoOption infoOption;
 O.Add(infoOption = new InfoOption());
 O.Add(windowOption = new TrackerWindow.WindowOption());
 
-Action<String> ErrorWriteLine = (s) => Console.Error.WriteLine(s);
+Action<String> errorWriteLine = (s) => Console.Error.WriteLine(s);
 
 int rc = 0;
 int cur = 0;
 while (cur < cl_args.Count)
 {
-    if (O.TryParse(cl_args, cur, ref rc, ErrorWriteLine)) continue;
+    if (O.TryParse(cl_args, cur, ref rc, errorWriteLine)) continue;
     if (cur >= cl_args.Count) continue;
     
     if (cl_args[cur].StartsWith("-"))
@@ -36,7 +36,7 @@ while (cur < cl_args.Count)
             continue;
         }
         
-        ErrorWriteLine($"Unknown argument: {args[cur]}");
+        errorWriteLine($"Unknown argument: {args[cur]}");
         cl_args.RemoveAt(cur);
 
         rc = -1;
@@ -47,7 +47,7 @@ while (cur < cl_args.Count)
 
 if (cl_args.Count() != 1)
 {
-    Console.Error.WriteLine("expected one file path");
+    errorWriteLine("expected one file path");
     showHelp = true;
 }
 
@@ -55,11 +55,11 @@ if (showHelp || rc != 0)
 {
     Console.WriteLine("Usage: TruthInTheFlip_sample_csv");
     Console.WriteLine();
-    Console.WriteLine(Util.PadRight("Supports:") + "TruthInTheFlip.v" + TrackerStore.VersionPrint(supported_ver));
+    Console.WriteLine(UtilT.PadRight("Supports:") + "TruthInTheFlip.v" + TrackerStore.VersionPrint(supported_ver));
     Console.WriteLine("Arguments:");
-    Console.WriteLine(Util.PadRight("  <filepath>") + $"Path to the tracker state file (required)");
+    Console.WriteLine(UtilT.PadRight("  <filepath>") + $"Path to the tracker state file (required)");
     Console.Write(O.GetHelp());
-    Console.WriteLine(Util.PadRight("  -help, -h") + "Display this help message");
+    Console.WriteLine(UtilT.PadRight("  -help, -h") + "Display this help message");
     Console.WriteLine();
     Console.WriteLine("Description:");
     Console.WriteLine("  This program outputs csv with a header for the file version.");
@@ -71,18 +71,18 @@ if (showHelp || rc != 0)
 string fileName = cl_args[0];
 
 if (!windowOption.Enabled)
-    ErrorWriteLine("warning viewing without window expect drift. Enable a window with -window def");
+    errorWriteLine("warning viewing without window expect drift. Enable a window with -window def");
 
 if (!File.Exists(fileName))
 {
-    Console.Error.WriteLine($"could not find \"{fileName.Replace("\"", "\\\"")}\""); 
+    errorWriteLine($"could not find \"{fileName.Replace("\"", "\\\"")}\""); 
     return -1;
 }
 
 TrackerStore store = TrackerStore.Default(fileName);
 if (store.Version == null) 
 {
-    Console.Error.WriteLine("\"fileName\" not a TrackerRecord file");
+    errorWriteLine("\"fileName\" not a TrackerRecord file");
     return -1; 
 }
         
@@ -109,21 +109,21 @@ TimeSpan wallclockTimeLength = new TimeSpan(t.wallclockTimeNs / 100);
 if (infoOption.Enabled)
 {
     Console.WriteLine("=== Run Configuration Info ===");
-    Console.WriteLine(Util.PadRight("File:") + fileName);
-    Console.WriteLine(Util.PadRight("record:") + store.Record);
+    Console.WriteLine(UtilT.PadRight("File:") + fileName);
+    Console.WriteLine(UtilT.PadRight("record:") + store.Record);
 
-    Console.WriteLine(Util.PadRight("Supports:") + "TruthInTheFlip.v" + TrackerStore.VersionPrint(supported_ver));
+    Console.WriteLine(UtilT.PadRight("Supports:") + "TruthInTheFlip.v" + TrackerStore.VersionPrint(supported_ver));
     
     // Quick peek at the file metadata (without running the full Enumerate)
     if (store.Version != null)
     {
         Tracker firstRecord = (Tracker) store.Enumerate().First(); 
 
-        Console.WriteLine(Util.PadRight($"Tracker Version:") + TrackerStore.VersionPrint(ver));
+        Console.WriteLine(UtilT.PadRight($"Tracker Version:") + TrackerStore.VersionPrint(ver));
         // You could load the tail here just to print the total lifetime flips/times
-        Console.WriteLine(Util.PadRight("Total Flips:") + $"{tail.total:N0}");
-        Console.WriteLine(Util.PadRight("Start Time:") + firstRecord.UtcBeginTime +" UTC");
-        Console.WriteLine(Util.PadRight("End Time:") + tail.UtcEndTime +" UTC");
+        Console.WriteLine(UtilT.PadRight("Total Flips:") + $"{tail.total:N0}");
+        Console.WriteLine(UtilT.PadRight("Start Time:") + firstRecord.UtcBeginTime +" UTC");
+        Console.WriteLine(UtilT.PadRight("End Time:") + tail.UtcEndTime +" UTC");
         Console.WriteLine();
     }
     
@@ -170,11 +170,11 @@ for (int i=0; i<2; i++)
     day *= 2;
 }
 
-WatchVariables w = Util.ThrowIfNull(addWindow(wallclockTimeLength, "lifetime"), "lifetime can not be null");
+WatchVariables w = UtilT.ThrowIfNull(addWindow(wallclockTimeLength, "lifetime"), "lifetime can not be null");
 
 TrackerWindow? window = null;
 
-if (windowOption.Enabled) window = new TrackerWindow(store, Util.ThrowIfNull(windowOption.WindowStrategy, "windowOption.WindowStrategy"));
+if (windowOption.Enabled) window = new TrackerWindow(store, UtilT.ThrowIfNull(windowOption.WindowStrategy, "windowOption.WindowStrategy"));
 
 t = null;
 foreach (ITracker fromStore in store.Enumerate())
@@ -309,7 +309,7 @@ return 0;
 
 void HandleError(string message)
 {
-    Console.Error.WriteLine(message);
+    errorWriteLine(message);
     Environment.Exit(-1);
 }
 

@@ -150,9 +150,9 @@ public class TrackerStore : ITrackerStore
     }
 
 
-    public static int[]? ReadVersion(string title, string version)
+    public static int[]? ReadVersion(string title, string? version)
     {
-        if (!version.StartsWith(title)) return null;
+        if (version == null || !version.StartsWith(title)) return null;
 
         string[] parts = version.Substring(title.Length).Split('.');
         if (parts.Length < 2) return null;

@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Text;
 
-namespace TruthInTheFlip_sample_report2;
+namespace TruthInTheFlip.Format;
 
 public abstract class Option
 {
@@ -50,7 +50,7 @@ public abstract class Option
 
     public virtual string NameString()
     {
-        return Util.PadRight($"  {Name}");
+        return UtilT.PadRight($"  {Name}");
     }
     
     // The default behavior when an option is disabled. 

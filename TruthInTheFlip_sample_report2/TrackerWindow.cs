@@ -8,8 +8,8 @@ public class TrackerWindow
     public TrackerStore store;
     public Func<Tracker, Tracker, bool> bound;
 
-    public Util.LinkNode<Tracker>? head = null;
-    public Util.LinkNode<Tracker>? tail = null;
+    public UtilT.LinkNode<Tracker>? head = null;
+    public UtilT.LinkNode<Tracker>? tail = null;
 
     public int[]? ver = null;
 
@@ -87,7 +87,7 @@ public class TrackerWindow
 
         if (store.Version == null) throw new Exception("At this point store.Version must not be null");
 
-        head = tail = new Util.LinkNode<Tracker>((Tracker)store.NewTracker());
+        head = tail = new UtilT.LinkNode<Tracker>((Tracker)store.NewTracker());
 
         ver = TrackerStore.ReadVersion("TruthInTheFlip.v", store.Version);
         if (ver == null) throw new NullReferenceException();
@@ -95,13 +95,13 @@ public class TrackerWindow
 
     public Tracker Add(Tracker In)
     {
-        Util.LinkNode<Tracker> node = new(In);
+        UtilT.LinkNode<Tracker> node = new(In);
         if (tail == null || head == null || ver == null) throw new NullReferenceException("Neither head nor tail nor ver can be null"); 
         tail = tail.Next = node;
 
-        while (head.Next != null && !bound(In, Util.ThrowIfNull(head.Value, "head.Value"))) head = head.Next;
+        while (head.Next != null && !bound(In, UtilT.ThrowIfNull(head.Value, "head.Value"))) head = head.Next;
 
-        return Util.Subtract(store, ver, In, Util.ThrowIfNull(head.Value, "head.Value"));
+        return UtilT.Subtract(store, ver, In, UtilT.ThrowIfNull(head.Value, "head.Value"));
     }
 
     public class WindowOption : TrackerOption
@@ -195,12 +195,12 @@ public class TrackerWindow
                     return;
                 }
 
-                WindowStrategy = Util.ThrowIfNull(
+                WindowStrategy = UtilT.ThrowIfNull(
                     (Func<Tracker, Tracker, bool>?)method.Invoke(null, new[] { parsedArgument }), 
                     "WindowStrategy");
                 
                 var versionAttr = method.GetCustomAttributes(typeof(VersioningAttribute), false).FirstOrDefault() as VersioningAttribute;
-                RequiredVersion = TrackerStore.ReadVersion("TruthInTheFlip.v", Util.ThrowIfNull(versionAttr?.Version, "versionAttr?.Version"));
+                RequiredVersion = TrackerStore.ReadVersion("TruthInTheFlip.v", UtilT.ThrowIfNull(versionAttr?.Version, "versionAttr?.Version"));
             }
             catch (Exception ex)
             {
@@ -213,7 +213,7 @@ public class TrackerWindow
         {
             string practicalMethodName = MethodName == "def" ? "WindowByTotal" : MethodName;
             
-            return Util.ThrowIfNull(
+            return UtilT.ThrowIfNull(
                 typeof(TrackerWindow).GetMethod(practicalMethodName,
                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
                 , "GetMethod(practicleMethodName");
@@ -243,7 +243,7 @@ Value:          {ArgValue}{ArgMore}
             if (ps.Length != 1) return false;
             
             var helpAttr = method.GetCustomAttributes(typeof(StringHelpAttribute), false).FirstOrDefault() as StringHelpAttribute;
-            var param = Util.ThrowIfNull(
+            var param = UtilT.ThrowIfNull(
                 method.GetParameters().FirstOrDefault(),
                 "method must have 1 parameter");
             
@@ -266,7 +266,7 @@ Value:          {ArgValue}{ArgMore}
             foreach (var method in methods)
             {
                 var helpAttr = method.GetCustomAttributes(typeof(StringHelpAttribute), false).FirstOrDefault() as StringHelpAttribute;
-                var param = Util.ThrowIfNull(
+                var param = UtilT.ThrowIfNull(
                     method.GetParameters().FirstOrDefault(),
                     "Method must have one parameter");
                 
@@ -282,7 +282,7 @@ Value:          {ArgValue}{ArgMore}
                 int[]? ver = TrackerStore.ReadVersion("TruthInTheFlip.v", versionAttr.Version);
                 if (ver == null) throw new Exception($"version {versionAttr} not supported");
 
-                stringBuilder.AppendLine(Util.PadRight("")+Util.PadRight(method.Name + $" <{paramType}>", 40) +Util.PadRight($"def=\"{defAttr.Value}\" ") + $"v"+TrackerStore.VersionPrint(ver));
+                stringBuilder.AppendLine(UtilT.PadRight("")+UtilT.PadRight(method.Name + $" <{paramType}>", 40) +UtilT.PadRight($"def=\"{defAttr.Value}\" ") + $"v"+TrackerStore.VersionPrint(ver));
                 if (helpAttr != null)
                 {       
                     stringBuilder.AppendLine($"{new string(' ', 24)}{helpAttr.Description}");

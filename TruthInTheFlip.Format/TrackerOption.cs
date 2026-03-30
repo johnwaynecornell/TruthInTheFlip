@@ -1,4 +1,4 @@
-namespace TruthInTheFlip_sample_report2;
+namespace TruthInTheFlip.Format;
 
 public abstract class TrackerOption : Option
 {
