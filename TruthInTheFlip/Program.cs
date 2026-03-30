@@ -52,7 +52,7 @@ public class Program
 
         //fillArray = QuantisInterop.initQuantis_Linux();
 
-        List<String> args = new(command_line_args);
+        List<String> cl_args = new(command_line_args);
 
         bool show = false;
         bool dump = false;
@@ -65,21 +65,21 @@ public class Program
         string randomSource = "NET1";
         
         int cur = 0;
-        while (cur < args.Count)
+        while (cur < cl_args.Count)
         {
-            if (args[cur].StartsWith("-"))
+            if (cl_args[cur].StartsWith("-"))
             {
-                if (args[cur] == "-log")
+                if (cl_args[cur] == "-log")
                 {
                     log = true;
-                    args.RemoveAt(cur);
+                    cl_args.RemoveAt(cur);
                     continue;
                 }
 
-                if (args[cur] == "-rsource")
+                if (cl_args[cur] == "-rsource")
                 {
-                    args.RemoveAt(cur);
-                    if (cur >= args.Count || args[cur].StartsWith("-"))
+                    cl_args.RemoveAt(cur);
+                    if (cur >= cl_args.Count || cl_args[cur].StartsWith("-"))
                     {
                         Console.Error.WriteLine($"Expected random source string after -rsource");
                         showHelp = true;
@@ -87,57 +87,57 @@ public class Program
                         continue;
                     }
 
-                    randomSource = args[cur];
-                    args.RemoveAt(cur);
+                    randomSource = cl_args[cur];
+                    cl_args.RemoveAt(cur);
 
                     continue;
                 }
 
-                if (args[cur] == "-concise")
+                if (cl_args[cur] == "-concise")
                 {
                     concise = true;
-                    args.RemoveAt(cur);
+                    cl_args.RemoveAt(cur);
                     continue;
                 }
 
-                if (args[cur] == "-show")
+                if (cl_args[cur] == "-show")
                 {
                     show = true;
-                    args.RemoveAt(cur);
+                    cl_args.RemoveAt(cur);
                     continue;
                 }
 
-                if (args[cur] == "-dump")
+                if (cl_args[cur] == "-dump")
                 {
                     dump = true;
-                    args.RemoveAt(cur);
+                    cl_args.RemoveAt(cur);
                     continue;
                 }
 
 
-                if (args[cur] == "-create")
+                if (cl_args[cur] == "-create")
                 {
                     createIfDoesntExsist = true;
-                    args.RemoveAt(cur);
+                    cl_args.RemoveAt(cur);
                     continue;
                 }
 
-                if (args[cur] == "-record")
+                if (cl_args[cur] == "-record")
                 {
                     record = true;
-                    args.RemoveAt(cur);
+                    cl_args.RemoveAt(cur);
                     continue;
                 }
 
-                if (args[cur] == "-help" || args[cur] == "-h")
+                if (cl_args[cur] == "-help" || cl_args[cur] == "-h")
                 {
-                    args.RemoveAt(cur);
+                    cl_args.RemoveAt(cur);
                     showHelp = true;
                     continue;
                 }
 
-                Console.Error.WriteLine($"Unknown argument: {args[cur]}");
-                args.RemoveAt(cur);
+                Console.Error.WriteLine($"Unknown argument: {cl_args[cur]}");
+                cl_args.RemoveAt(cur);
                 
                 rc = -1;
                 showHelp = true;
@@ -146,7 +146,7 @@ public class Program
             else cur++;
         }
 
-        if (args.Count() != 1)
+        if (cl_args.Count() != 1)
         {
             Console.Error.WriteLine("expected one file path");
             showHelp = true;
@@ -191,8 +191,7 @@ public class Program
             Console.WriteLine("  -concise            Prefer skinier output");
             Console.WriteLine("  -rsource <string>   Random source string (default: NET1)");
             Console.WriteLine("  -rsource list       List random sources");
-            Console.WriteLine("  -help, -h, /?, /h, /help");
-            Console.WriteLine("                      Display this help message");
+            Console.WriteLine("  -help, -h           Display this help message");
             Console.WriteLine();
             Console.WriteLine("Description:");
             Console.WriteLine("  This program runs a high-performance multithreaded meta-guessing simulation");
@@ -204,7 +203,7 @@ public class Program
             return rc;
         }
         
-        fileName = args[0];
+        fileName = cl_args[0];
 
         store = TrackerStore.Default(fileName);
         store.concise = concise;
