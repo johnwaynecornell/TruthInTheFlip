@@ -15,12 +15,13 @@ public class RSourceOption : Option
     
     public virtual RSourceOption AddDefaults()
     {
+        DefaultSource ??= "NET1";
         AddSource("NET1", "System.Random", BitFactory.initRandom_Net);
         AddSource("NET2", "System.Security.Cryptography.RandomNumberGenerator",() => (arr) => System.Security.Cryptography.RandomNumberGenerator.Fill(arr));
         return this;
     }
 
-    public virtual Func<Action<byte[]>>? SeedFunc => Source == null ? null : (Sources.ContainsKey(Source) ? Sources[Source] : null);
+    public virtual Func<Action<byte[]>>? SeedFunc =>  Source == null ? null : (Sources.ContainsKey(Source) ? Sources[Source] : null);
     
     public virtual void AddSource(String name, String description, Func<Action<byte[]>> func)
     {
@@ -33,6 +34,7 @@ public class RSourceOption : Option
     {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.AppendLine("  -rsource list       List random sources");
+        stringBuilder.AppendLine("  -rsource def        Default random source");
         stringBuilder.AppendLine("  -rsource <string>   Random source string (default: NET1)");
         return stringBuilder.ToString();
     }
@@ -40,12 +42,14 @@ public class RSourceOption : Option
     public virtual string List()
     {
         StringBuilder b = new StringBuilder();
-
-        b.AppendLine("Random sources:");
+        
+        b.AppendLine($"{NameString()}Random sources:");
         foreach (string key in Sources.Keys)
         {
-            b.AppendLine(UtilT.PadRight($"  {key}") + Descriptions[key]);
+            b.AppendLine(UtilT.PadRight("") + UtilT.PadRight($"  {key}") + Descriptions[key]);
         }
+
+        b.AppendLine();
         
         return b.ToString();
 
@@ -84,8 +88,18 @@ public class RSourceOption : Option
             
             Enabled = false;
             WantExit = true;
+
+            return true;
+        } else if (Source == "def")
+
+        {
+            Source = DefaultSource;
         }
 
+        
         return true;
     }
+
+    public virtual string? DefaultSource { get; set; } = null;
+
 }

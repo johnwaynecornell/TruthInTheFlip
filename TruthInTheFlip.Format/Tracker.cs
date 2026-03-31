@@ -70,6 +70,7 @@ public class Tracker : ITracker
     protected long batchMemberStartTimestamp;
     protected long wallclockStartTimestamp;
 
+    public Tracker Source { get; set;}
 
     public virtual void WallclockBegin()
     {
@@ -111,6 +112,7 @@ public class Tracker : ITracker
     public Tracker(TrackerStore store)
     {
         this.Store = store;
+        Source = this;
     }
 
     public virtual void Reset()

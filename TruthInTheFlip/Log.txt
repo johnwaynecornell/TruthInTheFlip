@@ -75,3 +75,75 @@ total,heads,tails,anticipated,baseAnticipated,anticipatedHeads,anticipatedTails,
 last 1hr | 100.0000% time above 50% | minZ= +0.946849 | maxZ= +1.905807 | ZHeadsAtMaxZ= -0.105915 | z= +1.337068 | a= 50+2.237e-04%
 lifetime |  99.6885% time above 50% | minZ= -0.077886 | maxZ= +2.284849 | ZHeadsAtMaxZ= -0.078929 | z= +1.313277 | a= 50+3.227e-04%
 File compute time: 01:54:20.2009931
+
+20260331_190210 ...Crypto wasnt the problem, drift was. So I implemented a 100 billion flip view window which coincidentally proved that I had been beating 
+    the odds with System.Random well over Z(3.0)
+    
+-rsource NET2 without a view window:
+TruthInTheFlip_sample_report2 crypto.tkr -info
+warning viewing without window expect drift. Enable a window with -window def
+=== Run Configuration Info ===
+File:                 crypto.tkr
+record:               True
+Supports:             TruthInTheFlip.v0.1.1
+Tracker Version:      1.1.0
+Total Flips:          3,508,800,000,000
+Start Time:           3/27/2026 4:03:53 PM UTC
+End Time:             3/29/2026 11:45:55 AM UTC
+
+[Options]
+  -window             Disabled (Using default Lifetime processing)
+==============================
+
+crypto.tkr : 20260329_114555.55 | 3508800000000 flips → heads: 50-3.3e-05% | aHeads: 50+4.8e-05% | aTails: 50-1.7e-05% | aSame: 50+2.9e-05% | aDiff: 50+2.3e-06% | a: 50+1.5e-05% | base: 50+1.5e-05% | Z: 0.577881 | [RATE] H/T: 50-1.7e-05%/ 50+4.8e-05% S/D: 50+2.9e-05%/ 50+2.3e-06% | threadTime: 32:04:54:49.2655180 | wallclock: 1:19:40:00.1967359 | flips/sec: 21346995.4104 | Z(1.96) in 19:23:34:42.8301603 | Z(3.00) in 49:08:51:10.1992985
+Final Record:
+total,heads,tails,anticipated,baseAnticipated,anticipatedHeads,anticipatedTails,cumulativeTicks,batchTotal,wallclockTimeNs,batchWallclockTimeNs,utcBeginTimeMs,utcEndTimeMs,betHeads,betSame,anticipatedSame
+3508800000000,1754398853109,1754401146891,1754400541237,1754400541237,877200270724,877200270513,27824892655180,200000000,157200196735900,9369504100,1774784746181,1774784755550,1754401147102,1754399538381,877200270613
+
+last 1hr  | 100.0000% time above 50% | minZ= +0.367765 | maxZ= +0.577881 | ZHeadsAtMaxZ= -1.224540 | aAtMaxZ= 50+1.54251e-05% | z= +0.485949 | a= 50+1.304e-05%
+last 2hr  | 100.0000% time above 50% | minZ= +0.367765 | maxZ= +0.753358 | ZHeadsAtMaxZ= -1.210829 | aAtMaxZ= 50+2.05722e-05% | z= +0.537077 | a= 50+1.451e-05%
+last 4hr  | 100.0000% time above 50% | minZ= +0.367765 | maxZ= +1.050201 | ZHeadsAtMaxZ= -1.283475 | aAtMaxZ= 50+2.92183e-05% | z= +0.693371 | a= 50+1.903e-05%
+last 8hr  | 100.0000% time above 50% | minZ= +0.367765 | maxZ= +1.050201 | ZHeadsAtMaxZ= -1.283475 | aAtMaxZ= 50+2.92183e-05% | z= +0.710879 | a= 50+2.001e-05%
+last 1day |  62.4530% time above 50% | minZ= -0.833215 | maxZ= +1.050201 | ZHeadsAtMaxZ= -1.283475 | aAtMaxZ= 50+2.92183e-05% | z= +0.180903 | a= 50+4.315e-06%
+lifetime  |  76.8354% time above 50% | minZ= -0.833215 | maxZ= +2.546694 | ZHeadsAtMaxZ= +0.536134 | aAtMaxZ= 50+2.58205e-04% | z= +0.471789 | a= 50+3.898e-05%
+
+To achieve exactly Z=3.0, we can claim a win rate of: 50-6.46526e-05%
+To achieve from ZMax we can claim a win rate of: 50-4.59599e-05%
+File compute time: 1.19:40:00.1967359
+
+And note the settled ZHeads behaviour giving the algorithm a fair chance of winning.
+TruthInTheFlip_sample_report2 crypto.tkr -info -window def
+=== Run Configuration Info ===
+File:                 crypto.tkr
+record:               True
+Supports:             TruthInTheFlip.v0.1.1
+Tracker Version:      1.1.0
+Total Flips:          3,508,800,000,000
+Start Time:           3/27/2026 4:03:53 PM UTC
+End Time:             3/29/2026 11:45:55 AM UTC
+
+[Options]
+
+TrackerWindow:  WindowByTotal(default)          //Creates a bounding function that defines a window based on a maximum number of total flips.
+Values:         def = "100000000000"
+==============================
+
+crypto.tkr : 20260329_114555.55 | 3508800000000 flips → heads: 50+5.1e-05% | aHeads: 50+2.5e-05% | aTails: 50+1.3e-04% | aSame: 50+6.2e-05% | aDiff: 50+8.9e-05% | a: 50+7.6e-05% | base: 50+7.6e-05% | Z: 0.477770 | [RATE] H/T: 50+1.3e-04%/ 50+2.5e-05% S/D: 50+6.2e-05%/ 50+8.9e-05% | threadTime: 32:04:54:49.2655180 | wallclock: 1:19:40:00.1967359 | flips/sec: 21346995.4104 | Z(1.96) in 0:20:35:54.0153400 | Z(3.00) in 2:02:00:16.3116566
+Entry Record:
+total,heads,tails,anticipated,baseAnticipated,anticipatedHeads,anticipatedTails,cumulativeTicks,batchTotal,wallclockTimeNs,batchWallclockTimeNs,utcBeginTimeMs,utcEndTimeMs,betHeads,betSame,anticipatedSame
+3408800000000,1704398802339,1704401197661,1704400465695,1704400465695,852200232961,852200232734,26970770471161,200000000,152372375037900,8035307800,1774779919310,1774779927346,1704401197888,1704399524524,852200232864
+
+Final Record:
+total,heads,tails,anticipated,baseAnticipated,anticipatedHeads,anticipatedTails,cumulativeTicks,batchTotal,wallclockTimeNs,batchWallclockTimeNs,utcBeginTimeMs,utcEndTimeMs,betHeads,betSame,anticipatedSame
+3508800000000,1754398853109,1754401146891,1754400541237,1754400541237,877200270724,877200270513,27824892655180,200000000,157200196735900,9369504100,1774784746181,1774784755550,1754401147102,1754399538381,877200270613
+
+last 1hr  |  15.5989% time above 50% | minZ= -1.627915 | maxZ= +0.477770 | ZHeadsAtMaxZ= +0.321098 | aAtMaxZ= 50+7.55420e-05% | z= -0.721463 | a= 50-1.141e-04%
+last 2hr  |   7.0976% time above 50% | minZ= -1.627915 | maxZ= +0.477770 | ZHeadsAtMaxZ= +0.321098 | aAtMaxZ= 50+7.55420e-05% | z= -0.809437 | a= 50-1.280e-04%
+last 4hr  |  23.8609% time above 50% | minZ= -2.044495 | maxZ= +1.082258 | ZHeadsAtMaxZ= +1.579583 | aAtMaxZ= 50+1.71120e-04% | z= -0.587162 | a= 50-9.284e-05%
+last 8hr  |  61.0120% time above 50% | minZ= -2.044495 | maxZ= +1.722505 | ZHeadsAtMaxZ= +0.058331 | aAtMaxZ= 50+2.72352e-04% | z= +0.145351 | a= 50+2.298e-05%
+last 1day |  56.9511% time above 50% | minZ= -2.112060 | maxZ= +2.170391 | ZHeadsAtMaxZ= -0.695828 | aAtMaxZ= 50+3.43169e-04% | z= +0.135412 | a= 50+2.141e-05%
+lifetime  |  55.0673% time above 50% | minZ= -2.300987 | maxZ= +2.668678 | ZHeadsAtMaxZ= -0.554139 | aAtMaxZ= 50+4.21955e-04% | z= +0.096471 | a= 50+1.955e-05%
+
+To achieve exactly Z=3.0, we can claim a win rate of: 50-6.46526e-05%
+To achieve from ZMax we can claim a win rate of: 50-5.23866e-05%
+File compute time: 1.19:40:00.1967359

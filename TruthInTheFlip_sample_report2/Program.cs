@@ -1,7 +1,4 @@
-﻿// See https://aka.ms/new-console-template for more information
-
-using System.ComponentModel;
-using System.Text;
+﻿using System.Text;
 using TruthInTheFlip_sample_report2;
 using TruthInTheFlip.Format;
 using TruthInTheFlip.Format.Options;
@@ -17,7 +14,7 @@ TrackerWindow.WindowOption windowOption;
 InfoOption infoOption;
 
 O.Add(infoOption = new InfoOption());
-O.Add(windowOption = new TrackerWindow.WindowOption());
+O.Add(windowOption = new TrackerWindow.WindowOption().AddDefaults());
 
 SOut errorMessage = (s, n) => Console.Error.Write(s +(n ? "\n" : ""));
 SOut message =  (s, n) => Console.Write(s +(n ? "\n" : ""));
@@ -128,7 +125,7 @@ if (infoOption.Enabled)
         message(UtilT.PadRight($"Tracker Version:") + TrackerStore.VersionPrint(ver));
         // You could load the tail here just to print the total lifetime flips/times
         message(UtilT.PadRight("Total Flips:") + $"{tail.total:N0}");
-        message(UtilT.PadRight("Start Time:") + firstRecord.UtcBeginTime +" UTC");
+        message(UtilT.PadRight("Start Time:") + firstRecord.UtcBeginTime + " UTC");
         message(UtilT.PadRight("End Time:") + tail.UtcEndTime +" UTC");
         message();
     }
@@ -179,8 +176,9 @@ for (int i=0; i<2; i++)
 WatchVariables w = UtilT.ThrowIfNull(addWindow(wallclockTimeLength, "lifetime"), "lifetime can not be null");
 
 TrackerWindow? window = null;
-
-if (windowOption.Enabled) window = new TrackerWindow(store, UtilT.ThrowIfNull(windowOption.WindowStrategy, "windowOption.WindowStrategy"));
+if (windowOption.Enabled)
+    window = new TrackerWindow(store,
+        UtilT.ThrowIfNull(windowOption.WindowStrategy, "windowOption.WindowStrategy"));
 
 t = null;
 foreach (ITracker fromStore in store.Enumerate())
@@ -200,27 +198,38 @@ DateTime utcBeginTime = t.UtcBeginTime;
 DateTime utcEndTime = t.UtcEndTime;
 
 message(Path.GetFileName(fileName) + " : " + utcEndTime.ToString("yyyyMMdd_HHmmss.ff") + " | " + store.Print(t));
-
 {
-    message();
-
-    Console.Write("total,heads,tails,anticipated,baseAnticipated,anticipatedHeads,anticipatedTails,cumulativeTicks");
-    if (TrackerStore.VersionCompare(ver, 1, 1, 0) >= 0)
-        Console.Write(
-            ",batchTotal,wallclockTimeNs,batchWallclockTimeNs,utcBeginTimeMs,utcEndTimeMs,betHeads,betSame,anticipatedSame");
-    message();
-
+    Action<Tracker> CSVOut = (t) =>
     {
         Console.Write(
-            $"{t.total},{t.heads},{t.tails},{t.anticipated},{t.baseAnticipated},{t.anticipatedHeads},{t.anticipatedTails},{t.cumulativeTicks}");
-
+            "total,heads,tails,anticipated,baseAnticipated,anticipatedHeads,anticipatedTails,cumulativeTicks");
         if (TrackerStore.VersionCompare(ver, 1, 1, 0) >= 0)
+            message(
+                ",batchTotal,wallclockTimeNs,batchWallclockTimeNs,utcBeginTimeMs,utcEndTimeMs,betHeads,betSame,anticipatedSame");
+        
+
+        {
             Console.Write(
-                $",{t.batchTotal},{t.wallclockTimeNs},{t.batchWallclockTimeNs},{t.utcBeginTimeMs},{t.utcEndTimeMs},{t.betHeads},{t.betSame},{t.anticipatedSame}");
+                $"{t.total},{t.heads},{t.tails},{t.anticipated},{t.baseAnticipated},{t.anticipatedHeads},{t.anticipatedTails},{t.cumulativeTicks}");
+
+            if (TrackerStore.VersionCompare(ver, 1, 1, 0) >= 0)
+                Console.Write(
+                    $",{t.batchTotal},{t.wallclockTimeNs},{t.batchWallclockTimeNs},{t.utcBeginTimeMs},{t.utcEndTimeMs},{t.betHeads},{t.betSame},{t.anticipatedSame}");
+            message();
+        }
+
         message();
+    };
+
+    if (window != null)
+    {
+        if (window.head == null) throw new Exception("?");
+        message("Entry Record:");
+        CSVOut(window.head.Value.Source);
     }
     
-    message();
+    message("Final Record:");
+    CSVOut(t.Source);
 
 }
 

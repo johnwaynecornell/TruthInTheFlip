@@ -1,3 +1,5 @@
+using System.Reflection;
+
 namespace TruthInTheFlip.Format;
 
 public class UtilT
@@ -16,6 +18,7 @@ public class UtilT
     public static Tracker Subtract(TrackerStore store, int[] ver, Tracker A, Tracker B)
     {
         Tracker C = (Tracker)store.NewTracker();
+        C.Source = A;
 
         C.total = A.total - B.total;
         C.heads = A.heads - B.heads;
@@ -79,6 +82,12 @@ public class UtilT
             // Yield both the isolated window AND the absolute lifetime state
             yield return (Subtract(store, ver, t, UtilT.ThrowIfNull(head?.Value, "head.Value")), t);
         }
+    }
+    
+    public static Type GetDelegateType(ParameterInfo[] parameters, Type returnType)
+    {
+        var paramTypes = parameters.Select(p => p.ParameterType).Concat(new[] { returnType }).ToArray();
+        return System.Linq.Expressions.Expression.GetFuncType(paramTypes);
     }
 
     public static string PadRight(string input, int L=22)

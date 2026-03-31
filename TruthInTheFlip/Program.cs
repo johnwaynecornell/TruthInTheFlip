@@ -40,18 +40,18 @@ public class Program
         }
     }
 
-    public static string RecordText(string tail)
+    public static string RecordText(Tracker tracker, string tail)
     {
         if (store == null || allTime == null) throw new NullReferenceException("Program is uninitialized");
-        
-        return (store.Print(allTime) + (tail == "" ? "" : $" | {tail}"));
+
+        return (store.Print(tracker) + (tail == "" ? "" : $" | {tail}"));
     }
 
-    public static SOut errorMessage = (s, n) => Console.Error.Write(s +(n ? "\n" : ""));
-    public static SOut message =  (s, n) => Console.Write(s +(n ? "\n" : ""));
-    
-    public static int[] supported_ver = TrackerStore.VersionArray(1,1,0);
-    
+    public static SOut errorMessage = (s, n) => Console.Error.Write(s + (n ? "\n" : ""));
+    public static SOut message = (s, n) => Console.Write(s + (n ? "\n" : ""));
+
+    public static int[] supported_ver = TrackerStore.VersionArray(1, 1, 0);
+
     public static int Main(string[] command_line_args)
     {
         BitFactory bitFactory = new BitFactory();
@@ -61,13 +61,15 @@ public class Program
         List<String> cl_args = new(command_line_args);
 
         Options O = new Options();
-        
+
         InfoOption infoOption;
         RSourceOption rsourceOption;
-        
+        TrackerWindow.WindowOption windowOption;
+
         O.Add(infoOption = new InfoOption());
         O.Add(rsourceOption = new RSourceOption().AddDefaults());
-        
+        O.Add(windowOption = new TrackerWindow.WindowOption().AddDefaults());
+
         bool show = false;
         bool dump = false;
         bool createIfDoesntExsist = false;
@@ -75,14 +77,16 @@ public class Program
 
         bool showHelp = false;
         int rc = 0;
-        
+
+        Func<bool>? runCondition = null;
+
         int cur = 0;
         while (cur < cl_args.Count)
         {
             if (O.TryParse(cl_args, cur, ref rc, message, errorMessage)) continue;
             if (cur >= cl_args.Count) continue;
 
-            
+
             if (cl_args[cur].StartsWith("-"))
             {
                 if (cl_args[cur] == "-log")
@@ -91,25 +95,7 @@ public class Program
                     cl_args.RemoveAt(cur);
                     continue;
                 }
-
-                /*
-                if (cl_args[cur] == "-rsource")
-                {
-                    cl_args.RemoveAt(cur);
-                    if (cur >= cl_args.Count || cl_args[cur].StartsWith("-"))
-                    {
-                        errorWriteLine($"Expected random source string after -rsource");
-                        showHelp = true;
-                        rc = -1;
-                        continue;
-                    }
-
-                    randomSource = cl_args[cur];
-                    cl_args.RemoveAt(cur);
-
-                    continue;
-                }*/
-
+                
                 if (cl_args[cur] == "-concise")
                 {
                     concise = true;
@@ -130,7 +116,89 @@ public class Program
                     cl_args.RemoveAt(cur);
                     continue;
                 }
+                
+                if (cl_args[cur] == "-iter")
+                {
+                    cl_args.RemoveAt(cur);
 
+                    if (cur >= cl_args.Count)
+                    {
+                        errorMessage($"Option \'-iter\' missing parameter");
+                        rc = -1;
+                        continue;
+                    }
+
+                    string val = cl_args[cur];
+                    cl_args.RemoveAt(cur);
+
+                    if (!long.TryParse(val, out long iter_val))
+                    {
+                        errorMessage($"-iter could not parse {val} as long integer");
+                        rc = -1;
+                        continue;
+                    }
+
+                    Func<bool> condition = () => --iter_val >= 0;
+                    Func<bool>? prev = runCondition;
+
+                    message($"-iter     Will run for at most {iter_val} iterations");
+
+                    runCondition = prev == null
+                        ? condition
+                        : () =>
+                        {
+                            //  We must ensure both are evaluated so conditions don't stack.
+                            bool A = condition();
+                            bool B = prev();
+
+                            return A && B;
+                        };
+
+
+
+                    continue;
+                }
+
+                if (cl_args[cur] == "-stopwatch")
+                {
+                    cl_args.RemoveAt(cur);
+
+                    if (cur >= cl_args.Count)
+                    {
+                        errorMessage($"Option \'-stopwatch\' missing parameter");
+                        rc = -1;
+                        continue;
+                    }
+
+                    string val = cl_args[cur];
+                    cl_args.RemoveAt(cur);
+
+                    if (!TimeSpan.TryParse(val, out TimeSpan time_val))
+                    {
+                        errorMessage($"-stopwatch could not parse {val} as TimeSpan");
+                        rc = -1;
+                        continue;
+                    }
+
+                    DateTime start = DateTime.Now;
+                    Func<bool> condition = () => DateTime.Now - start <= time_val;
+                    Func<bool>? prev = runCondition;
+                    
+                    message($"-stopwatch Will run for at most {time_val}");
+
+                    runCondition = prev == null
+                        ? condition
+                        : () =>
+                        {
+                            //  We must ensure both are evaluated so conditions don't stack.
+                            bool A = condition();
+                            bool B = prev();
+
+                            return A && B;
+                        };
+                    
+                    continue;
+                }
 
                 if (cl_args[cur] == "-create")
                 {
@@ -155,7 +223,7 @@ public class Program
 
                 errorMessage($"Unknown argument: {cl_args[cur]}");
                 cl_args.RemoveAt(cur);
-                
+
                 rc = -1;
                 showHelp = true;
                 continue;
@@ -171,37 +239,14 @@ public class Program
         }
 
         Func<Action<byte[]>> seedFunc = BitFactory.initRandom_Net;
-        if (rsourceOption.Enabled) seedFunc = UtilT.ThrowIfNull(rsourceOption.SeedFunc, "rsource enabled but not providing SeedFunc");
+        if (rsourceOption.Enabled)
+            seedFunc = UtilT.ThrowIfNull(rsourceOption.SeedFunc, "rsource enabled but not providing SeedFunc");
         bitFactory.resetRandom = seedFunc;
         bitFactory.Reset();
         
-        /*
-
-        switch (randomSource)
-        {
-            case "list":
-                message("Random sources:");
-                message("  NET1            System.Random");
-                message("  NET2            System.Security.Cryptography");
-                return rc;
-            case "NET1":
-                bitFactory.resetRandom = BitFactory.initRandom_Net;
-                bitFactory.Reset();
-                break;
-            case "NET2":
-                bitFactory.resetRandom = () => (arr) => System.Security.Cryptography.RandomNumberGenerator.Fill(arr);
-                bitFactory.Reset();
-                break;
-            default:
-            {
-                errorWriteLine($"random source \"{randomSource}\" UNKNOWN");
-                return -1;
-            }
-        } */
-        
-        if (O.WantExit) 
+        if (O.WantExit)
             return rc;
-        
+
         if (showHelp || rc != 0)
         {
             message("Usage: TruthInTheFlip [options] <filepath>");
@@ -216,9 +261,9 @@ public class Program
             message("  -dump               verbose output");
             message("  -record             Append records to the state file");
             message("  -concise            Prefer skinier output");
+            message("  -iter <integer>     run x iterations and exit");
+            message("  -stopwacth <time>   run for x amount of time(example 1:0:0 for 1hr) and exit ");
             message(O.GetHelp(), false);
-            //message("  -rsource <string>   Random source string (default: NET1)");
-            //message("  -rsource list       List random sources");
             message("  -help, -h           Display this help message");
             message();
             message("Description:");
@@ -227,22 +272,28 @@ public class Program
             message("  It continuously processes billions of flips and tracks statistical significance");
             message("  via Z-score calculations, saving state periodically to the specified file.");
             message("  The recomended extension is .tkr or .TrackerRecord.");
-            
+            message("  **This program runs perpetually by default see -iter or -stopwatch");
+            message("Example: (bash)");
+            message("  ./TruthInTheFlip /PathToYourTracker/YourTracker.tkr -create -record -rsource NET2 -window def");
+                        
             return rc;
         }
-        
+
         fileName = cl_args[0];
+
+        if (!windowOption.Enabled)
+            errorMessage("warning viewing without window expect drift. Enable a window with -window def");
 
         store = TrackerStore.Default(fileName);
         store.concise = concise;
-        
+
         //v1.0.1 compat
         // store.print_delegate = (store, tracker) =>
         // {
         //     if (!(tracker is Tracker t)) throw new IOException();
         //     
         //     string threadTime = $"threadTime: {new TimeSpan(t.cumulativeTicks):G}";
-        //     return ($"{t.total} flips → " +
+        //     return ($"{t.Source.total} flips → " +
         //             $"positive: {Tracker.FormatOffset(t.HeadsPercentage, "0.0e+00")} | " +
         //             $"negative: {Tracker.FormatOffset(t.TailsPercentage, "0.0e+00")} | " +
         //             $"anticipatedPositive: {Tracker.FormatOffset(t.AnticipatedHeadsPercentage, "0.0e+00")} | " +
@@ -251,7 +302,7 @@ public class Program
         //             $"base: {Tracker.FormatOffset(t.BaseAnticipatedPercentage, "0.0e+00")} | " +
         //             $"Z: {t.GetCurrentZScore():F6} | {threadTime}");
         // };
-        
+
         if (dump)
         {
             long cnt = 0;
@@ -278,11 +329,14 @@ public class Program
 
                 if (((TrackerStore)store).Record != record)
                 {
-                    errorMessage($"{fileName} : Record ={((TrackerStore)store).Record} but -record switch {(record ? "was" : "wasn't")} passed");
-                    if (record && !store.Record) errorMessage("create new file with -record and -create among the switches if you desire to record");
+                    errorMessage(
+                        $"{fileName} : Record ={((TrackerStore)store).Record} but -record switch {(record ? "was" : "wasn't")} passed");
+                    if (record && !store.Record)
+                        errorMessage(
+                            "create new file with -record and -create among the switches if you desire to record");
                     return 1;
                 }
-                
+
 
                 if (show)
                 {
@@ -295,7 +349,8 @@ public class Program
                 errorMessage($"File does not exist: {fileName}");
                 errorMessage("Use -create to create a new state file");
                 return 1;
-            } else
+            }
+            else
             {
                 store.Record = record;
                 store.Version = TrackerStore.latest;
@@ -324,19 +379,21 @@ public class Program
             }
 
         }
-        
-        int[] ver = UtilT.ThrowIfNull(TrackerStore.ReadVersion("TruthInTheFlip.v", store.Version), "unsupported version");
-        
+
+        int[] ver = UtilT.ThrowIfNull(TrackerStore.ReadVersion("TruthInTheFlip.v", store.Version),
+            "unsupported version");
+
         bool validate_error = false;
         foreach (Option o in O)
         {
-            if (o is TrackerOption tracker_o) validate_error = !tracker_o.ValidateVersion(ver, errorMessage) || validate_error;
+            if (o is TrackerOption tracker_o)
+                validate_error = !tracker_o.ValidateVersion(ver, errorMessage) || validate_error;
         }
 
         if (validate_error) return -1;
 
         if (!record) message($"warning {fileName} started without record, history not being saved");
-        
+
         if (infoOption.Enabled)
         {
             message("=== Run Configuration Info ===");
@@ -344,12 +401,12 @@ public class Program
             message(UtilT.PadRight("record:") + store.Record);
 
             message(UtilT.PadRight("Supports:") + "TruthInTheFlip.v" + TrackerStore.VersionPrint(supported_ver));
-    
+
             // Quick peek at the file metadata (without running the full Enumerate)
             if (store.Version != null)
             {
-                Tracker lastRecord = (Tracker) UtilT.ThrowIfNull(allTime, "allTime must be Tracker");
-                Tracker firstRecord = File.Exists(store.Path) ?  (Tracker) store.Enumerate().First() : lastRecord;
+                Tracker lastRecord = (Tracker)UtilT.ThrowIfNull(allTime, "allTime must be Tracker");
+                Tracker firstRecord = File.Exists(store.Path) ? (Tracker)store.Enumerate().First() : lastRecord;
 
                 message(UtilT.PadRight($"Tracker Version:") + TrackerStore.VersionPrint(ver));
                 // You could load the tail here just to print the total lifetime flips/times
@@ -361,25 +418,38 @@ public class Program
                     {
                         message(UtilT.PadRight("Start Time:") + firstRecord.UtcBeginTime + " UTC");
                         message(UtilT.PadRight("End Time:") + lastRecord.UtcEndTime + " UTC");
-                    } else message("use newer file version for timing info");
-                }else message("creating file");
+                    }
+                    else message("use newer file version for timing info");
+                }
+                else message("creating file");
 
 
                 message();
             }
-    
+
             message("[Options]");
             Console.Write(O.Info());
             message("==============================\n");
         }
 
+        TrackerWindow? window = null;
+        if (windowOption.Enabled)
+            window = new TrackerWindow(store,
+                UtilT.ThrowIfNull(windowOption.WindowStrategy, "windowOption.WindowStrategy"));
+
         TrackerRunner runner = new TrackerRunner(store, bitFactory);
 
-        while (true)
+        if (window != null) foreach (Tracker t in store.Enumerate()) window.Add(t);
+        
+        while (runCondition == null || runCondition())
         {
             runner.Run(allTime, 20, 10000000);
             store.Save(allTime, record);
-            LogWriteLine(Program.RecordText(""));
+            Tracker current = window == null ? (Tracker)allTime : window.Add((Tracker)allTime);
+
+            LogWriteLine(Program.RecordText(current, ""));
         }
+
+        return 0;
     }
 }

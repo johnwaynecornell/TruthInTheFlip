@@ -1,7 +1,5 @@
 namespace TruthInTheFlip.Format;
 
-
-
 public class VersioningAttribute : Attribute
 {
     public string Version { get; set; }
@@ -42,4 +40,24 @@ public class IsMetricAttribute : VersioningAttribute
     {
     }
     
+}
+
+public class StringHelpAttribute : Attribute
+{
+    public string Description { get; }
+    
+    public StringHelpAttribute(string description)
+    {
+        Description = description;
+    }
+}
+
+public class StringDefaultAttribute : Attribute
+{
+    public string Value { get; }
+    
+    public StringDefaultAttribute(string value)
+    {
+        Value = value;
+    }
 }

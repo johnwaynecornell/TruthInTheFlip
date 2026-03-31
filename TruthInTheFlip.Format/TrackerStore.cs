@@ -261,6 +261,31 @@ public class TrackerStore : ITrackerStore
 
         return store;
     }
+    
+    public virtual Tracker Clone(Tracker other)
+    {
+        Tracker tracker = (Tracker) NewTracker();
+        tracker.total = other.total;        
+        tracker.heads = other.heads;
+        tracker.tails = other.tails;
+        tracker.anticipated = other.anticipated;
+
+        tracker.baseAnticipated = other.baseAnticipated;
+        tracker.anticipatedHeads = other.anticipatedHeads;
+        tracker.anticipatedTails = other.anticipatedTails;
+        tracker.cumulativeTicks = other.cumulativeTicks;
+        //v1.1.0 additions
+        tracker.batchTotal = other.batchTotal;
+        tracker.wallclockTimeNs = other.wallclockTimeNs;
+        tracker.batchWallclockTimeNs = other.batchWallclockTimeNs;
+        tracker.utcBeginTimeMs = other.utcBeginTimeMs;
+        tracker.utcEndTimeMs = other.utcEndTimeMs;
+        tracker.betHeads = other.betHeads;
+        tracker.betSame = other.betSame;
+        tracker.anticipatedSame = other.anticipatedSame;
+        
+        return tracker;
+    }
 
     public static string StockPrint(ITrackerStore store, ITracker tracker)
     {
@@ -282,7 +307,7 @@ public class TrackerStore : ITrackerStore
         {
             var proof1 = t.EstimateRemainingFlipsForZScore(1.96);
             var proof2 = t.EstimateRemainingFlipsForZScore(3.00);
-            double durationSeconds = Math.Max(0.001, (t.utcEndTimeMs - t.utcBeginTimeMs) / 1000.0);
+            double durationSeconds = Math.Max(0.001, (t.Source.utcEndTimeMs - t.Source.utcBeginTimeMs) / 1000.0);
             double fps = t.batchTotal / durationSeconds;
 
             TimeSpan ts1 = new TimeSpan((long)((proof1 / fps) * TimeSpan.TicksPerSecond));
@@ -296,7 +321,7 @@ public class TrackerStore : ITrackerStore
 
         if (VersionCompare(ver, 1, 1, 0) >= 0)
         {
-            TimeSpan wallclockSpan = new TimeSpan(t.wallclockTimeNs / 100);
+            TimeSpan wallclockSpan = new TimeSpan(t.Source.wallclockTimeNs / 100);
 
             string insert = s.concise
                 ? ""
@@ -304,7 +329,7 @@ public class TrackerStore : ITrackerStore
                     $"[RATE] H/T: {Tracker.FormatOffset(t.BetHeadsWinRate, "0.0e+00")}/ {Tracker.FormatOffset(t.BetTailsWinRate, "0.0e+00")} " +
                     $"S/D: {Tracker.FormatOffset(t.BetSameWinRate, "0.0e+00")}/ {Tracker.FormatOffset(t.BetDiffWinRate, "0.0e+00")} | ");
 
-            return $"{t.total} flips → " +
+            return $"{t.Source.total} flips → " +
                    $"heads: {Tracker.FormatOffset(t.HeadsPercentage, "0.0e+00")} | " +
                    $"aHeads: {Tracker.FormatOffset(t.AnticipatedHeadsPercentage, "0.0e+00")} | " +
                    $"aTails: {Tracker.FormatOffset(t.AnticipatedTailsPercentage, "0.0e+00")} | " +
@@ -317,19 +342,19 @@ public class TrackerStore : ITrackerStore
                    //$"[BETS] H/T: {Tracker.FormatOffset(t.BetHeadsPercentage, "0.0e+00")}/{Tracker.FormatOffset(t.BetTailsPercentage, "0.0e+00")} " +
                    //$"S/D: {Tracker.FormatOffset(t.BetSamePercentage, "0.0e+00")}/{Tracker.FormatOffset(t.BetDiffPercentage, "0.0e+00")} | " +
 
-                   $"threadTime: {new TimeSpan(t.cumulativeTicks):G} | " +
+                   $"threadTime: {new TimeSpan(t.Source.cumulativeTicks):G} | " +
                    $"wallclock: {wallclockSpan:G}" +
                    projectText;
         }
 
-        return $"{t.total} flips → " +
+        return $"{t.Source.total} flips → " +
                $"heads: {Tracker.FormatOffset(t.HeadsPercentage, "0.0e+00")} | " +
                $"anticipatedHeads: {Tracker.FormatOffset(t.AnticipatedHeadsPercentage, "0.0e+00")} | " +
                $"anticipatedTails: {Tracker.FormatOffset(t.AnticipatedTailsPercentage, "0.0e+00")} | " +
                $"anticipated: {Tracker.FormatOffset(t.AnticipatedPercentage, "0.0e+00")} | " +
                $"base: {Tracker.FormatOffset(t.BaseAnticipatedPercentage, "0.0e+00")} | " +
                $"Z: {t.ZScore:F6} | " +
-               $"threadTime: {new TimeSpan(t.cumulativeTicks):G}" +
+               $"threadTime: {new TimeSpan(t.Source.cumulativeTicks):G}" +
                projectText;
 
         // return $"{t.total} flips → " +
