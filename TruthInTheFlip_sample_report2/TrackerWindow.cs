@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Text;
 using TruthInTheFlip_sample_report2;
 using TruthInTheFlip.Format;
+using TruthInTheFlip.Format.Options;
 
 public class TrackerWindow
 {
@@ -122,9 +123,9 @@ public class TrackerWindow
         /// Attempts to consume the -window flag and its arguments.
         /// </summary>
         /// <returns>True if the flag was found and consumed; otherwise, false.</returns>
-        public override bool TryParse(List<String> command_args, int index, ref int status, Action<String> errorMessage)
+        public override bool TryParse(List<string> command_args, int index, ref int status, SOut message, SOut errorMessage)
         {
-            if (!base.TryParse(command_args, index, ref status, errorMessage) || status != 0)
+            if (!base.TryParse(command_args, index, ref status, message, errorMessage) || status != 0)
             {
                 return false;
                 
@@ -144,7 +145,15 @@ public class TrackerWindow
                 MethodName = "def";
                 ArgValue = "def";
             }
-            else
+            else if (MethodName == "list")
+            {
+                message(List(), false);
+            
+                Enabled = false;
+                WantExit = true;
+                
+                return true;
+            } else
             {
                 if (index >= command_args.Count)
                 {
@@ -161,7 +170,7 @@ public class TrackerWindow
             return true;
         }
 
-        private void CompileStrategy(Action<String> errorMessage, ref int exitStatus)
+        private void CompileStrategy(SOut errorMessage, ref int exitStatus)
         {
             if (exitStatus != 0) return; // Don't bother if we are already in an error state
 
@@ -234,8 +243,9 @@ TrackerWindow:  {method.Name}{isDefault}          //{help}
 Value:          {ArgValue}{ArgMore}
 ";
         }
-    
-        public static bool TryGet(MethodInfo method, out string help, out string def)
+        
+       
+        public virtual bool TryGet(MethodInfo method, out string help, out string def)
         {
             help = "";
             def = "";
@@ -255,7 +265,7 @@ Value:          {ArgValue}{ArgMore}
             return true;
         }
         
-        public override string GetHelp()
+        public virtual string List()
         {
             StringBuilder stringBuilder = new StringBuilder();
             
@@ -282,12 +292,23 @@ Value:          {ArgValue}{ArgMore}
                 int[]? ver = TrackerStore.ReadVersion("TruthInTheFlip.v", versionAttr.Version);
                 if (ver == null) throw new Exception($"version {versionAttr} not supported");
 
-                stringBuilder.AppendLine(UtilT.PadRight("")+UtilT.PadRight(method.Name + $" <{paramType}>", 40) +UtilT.PadRight($"def=\"{defAttr.Value}\" ") + $"v"+TrackerStore.VersionPrint(ver));
+                stringBuilder.AppendLine(UtilT.PadRight(method.Name + $" <{paramType}>", 40) +UtilT.PadRight($"def=\"{defAttr.Value}\" ") + $"v"+TrackerStore.VersionPrint(ver));
                 if (helpAttr != null)
                 {       
-                    stringBuilder.AppendLine($"{new string(' ', 24)}{helpAttr.Description}");
+                    stringBuilder.AppendLine($"  {helpAttr.Description}");
                 }
             }
+            
+            return stringBuilder.ToString();
+
+        }
+        
+        public override string GetHelp()
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.AppendLine(UtilT.PadRight($"  {Name} list")+"List random sources");
+            stringBuilder.AppendLine(UtilT.PadRight($"  {Name} def")+"Use default view window");
+            stringBuilder.AppendLine(UtilT.PadRight($"  {Name} <string> <parameter>")+"Configure view window");
             
             return stringBuilder.ToString();
         }
@@ -297,7 +318,7 @@ Value:          {ArgValue}{ArgMore}
             return $"{NameString()}Disabled (Using default Lifetime processing)\n";
         }
 
-        public override bool ValidateVersion(int[] target_version, Action<string>? errorMessage)
+        public override bool ValidateVersion(int[] target_version, SOut? errorMessage)
         {
             if (Enabled && RequiredVersion != null)
             {

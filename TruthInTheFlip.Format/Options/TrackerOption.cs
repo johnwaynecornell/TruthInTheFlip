@@ -1,4 +1,4 @@
-namespace TruthInTheFlip.Format;
+namespace TruthInTheFlip.Format.Options;
 
 public abstract class TrackerOption : Option
 {
@@ -8,5 +8,5 @@ public abstract class TrackerOption : Option
     
     public virtual int[]? RequiredVersion {get; set; }
 
-    public abstract bool ValidateVersion(int[] target_version, Action<String>? errorMessag);
+    public abstract bool ValidateVersion(int[] target_version, SOut? errorMessage);
 }

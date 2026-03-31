@@ -1,4 +1,5 @@
 ﻿using TruthInTheFlip.Format;
+using TruthInTheFlip.Format.Options;
 using System.Diagnostics;
 using TruthInTheFlip;
 
@@ -27,7 +28,7 @@ public class Program
 
     public static void LogWriteLine(string text)
     {
-        Console.WriteLine(text);
+        message(text);
 
         if (log)
         {
@@ -46,6 +47,11 @@ public class Program
         return (store.Print(allTime) + (tail == "" ? "" : $" | {tail}"));
     }
 
+    public static SOut errorMessage = (s, n) => Console.Error.Write(s +(n ? "\n" : ""));
+    public static SOut message =  (s, n) => Console.Write(s +(n ? "\n" : ""));
+    
+    public static int[] supported_ver = TrackerStore.VersionArray(1,1,0);
+    
     public static int Main(string[] command_line_args)
     {
         BitFactory bitFactory = new BitFactory();
@@ -56,7 +62,11 @@ public class Program
 
         Options O = new Options();
         
-        Action<String> errorWriteLine = (s) => Console.Error.WriteLine(s);
+        InfoOption infoOption;
+        RSourceOption rsourceOption;
+        
+        O.Add(infoOption = new InfoOption());
+        O.Add(rsourceOption = new RSourceOption().AddDefaults());
         
         bool show = false;
         bool dump = false;
@@ -66,12 +76,10 @@ public class Program
         bool showHelp = false;
         int rc = 0;
         
-        string randomSource = "NET1";
-        
         int cur = 0;
         while (cur < cl_args.Count)
         {
-            if (O.TryParse(cl_args, cur, ref rc, errorWriteLine)) continue;
+            if (O.TryParse(cl_args, cur, ref rc, message, errorMessage)) continue;
             if (cur >= cl_args.Count) continue;
 
             
@@ -84,6 +92,7 @@ public class Program
                     continue;
                 }
 
+                /*
                 if (cl_args[cur] == "-rsource")
                 {
                     cl_args.RemoveAt(cur);
@@ -99,7 +108,7 @@ public class Program
                     cl_args.RemoveAt(cur);
 
                     continue;
-                }
+                }*/
 
                 if (cl_args[cur] == "-concise")
                 {
@@ -144,7 +153,7 @@ public class Program
                     continue;
                 }
 
-                errorWriteLine($"Unknown argument: {cl_args[cur]}");
+                errorMessage($"Unknown argument: {cl_args[cur]}");
                 cl_args.RemoveAt(cur);
                 
                 rc = -1;
@@ -156,17 +165,24 @@ public class Program
 
         if (cl_args.Count() != 1)
         {
-            errorWriteLine("expected one file path");
+            errorMessage("expected one file path");
             showHelp = true;
             rc = -1;
         }
 
+        Func<Action<byte[]>> seedFunc = BitFactory.initRandom_Net;
+        if (rsourceOption.Enabled) seedFunc = UtilT.ThrowIfNull(rsourceOption.SeedFunc, "rsource enabled but not providing SeedFunc");
+        bitFactory.resetRandom = seedFunc;
+        bitFactory.Reset();
+        
+        /*
+
         switch (randomSource)
         {
             case "list":
-                Console.WriteLine("Random sources:");
-                Console.WriteLine("  NET1            System.Random");
-                Console.WriteLine("  NET2            System.Security.Cryptography");
+                message("Random sources:");
+                message("  NET1            System.Random");
+                message("  NET2            System.Security.Cryptography");
                 return rc;
             case "NET1":
                 bitFactory.resetRandom = BitFactory.initRandom_Net;
@@ -181,32 +197,36 @@ public class Program
                 errorWriteLine($"random source \"{randomSource}\" UNKNOWN");
                 return -1;
             }
-        }
+        } */
+        
+        if (O.WantExit) 
+            return rc;
         
         if (showHelp || rc != 0)
         {
-            Console.WriteLine("Usage: TruthInTheFlip [options] <filepath>");
-            Console.WriteLine();
-            Console.WriteLine("Arguments:");
-            Console.WriteLine("  <filepath>          Path to the tracker state file (required)");
-            Console.WriteLine();
-            Console.WriteLine("Options:");
-            Console.WriteLine("  -log                Enable detailed logging output");
-            Console.WriteLine("  -show               show stats or log tail");
-            Console.WriteLine("  -create             Create the state file if it doesn't exist");
-            Console.WriteLine("  -dump               verbose output");
-            Console.WriteLine("  -record             Append records to the state file");
-            Console.WriteLine("  -concise            Prefer skinier output");
-            Console.WriteLine("  -rsource <string>   Random source string (default: NET1)");
-            Console.WriteLine("  -rsource list       List random sources");
-            Console.WriteLine("  -help, -h           Display this help message");
-            Console.WriteLine();
-            Console.WriteLine("Description:");
-            Console.WriteLine("  This program runs a high-performance multithreaded meta-guessing simulation");
-            Console.WriteLine("  to test negentropy hypotheses against massive random bit sequences.");
-            Console.WriteLine("  It continuously processes billions of flips and tracks statistical significance");
-            Console.WriteLine("  via Z-score calculations, saving state periodically to the specified file.");
-            Console.WriteLine("  The recomended extension is .tkr or .TrackerRecord.");
+            message("Usage: TruthInTheFlip [options] <filepath>");
+            message();
+            message("Arguments:");
+            message("  <filepath>          Path to the tracker state file (required)");
+            message();
+            message("Options:");
+            message("  -log                Enable detailed logging output");
+            message("  -show               show stats or log tail");
+            message("  -create             Create the state file if it doesn't exist");
+            message("  -dump               verbose output");
+            message("  -record             Append records to the state file");
+            message("  -concise            Prefer skinier output");
+            message(O.GetHelp(), false);
+            //message("  -rsource <string>   Random source string (default: NET1)");
+            //message("  -rsource list       List random sources");
+            message("  -help, -h           Display this help message");
+            message();
+            message("Description:");
+            message("  This program runs a high-performance multithreaded meta-guessing simulation");
+            message("  to test negentropy hypotheses against massive random bit sequences.");
+            message("  It continuously processes billions of flips and tracks statistical significance");
+            message("  via Z-score calculations, saving state periodically to the specified file.");
+            message("  The recomended extension is .tkr or .TrackerRecord.");
             
             return rc;
         }
@@ -215,17 +235,6 @@ public class Program
 
         store = TrackerStore.Default(fileName);
         store.concise = concise;
-        
-        int[] ver = UtilT.ThrowIfNull(TrackerStore.ReadVersion("TruthInTheFlip.v", store.Version), "unsupported version");
-        
-        bool validate_error = false;
-        foreach (Option o in O)
-        {
-            if (o is TrackerOption tracker_o) validate_error = !tracker_o.ValidateVersion(ver, errorWriteLine) || validate_error;
-        }
-
-        if (validate_error) return -1;
-
         
         //v1.0.1 compat
         // store.print_delegate = (store, tracker) =>
@@ -242,7 +251,7 @@ public class Program
         //             $"base: {Tracker.FormatOffset(t.BaseAnticipatedPercentage, "0.0e+00")} | " +
         //             $"Z: {t.GetCurrentZScore():F6} | {threadTime}");
         // };
-
+        
         if (dump)
         {
             long cnt = 0;
@@ -251,12 +260,12 @@ public class Program
             foreach (var t1 in store.Enumerate())
             {
                 Tracker t = (Tracker)t1;
-                Console.WriteLine(store.Print(t));
+                message(store.Print(t));
                 cnt++;
                 if (t.anticipated << 1 >= t.total) good++;
             }
 
-            Console.WriteLine($"{(good / (double)cnt * 100)}% of the time above 50%");
+            message($"{(good / (double)cnt * 100)}% of the time above 50%");
             return 0;
         }
 
@@ -265,26 +274,38 @@ public class Program
             allTime = store.NewTracker();
             if (File.Exists(fileName))
             {
-                allTime = store.LoadOrCreate(show ? null : record);
+                allTime = store.LoadOrCreate(null);
+
+                if (((TrackerStore)store).Record != record)
+                {
+                    errorMessage($"{fileName} : Record ={((TrackerStore)store).Record} but -record switch {(record ? "was" : "wasn't")} passed");
+                    if (record && !store.Record) errorMessage("create new file with -record and -create among the switches if you desire to record");
+                    return 1;
+                }
+                
 
                 if (show)
                 {
-                    Console.WriteLine(store.Print(allTime));
+                    message(store.Print(allTime));
                     return 0;
                 }
             }
             else if (!createIfDoesntExsist)
             {
-                errorWriteLine($"File does not exist: {fileName}");
-                errorWriteLine("Use -create to create a new state file");
+                errorMessage($"File does not exist: {fileName}");
+                errorMessage("Use -create to create a new state file");
                 return 1;
+            } else
+            {
+                store.Record = record;
+                store.Version = TrackerStore.latest;
             }
         }
         else
         {
             if (!File.Exists(fileName + ".log"))
             {
-                errorWriteLine($"the log file \"{fileName + ".log"}\" does not exist.");
+                errorMessage($"the log file \"{fileName + ".log"}\" does not exist.");
                 return 1;
             }
 
@@ -298,10 +319,58 @@ public class Program
                     if (lines.Count > 20) lines.Dequeue();
                 }
 
-                foreach (var l in lines) Console.WriteLine(l);
+                foreach (var l in lines) message(l);
                 return 0;
             }
 
+        }
+        
+        int[] ver = UtilT.ThrowIfNull(TrackerStore.ReadVersion("TruthInTheFlip.v", store.Version), "unsupported version");
+        
+        bool validate_error = false;
+        foreach (Option o in O)
+        {
+            if (o is TrackerOption tracker_o) validate_error = !tracker_o.ValidateVersion(ver, errorMessage) || validate_error;
+        }
+
+        if (validate_error) return -1;
+
+        if (!record) message($"warning {fileName} started without record, history not being saved");
+        
+        if (infoOption.Enabled)
+        {
+            message("=== Run Configuration Info ===");
+            message(UtilT.PadRight("File:") + fileName);
+            message(UtilT.PadRight("record:") + store.Record);
+
+            message(UtilT.PadRight("Supports:") + "TruthInTheFlip.v" + TrackerStore.VersionPrint(supported_ver));
+    
+            // Quick peek at the file metadata (without running the full Enumerate)
+            if (store.Version != null)
+            {
+                Tracker lastRecord = (Tracker) UtilT.ThrowIfNull(allTime, "allTime must be Tracker");
+                Tracker firstRecord = File.Exists(store.Path) ?  (Tracker) store.Enumerate().First() : lastRecord;
+
+                message(UtilT.PadRight($"Tracker Version:") + TrackerStore.VersionPrint(ver));
+                // You could load the tail here just to print the total lifetime flips/times
+                message(UtilT.PadRight("Total Flips:") + $"{lastRecord.total:N0}");
+
+                if (File.Exists(store.Path))
+                {
+                    if (TrackerStore.VersionCompare(ver, 1, 1, 0) >= 0)
+                    {
+                        message(UtilT.PadRight("Start Time:") + firstRecord.UtcBeginTime + " UTC");
+                        message(UtilT.PadRight("End Time:") + lastRecord.UtcEndTime + " UTC");
+                    } else message("use newer file version for timing info");
+                }else message("creating file");
+
+
+                message();
+            }
+    
+            message("[Options]");
+            Console.Write(O.Info());
+            message("==============================\n");
         }
 
         TrackerRunner runner = new TrackerRunner(store, bitFactory);

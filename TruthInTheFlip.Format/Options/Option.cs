@@ -1,12 +1,14 @@
 using System.Collections;
 using System.Text;
 
-namespace TruthInTheFlip.Format;
+namespace TruthInTheFlip.Format.Options;
 
 public abstract class Option
 {
     public string? Name { get; set;  }
     public bool Enabled { get; set; } = false;
+    
+    public bool WantExit { get; set; } = false;
 
     public Option(string? name)
     {
@@ -14,17 +16,16 @@ public abstract class Option
         this.Name = name;
     }
 
-    public bool ManualConfigurate(Action<string>? errorWriteLine = null, params string[] args)
+    public bool ManualConfigurate(SOut message, SOut errorMessage, params string[] args)
     {
-        if (errorWriteLine == null) errorWriteLine = (s) => Console.Error.WriteLine(s);
         List<String> command_args = new List<String>(args);
 
         int status = 0;
-        bool rc = TryParse(command_args, 0, ref status, errorWriteLine);
+        bool rc = TryParse(command_args, 0, ref status, message, errorMessage);
         return rc && (status == 0) && (command_args.Count == 0);
     }
     
-    public virtual bool TryParse(List<String> command_args, int index, ref int status, Action<String> errorMessage)
+    public virtual bool TryParse(List<String> command_args, int index, ref int status, SOut message, SOut errorMessage)
     {
         // If Name is null, as is the case of the Options class, it will need special processing through method override.
         if (Name == null) return false;
@@ -91,13 +92,20 @@ public class Options : Option , IEnumerable<Option>
         Enabled = true;
     }
 
-    public override bool TryParse(List<String> command_args, int index, ref int status, Action<String> errorMessage)
+    public override bool TryParse(List<String> command_args, int index, ref int status, SOut message, SOut errorMessage)
     {
         bool rc;
         if (status != 0) return false;
         foreach (Option o in contents)
-            if ((rc = o.TryParse(command_args, index, ref status, errorMessage)) || status != 0)
+        {
+            rc = o.TryParse(command_args, index, ref status, message, errorMessage);
+            
+            if (o.WantExit) WantExit = true;
+            
+            if (rc || status != 0)
                 return rc;
+        }
+
         return false;
     }
 

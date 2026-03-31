@@ -194,6 +194,11 @@ public class TrackerStore : ITrackerStore
         return 0;
     }
 
+    public static int[] VersionArray(int major, int minor, int patch)
+    {
+        return new int[] {patch, minor, major};
+    }
+
     public static string VersionPrint(int[] version)
     {
         return $"{version[2]}.{version[1]}.{version[0]}";

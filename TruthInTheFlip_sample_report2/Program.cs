@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Text;
 using TruthInTheFlip_sample_report2;
 using TruthInTheFlip.Format;
+using TruthInTheFlip.Format.Options;
 
 int[] supported_ver = new int[] { 1, 1, 0 };
 
@@ -18,13 +19,14 @@ InfoOption infoOption;
 O.Add(infoOption = new InfoOption());
 O.Add(windowOption = new TrackerWindow.WindowOption());
 
-Action<String> errorWriteLine = (s) => Console.Error.WriteLine(s);
+SOut errorMessage = (s, n) => Console.Error.Write(s +(n ? "\n" : ""));
+SOut message =  (s, n) => Console.Write(s +(n ? "\n" : ""));
 
 int rc = 0;
 int cur = 0;
 while (cur < cl_args.Count)
 {
-    if (O.TryParse(cl_args, cur, ref rc, errorWriteLine)) continue;
+    if (O.TryParse(cl_args, cur, ref rc, message, errorMessage)) continue;
     if (cur >= cl_args.Count) continue;
     
     if (cl_args[cur].StartsWith("-"))
@@ -36,7 +38,7 @@ while (cur < cl_args.Count)
             continue;
         }
         
-        errorWriteLine($"Unknown argument: {args[cur]}");
+        errorMessage($"Unknown argument: {args[cur]}");
         cl_args.RemoveAt(cur);
 
         rc = -1;
@@ -45,24 +47,28 @@ while (cur < cl_args.Count)
     else cur++;
 }
 
+if (O.WantExit) 
+    return rc;
+
+
 if (cl_args.Count() != 1)
 {
-    errorWriteLine("expected one file path");
+    errorMessage("expected one file path");
     showHelp = true;
 }
 
 if (showHelp || rc != 0)
 {
-    Console.WriteLine("Usage: TruthInTheFlip_sample_csv");
-    Console.WriteLine();
-    Console.WriteLine(UtilT.PadRight("Supports:") + "TruthInTheFlip.v" + TrackerStore.VersionPrint(supported_ver));
-    Console.WriteLine("Arguments:");
-    Console.WriteLine(UtilT.PadRight("  <filepath>") + $"Path to the tracker state file (required)");
-    Console.Write(O.GetHelp());
-    Console.WriteLine(UtilT.PadRight("  -help, -h") + "Display this help message");
-    Console.WriteLine();
-    Console.WriteLine("Description:");
-    Console.WriteLine("  This program outputs csv with a header for the file version.");
+    message("Usage: TruthInTheFlip_sample_csv");
+    message();
+    message(UtilT.PadRight("Supports:") + "TruthInTheFlip.v" + TrackerStore.VersionPrint(supported_ver));
+    message("Arguments:");
+    message(UtilT.PadRight("  <filepath>") + $"Path to the tracker state file (required)");
+    message(O.GetHelp(), false);
+    message(UtilT.PadRight("  -help, -h") + "Display this help message");
+    message();
+    message("Description:");
+    message("  This program outputs csv with a header for the file version.");
             
     return cl_args.Count() != 1 || (cl_args[0].StartsWith("-") && cl_args[0] != "-h" && cl_args[0] != "--help") ? -1 : 0;
 
@@ -71,18 +77,18 @@ if (showHelp || rc != 0)
 string fileName = cl_args[0];
 
 if (!windowOption.Enabled)
-    errorWriteLine("warning viewing without window expect drift. Enable a window with -window def");
+    errorMessage("warning viewing without window expect drift. Enable a window with -window def");
 
 if (!File.Exists(fileName))
 {
-    errorWriteLine($"could not find \"{fileName.Replace("\"", "\\\"")}\""); 
+    errorMessage($"could not find \"{fileName.Replace("\"", "\\\"")}\""); 
     return -1;
 }
 
 TrackerStore store = TrackerStore.Default(fileName);
 if (store.Version == null) 
 {
-    errorWriteLine("\"fileName\" not a TrackerRecord file");
+    errorMessage("\"fileName\" not a TrackerRecord file");
     return -1; 
 }
         
@@ -108,28 +114,28 @@ TimeSpan wallclockTimeLength = new TimeSpan(t.wallclockTimeNs / 100);
 
 if (infoOption.Enabled)
 {
-    Console.WriteLine("=== Run Configuration Info ===");
-    Console.WriteLine(UtilT.PadRight("File:") + fileName);
-    Console.WriteLine(UtilT.PadRight("record:") + store.Record);
+    message("=== Run Configuration Info ===");
+    message(UtilT.PadRight("File:") + fileName);
+    message(UtilT.PadRight("record:") + store.Record);
 
-    Console.WriteLine(UtilT.PadRight("Supports:") + "TruthInTheFlip.v" + TrackerStore.VersionPrint(supported_ver));
+    message(UtilT.PadRight("Supports:") + "TruthInTheFlip.v" + TrackerStore.VersionPrint(supported_ver));
     
     // Quick peek at the file metadata (without running the full Enumerate)
     if (store.Version != null)
     {
         Tracker firstRecord = (Tracker) store.Enumerate().First(); 
 
-        Console.WriteLine(UtilT.PadRight($"Tracker Version:") + TrackerStore.VersionPrint(ver));
+        message(UtilT.PadRight($"Tracker Version:") + TrackerStore.VersionPrint(ver));
         // You could load the tail here just to print the total lifetime flips/times
-        Console.WriteLine(UtilT.PadRight("Total Flips:") + $"{tail.total:N0}");
-        Console.WriteLine(UtilT.PadRight("Start Time:") + firstRecord.UtcBeginTime +" UTC");
-        Console.WriteLine(UtilT.PadRight("End Time:") + tail.UtcEndTime +" UTC");
-        Console.WriteLine();
+        message(UtilT.PadRight("Total Flips:") + $"{tail.total:N0}");
+        message(UtilT.PadRight("Start Time:") + firstRecord.UtcBeginTime +" UTC");
+        message(UtilT.PadRight("End Time:") + tail.UtcEndTime +" UTC");
+        message();
     }
     
-    Console.WriteLine("[Options]");
+    message("[Options]");
     Console.Write(O.Info());
-    Console.WriteLine("==============================\n");
+    message("==============================\n");
 }
 
 List<WatchVariables> watchers = new List<WatchVariables>();
@@ -193,16 +199,16 @@ if (t == null)
 DateTime utcBeginTime = t.UtcBeginTime;
 DateTime utcEndTime = t.UtcEndTime;
 
-Console.WriteLine(Path.GetFileName(fileName) + " : " + utcEndTime.ToString("yyyyMMdd_HHmmss.ff") + " | " + store.Print(t));
+message(Path.GetFileName(fileName) + " : " + utcEndTime.ToString("yyyyMMdd_HHmmss.ff") + " | " + store.Print(t));
 
 {
-    Console.WriteLine();
+    message();
 
     Console.Write("total,heads,tails,anticipated,baseAnticipated,anticipatedHeads,anticipatedTails,cumulativeTicks");
     if (TrackerStore.VersionCompare(ver, 1, 1, 0) >= 0)
         Console.Write(
             ",batchTotal,wallclockTimeNs,batchWallclockTimeNs,utcBeginTimeMs,utcEndTimeMs,betHeads,betSame,anticipatedSame");
-    Console.WriteLine();
+    message();
 
     {
         Console.Write(
@@ -211,10 +217,10 @@ Console.WriteLine(Path.GetFileName(fileName) + " : " + utcEndTime.ToString("yyyy
         if (TrackerStore.VersionCompare(ver, 1, 1, 0) >= 0)
             Console.Write(
                 $",{t.batchTotal},{t.wallclockTimeNs},{t.batchWallclockTimeNs},{t.utcBeginTimeMs},{t.utcEndTimeMs},{t.betHeads},{t.betSame},{t.anticipatedSame}");
-        Console.WriteLine();
+        message();
     }
     
-    Console.WriteLine();
+    message();
 
 }
 
@@ -242,8 +248,8 @@ Func<WatchVariables, string> print = (wv) =>
 
 int l1 = int.MinValue; foreach (var w2 in watchers) l1 = int.Max(l1, labels[w2].Length);
 
-foreach (var w2 in watchers) Console.WriteLine($"{labels[w2] + new string(' ', l1 - labels[w2].Length)} | {print(w2)}");
-Console.WriteLine();
+foreach (var w2 in watchers) message($"{labels[w2] + new string(' ', l1 - labels[w2].Length)} | {print(w2)}");
+message();
 
 // The fixed state from your tracker
 long observed = t.anticipated;
@@ -297,19 +303,19 @@ Func<long, long, double, double> ZCompass = (observed, total, targetZ) =>
 
 Tracker ? ZMax = w["Z"].maxHolder;
 
-Console.WriteLine($"To achieve exactly Z=3.0, we can claim a win rate of: {Tracker.FormatOffset(ZCompass(tail.anticipated, tail.total, 3.0) * 100, "0.00000e+00")}");
+message($"To achieve exactly Z=3.0, we can claim a win rate of: {Tracker.FormatOffset(ZCompass(tail.anticipated, tail.total, 3.0) * 100, "0.00000e+00")}");
 if (ZMax != null)
 {
-    Console.WriteLine($"To achieve from ZMax we can claim a win rate of: {Tracker.FormatOffset(ZCompass(ZMax.anticipated, ZMax.total, 3.0) * 100, "0.00000e+00")}");
+    message($"To achieve from ZMax we can claim a win rate of: {Tracker.FormatOffset(ZCompass(ZMax.anticipated, ZMax.total, 3.0) * 100, "0.00000e+00")}");
 }
 
-Console.WriteLine($"File compute time: {wallclockTimeLength}");
+message($"File compute time: {wallclockTimeLength}");
 
 return 0;
 
-void HandleError(string message)
+void HandleError(string message, bool nl = true)
 {
-    errorWriteLine(message);
+    errorMessage(message, nl);
     Environment.Exit(-1);
 }
 

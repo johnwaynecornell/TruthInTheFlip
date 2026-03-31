@@ -81,7 +81,7 @@ public class UtilT
         }
     }
 
-    public static string PadRight(string input, int L=20)
+    public static string PadRight(string input, int L=22)
     {
         if (input.Length >=1 && input[input.Length - 1] != ' ') input +=" ";
         return input + new string(' ', int.Max(0, L - input.Length));
@@ -98,4 +98,11 @@ public class UtilT
         if (value == null) throw new ArgumentNullException(message());
         return value;
     }
+    
+    
+    public static SOut nillMessage => (s, nl) => { };
+    public static SOut nillErrorMessage => (s, nl) => { };
+    
+    public static SOut consoleMessage => (s, nl ) => Console.Write(s +(nl ? "\n" : ""));
+    public static SOut consoleErrorMessage => (s, nl) => Console.Error.Write(s +(nl ? "\n" : ""));
 }
