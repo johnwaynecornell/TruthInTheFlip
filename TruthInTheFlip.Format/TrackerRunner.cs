@@ -15,7 +15,55 @@ public class TrackerRunner : ITrackerRunner
     
     public delegate bool AnticipateDelegate(ITrackerRunner store, ITracker tracker, bool currentFlip);
     public AnticipateDelegate? anticipate_delegate;
-    
+
+    public delegate bool GuessChange(bool currentFlip, bool priorFlip, Tracker t, bool lastGuess, bool currentOutcome);
+
+    public AnticipateDelegate MakeAnticipateDelegate(GuessChange guessChange)
+    {
+        return (ITrackerRunner store, ITracker tracker, bool currentFlip) =>
+        {
+
+            Tracker t = (Tracker)tracker;
+            // If anticipating change, expect !priorFlip. If anticipating same, expect priorFlip.
+
+            bool guess = t.guessAnticipateChange ? (!t.priorFlip) : t.priorFlip;
+            bool guessOutcome = guess == currentFlip;
+
+            if (guess) t.betHeads++;
+
+            if (guessOutcome) t.baseAnticipated++;
+
+            //if (trackerInner != null) result = trackerInner.Anticipate(result) ? !result : result;
+            if (t.trackerInner != null)
+                guessOutcome = t.trackerInner.Anticipate(guessOutcome) ? guessOutcome : !guessOutcome;
+
+            if (!t.guessAnticipateChange) t.betSame++;
+
+            if (guessOutcome)
+            {
+                if (!t.guessAnticipateChange) t.anticipatedSame++;
+                if (currentFlip) t.anticipatedHeads++;
+                else t.anticipatedTails++;
+
+                t.anticipated++;
+            }
+
+            t.total++;
+
+            if (currentFlip)
+                t.heads++;
+            else
+                t.tails++;
+
+            // Anticipate the relation, not the value.
+            t.guessAnticipateChange = guessChange(currentFlip, t.priorFlip, t, guess, guessOutcome);
+
+            t.priorFlip = currentFlip;
+
+            return guessOutcome;
+        };
+    }
+
     public TrackerRunner(ITrackerStore store, BitFactory bitFactory)
     {
         this.store = store;
