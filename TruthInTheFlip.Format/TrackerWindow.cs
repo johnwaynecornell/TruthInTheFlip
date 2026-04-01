@@ -98,9 +98,14 @@ public class TrackerWindow
     {
         UtilT.LinkNode<Tracker> node = new(store.Clone(In));
         if (tail == null || head == null || ver == null) throw new NullReferenceException("Neither head nor tail nor ver can be null"); 
+        node.Prev = tail;
         tail = tail.Next = node;
 
-        while (head.Next != null && !bound(In, UtilT.ThrowIfNull(head.Value, "head.Value"))) head = head.Next;
+        while (head.Next != null && !bound(In, UtilT.ThrowIfNull(head.Value, "head.Value"))) 
+        {
+            head = head.Next;
+            head.Prev = null;
+        }
 
         return UtilT.Subtract(store, ver, In, UtilT.ThrowIfNull(head.Value, "head.Value"));
     }

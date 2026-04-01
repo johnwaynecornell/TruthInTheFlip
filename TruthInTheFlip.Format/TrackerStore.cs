@@ -54,6 +54,8 @@ public class TrackerStore : ITrackerStore
     public ReadRecordDelegate? readRecord_delegate;
     public WriteRecordDelegate? writeRecord_delegate;
 
+    public EnumerateDelegate? reverse_enumerate_delegate;
+    
     public bool Record { get; set; }
 
     public string? Path { get; set; }
@@ -128,6 +130,12 @@ public class TrackerStore : ITrackerStore
     {
         if (enumerate_delegate == null) throw new Exception("TrackerStore 'enumerate_delegate' not initialized");
         return enumerate_delegate(this);
+    }
+
+    public virtual IEnumerable<ITracker> ReverseEnumerate()
+    {
+        if (reverse_enumerate_delegate == null) throw new Exception("TrackerStore 'reverse_enumerate_delegate' not initialized");
+        return reverse_enumerate_delegate(this); 
     }
 
 
@@ -224,7 +232,8 @@ public class TrackerStore : ITrackerStore
         store.loadOrCreate_delegate = StockLoadOrCreate;
         store.save_delegate = StockSave;
         store.enumerate_delegate = StockEnumerate;
-
+        store.reverse_enumerate_delegate = StockReverseEnumerate;
+        
         store.readRecord_delegate = StockReadRecord;
         store.writeRecord_delegate = StockWriteRecord;
 
@@ -628,6 +637,60 @@ public class TrackerStore : ITrackerStore
         }
     }
 
+        public static IEnumerable<Tracker> StockReverseEnumerate(ITrackerStore store)
+        {
+            if (!File.Exists(store.Path)) yield break;
+    
+            Tracker tracker;
+    
+            using (var fs = ((TrackerStore)store).NewFileStream(store.Path, FileMode.Open))
+            using (BinaryReader reader = new BinaryReader(fs))
+            {
+                string version;
+                version = reader.ReadString();
+    
+                int[]? ver = ReadVersion("TruthInTheFlip.v", version);
+                if (ver == null || VersionCompare(ver, 1, 0, 0) < 0)
+                    throw new IOException($"version \"{version}\" not handled");
+                if (VersionCompare(ver, 1, 1, 0) > 0)
+                    throw new Exception($"\"{store.Path}\" \"{version}\" is a newer than {latest}");
+    
+    
+                if (version == "TruthInTheFlip.v1.0")
+                {
+                    tracker = (Tracker)((TrackerStore)store).ReadRecord(version, reader);
+                    store.Record = false;
+                    store.Version = "TruthInTheFlip.v1.0.1";
+    
+                    yield return tracker;
+                    yield break;
+                }
+    
+                if (VersionCompare(ver, 1, 1, 0) > 0)
+                    throw new Exception($"\"{store.Path}\" \"{version}\" is a newer than {latest}");
+    
+    
+                store.Version = version;
+    
+                long head = fs.Seek(0, SeekOrigin.Current);
+    
+                store.Record = reader.ReadBoolean();
+    
+                fs.Seek(-4, SeekOrigin.End);
+                do
+                {
+                    int sz = reader.ReadInt32(); 
+                    fs.Seek(-sz - 4, SeekOrigin.Current);
+                    tracker = (Tracker)((TrackerStore)store).ReadRecord(version, reader);
+                    fs.Seek(-sz - 8, SeekOrigin.Current);
+                    
+                    yield return tracker;
+                } while (fs.Seek(0, SeekOrigin.Current) > head);
+            }
+        }
+
+    
+    
     public static void StockSave(ITrackerStore store, ITracker tracker, bool record = false)
     {
         if (store.Path == null) throw new Exception("TrackerStore 'store.Path' not initialized");

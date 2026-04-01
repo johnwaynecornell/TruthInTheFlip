@@ -7,6 +7,7 @@ public class UtilT
     public class LinkNode<T>
     {
         public LinkNode<T>? Next;
+        public LinkNode<T>? Prev;
         public T? Value;
 
         public LinkNode(T? Value)
