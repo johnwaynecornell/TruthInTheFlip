@@ -54,4 +54,8 @@ dotnet build
 
 # Run the simulation (requires a file path to store/load state)
 dotnet run -- session_data.tkr -create -record
+
+# If you are creating 100s of billions of samples (days) drift will skew the results view windows solve this. And if you want better random -rsource
+dotnet run -- session_data.tkr -create -record -window def -rsource NET2
+
 ```
