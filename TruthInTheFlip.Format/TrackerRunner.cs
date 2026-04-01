@@ -18,6 +18,12 @@ public class TrackerRunner : ITrackerRunner
 
     public delegate bool GuessChange(bool currentFlip, bool priorFlip, Tracker t, bool lastGuess, bool currentOutcome);
 
+    /// <summary>
+    /// Creates an anticipation delegate that wraps custom guessing logic for processing coin flip sequences.
+    /// This factory method takes a GuessChange delegate and returns a fully-configured AnticipateDelegate
+    /// that handles all tracking, scoring, and state management for the meta-guessing algorithm.
+    /// For predefined strategies and examples, see AnticipationStrategies.
+    /// </summary>
     public AnticipateDelegate MakeAnticipateDelegate(GuessChange guessChange)
     {
         return (ITrackerRunner store, ITracker tracker, bool currentFlip) =>
