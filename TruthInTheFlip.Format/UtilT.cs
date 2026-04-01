@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Reflection;
 
 namespace TruthInTheFlip.Format;
@@ -9,12 +10,203 @@ public class UtilT
         public LinkNode<T>? Next;
         public LinkNode<T>? Prev;
         public T? Value;
-
+        public object? Tag;
+        
         public LinkNode(T? Value)
         {
             this.Value = Value;
         }
     }
+    
+    /// <summary>
+        /// A high-performance doubly linked list designed for sliding window telemetry.
+        /// Exposes raw node access for O(1) insertions and removals.
+        /// </summary>
+        public class LinkedList<T> : ICollection<T>
+        {
+            public LinkNode<T>? Head { get; private set; }
+            public LinkNode<T>? Tail { get; private set; }
+            
+            public int Count { get; private set; }
+            public bool IsReadOnly => false;
+    
+            // --- Raw Node Operations (O(1) Performance) ---
+    
+            /// <summary>
+            /// Inserts a new node into the list relative to an existing node.
+            /// </summary>
+            /// <param name="at">The reference node currently in the list.</param>
+            /// <param name="node">The new node to insert.</param>
+            /// <param name="after">If true, inserts after the reference node. If false, inserts before.</param>
+            public void Insert(LinkNode<T> at, LinkNode<T> node, bool after = false)
+            {
+                if (at == null) throw new ArgumentNullException(nameof(at));
+                if (node == null) throw new ArgumentNullException(nameof(node));
+    
+                if (after)
+                {
+                    node.Prev = at;
+                    node.Next = at.Next;
+                    
+                    if (at.Next != null) at.Next.Prev = node;
+                    else Tail = node; // We inserted after the tail
+                    
+                    at.Next = node;
+                }
+                else // Before
+                {
+                    node.Next = at;
+                    node.Prev = at.Prev;
+                    
+                    if (at.Prev != null) at.Prev.Next = node;
+                    else Head = node; // We inserted before the head
+                    
+                    at.Prev = node;
+                }
+    
+                Count++;
+            }
+    
+            public void AddTail(LinkNode<T> node)
+            {
+                if (Head == null)
+                {
+                    Head = Tail = node;
+                    node.Prev = node.Next = null;
+                }
+                else
+                {
+                    Tail!.Next = node;
+                    node.Prev = Tail;
+                    node.Next = null;
+                    Tail = node;
+                }
+                Count++;
+            }
+    
+            public void AddHead(LinkNode<T> node)
+            {
+                if (Head == null)
+                {
+                    Head = Tail = node;
+                    node.Prev = node.Next = null;
+                }
+                else
+                {
+                    node.Next = Head;
+                    node.Prev = null;
+                    Head.Prev = node;
+                    Head = node;
+                }
+                Count++;
+            }
+    
+            public LinkNode<T>? PopHead()
+            {
+                if (Head == null) return null;
+                return UnlinkNode(Head);
+            }
+            
+            public LinkNode<T>? PopTail()
+            {
+                if (Tail == null) return null;
+                return UnlinkNode(Tail);
+            }
+                        
+            
+            /// <summary>
+            /// Unlinks a specific node from the list in O(1) time.
+            /// </summary>
+            public LinkNode<T> UnlinkNode(LinkNode<T> node)
+            {
+                if (node == null) throw new ArgumentNullException(nameof(node));
+    
+                if (node.Prev != null) node.Prev.Next = node.Next;
+                else Head = node.Next;
+    
+                if (node.Next != null) node.Next.Prev = node.Prev;
+                else Tail = node.Prev;
+    
+                node.Next = null;
+                node.Prev = null;
+                Count--;
+                return node;
+            }
+    
+            public bool Empty => Head == null;
+            
+            // --- ICollection<T> Implementation ---
+    
+            public void Add(T item) => AddTail(new LinkNode<T>(item));
+    
+            public void Clear()
+            {
+                // Optional: iterate and clear refs to help GC if the list is massive, 
+                // but for simple value-types or small objects, this is fine.
+                Head = Tail = null;
+                Count = 0;
+            }
+    
+            public bool Contains(T item)
+            {
+                var current = Head;
+                var comparer = EqualityComparer<T>.Default;
+                while (current != null)
+                {
+                    if (comparer.Equals(current.Value, item)) return true;
+                    current = current.Next;
+                }
+                return false;
+            }
+    
+            public void CopyTo(T[] array, int arrayIndex)
+            {
+                if (array == null) throw new ArgumentNullException(nameof(array));
+                if (arrayIndex < 0 || arrayIndex > array.Length) throw new ArgumentOutOfRangeException(nameof(arrayIndex));
+                if (array.Length - arrayIndex < Count) throw new ArgumentException("Destination array is not long enough.");
+    
+                var current = Head;
+                while (current != null)
+                {
+                    array[arrayIndex++] = current.Value!;
+                    current = current.Next;
+                }
+            }
+    
+            public bool Remove(T item)
+            {
+                var current = Head;
+                var comparer = EqualityComparer<T>.Default;
+                
+                while (current != null)
+                {
+                    if (comparer.Equals(current.Value, item))
+                    {
+                        UnlinkNode(current);
+                        return true;
+                    }
+                    current = current.Next;
+                }
+                return false;
+            }
+    
+            // --- Enumerators ---
+    
+            public IEnumerator<T> GetEnumerator()
+            {
+                var current = Head;
+                while (current != null)
+                {
+                    if (current.Value != null) yield return current.Value;
+                    current = current.Next;
+                }
+            }
+            
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return GetEnumerator();
+            }
+        }
     
     public static Tracker Subtract(TrackerStore store, int[] ver, Tracker A, Tracker B)
     {

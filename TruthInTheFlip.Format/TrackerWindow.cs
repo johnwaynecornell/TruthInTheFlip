@@ -9,9 +9,8 @@ public class TrackerWindow
     public TrackerStore store;
     public Func<Tracker, Tracker, bool> bound;
 
-    public UtilT.LinkNode<Tracker>? head = null;
-    public UtilT.LinkNode<Tracker>? tail = null;
-
+    public UtilT.LinkedList<Tracker> States { get; set; } = new UtilT.LinkedList<Tracker>();
+    
     public int[]? ver = null;
 
     /// <summary>
@@ -87,29 +86,62 @@ public class TrackerWindow
         this.bound = bound;
 
         if (store.Version == null) throw new Exception("At this point store.Version must not be null");
-
-        head = tail = new UtilT.LinkNode<Tracker>((Tracker)store.NewTracker());
+        
+        States.Add((Tracker)store.NewTracker());
 
         ver = TrackerStore.ReadVersion("TruthInTheFlip.v", store.Version);
         if (ver == null) throw new NullReferenceException();
     }
+    
+    public Tracker Relative(Tracker raw)
+    {
+        var Head = UtilT.ThrowIfNull(States.Head, "States.Head");
+        return UtilT.Subtract(store, UtilT.ThrowIfNull(ver,"ver"), raw, UtilT.ThrowIfNull(Head.Value, "head.Value"));
+    }
+    
+    public bool MaintainWindow()
+    {
+        bool rc = false;
+        while ((States.Head != null) && (States.Tail != null) && !bound(UtilT.ThrowIfNull(States.Tail.Value, "States.Tail.Value"), UtilT.ThrowIfNull(States.Head.Value, "head.Value"))) 
+        {
+            States.PopHead();
+            rc = true;
+        }
+        return rc;
+    }
 
     public Tracker Add(Tracker In)
     {
-        UtilT.LinkNode<Tracker> node = new(store.Clone(In));
-        if (tail == null || head == null || ver == null) throw new NullReferenceException("Neither head nor tail nor ver can be null"); 
-        node.Prev = tail;
-        tail = tail.Next = node;
-
-        while (head.Next != null && !bound(In, UtilT.ThrowIfNull(head.Value, "head.Value"))) 
-        {
-            head = head.Next;
-            head.Prev = null;
-        }
-
-        return UtilT.Subtract(store, ver, In, UtilT.ThrowIfNull(head.Value, "head.Value"));
+        Tracker clone = store.Clone(In);
+        States.Add(clone); 
+        
+        MaintainWindow();
+        return Relative(clone);
     }
 
+    public bool ReverseAdd(Tracker In)
+    { 
+        var clone = new UtilT.LinkNode<Tracker>(store.Clone(In));
+        States.AddHead(clone); 
+            
+        return MaintainWindow();
+    }
+    
+    public bool ForwardAdd(Tracker In)
+    { 
+        var clone = new UtilT.LinkNode<Tracker>(store.Clone(In));
+        States.AddTail(clone); 
+                
+        return MaintainWindow();
+    }
+    
+    public Tracker Final()
+    {
+        var Tail = UtilT.ThrowIfNull(States.Tail, "States.Tail"); 
+        var Value = UtilT.ThrowIfNull(Tail.Value, "States.Tail.Value"); 
+        return Relative(Value);
+    }
+    
     public class WindowOption : TrackerOption
     {
         public class CreateWindowMethod

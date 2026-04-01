@@ -433,13 +433,26 @@ public class Program
         }
 
         TrackerWindow? window = null;
-        if (windowOption.Enabled)
+        if (windowOption.Enabled) 
+        {
             window = new TrackerWindow(store,
                 UtilT.ThrowIfNull(windowOption.WindowStrategy, "windowOption.WindowStrategy"));
+            //if (window != null) foreach (Tracker t in store.Enumerate()) window.Add(t);
+            
+            window.States.PopHead();   //we won't be using the default 'zero' entry
+            bool filled = false;
+            foreach (ITracker t in store.ReverseEnumerate()) //This design pattern can be used to compose code to prime multiple tracker windows with relative ease.
+            {
+                filled = window.ReverseAdd((Tracker)t);
+                if (filled) break;
+            }
+            
+            if (!filled) { window.States.AddHead(new UtilT.LinkNode<Tracker>((Tracker)store.NewTracker())); }
+        }
 
         TrackerRunner runner = new TrackerRunner(store, bitFactory);
 
-        if (window != null) foreach (Tracker t in store.Enumerate()) window.Add(t);
+        
         
         while (runCondition == null || runCondition())
         {

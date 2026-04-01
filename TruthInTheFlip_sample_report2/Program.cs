@@ -223,9 +223,9 @@ message(Path.GetFileName(fileName) + " : " + utcEndTime.ToString("yyyyMMdd_HHmms
 
     if (window != null)
     {
-        if (window.head == null) throw new Exception("?");
+        if (window.States.Head == null) throw new Exception("?");
         message("Entry Record:");
-        CSVOut(UtilT.ThrowIfNull(window.head.Value, "node has no value").Source);
+        CSVOut(UtilT.ThrowIfNull(window.States.Head.Value, "node has no value").Source);
     }
     
     message("Final Record:");
