@@ -451,7 +451,7 @@ public class Program
         }
 
         TrackerRunner runner = new TrackerRunner(store, bitFactory);
-
+        //runner.anticipate_delegate = runner.MakeAnticipateDelegate(AnticipationStrategies.AlternatingMetaGuess);
         
         
         while (runCondition == null || runCondition())
