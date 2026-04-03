@@ -326,6 +326,8 @@ public class TrackerWindow
                     }
                     ArgValues.Add(command_args[index]);
                     command_args.RemoveAt(index);
+                    
+                    if (ArgValues.Last() == "def") break;
                 }
             }
             
@@ -406,13 +408,15 @@ Values:         {joinedArgs}
             foreach (var kvp in Strategies)
             {
                 string methodTypeStr = kvp.Key;
-                string defStr = "";
+                string defStr = "def=";
                 
                 if (kvp.Value.Parameters.Count > 0)
                 {
-                    var param = kvp.Value.Parameters[0];
-                    methodTypeStr += $" <{param.Type}>";
-                    defStr = $"def=\"{param.Default}\" ";
+                    foreach (var param in kvp.Value.Parameters)
+                    {
+                        methodTypeStr += $" <{param.Type}>";
+                        defStr += $" \"{param.Default}\"";
+                    }
                 }
 
                 string versionStr = kvp.Value.RequiredVersion != null ? $"v{TrackerStore.VersionPrint(kvp.Value.RequiredVersion)}" : "";
