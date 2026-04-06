@@ -384,12 +384,8 @@ public class Program
             "unsupported version");
 
         bool validate_error = false;
-        foreach (Option o in O)
-        {
-            if (o is TrackerOption tracker_o)
-                validate_error = !tracker_o.ValidateVersion(ver, errorMessage) || validate_error;
-        }
-
+        validate_error = !O.ValidateVersion(UtilT.ThrowIfNull(store.Version,"Store.Version"), errorMessage) || validate_error;
+        
         if (validate_error) return -1;
 
         if (!record) message($"warning {fileName} started without record, history not being saved");

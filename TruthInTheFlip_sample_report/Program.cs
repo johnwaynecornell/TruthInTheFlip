@@ -76,8 +76,8 @@ if (store.Version == null)
 int[]? ver = TrackerStore.ReadVersion("TruthInTheFlip.v", store.Version);
 
 if (ver == null) throw new NullReferenceException();
-if (!force & TrackerStore.VersionCompare(ver, 1, 1, 0) > 0) HandleError($"{store.Path} Version {ver} newer than program");
-if (TrackerStore.VersionCompare(ver, 1, 1, 0) < 0) HandleError($"{store.Path} Version {ver} lower than the v1.1.0 required by this util");
+if (!force & TrackerStore.VersionCompare(ver, 1, 1, 0) > 0) HandleError($"{store.Path} Version {store.Version} newer than program");
+if (TrackerStore.VersionCompare(ver, 1, 1, 0) < 0) HandleError($"{store.Path} Version {store.Version} lower than the v1.1.0 required by this util");
 
 
 Tracker? t = (Tracker)store.LoadOrCreate(null);

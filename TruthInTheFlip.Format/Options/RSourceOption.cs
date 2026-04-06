@@ -65,6 +65,12 @@ public class RSourceOption : Option
         return b.ToString();
         
     }
+
+    public override bool ValidateVersion(string Version, SOut errorMessage)
+    {
+        return true;
+    }
+
     public override bool TryParse(List<string> command_args, int index, ref int status, SOut message, SOut errorMessage)
     {
         if (!base.TryParse(command_args, index, ref status, message, errorMessage) || status != 0)

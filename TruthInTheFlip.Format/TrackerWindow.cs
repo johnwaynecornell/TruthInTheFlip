@@ -144,24 +144,30 @@ public class TrackerWindow
     
     public class WindowOption : TrackerOption
     {
-        public class CreateWindowMethod
+        public class RegistryMethod
         {
             public Delegate Method { get; set; } = default!;
             public string Help { get; set; } = "";
-            public int[]? RequiredVersion { get; set; }
+            public VersioningAttribute? RequiredVersion { get; set; }
 
             public class Parameter
             {
                 public string Name { get; set; } = "";
-                public string Type { get; set; } = "";
+                public Type Type { get; set; } = default!;
                 public string Default { get; set; } = "";
             }
 
             public List<Parameter> Parameters { get; set; } = new List<Parameter>();
+            
+            public RegistryMethod Versioning(string requiredVersion, string? versionCapExclusive = null, bool obsolete = false)
+            {
+                RequiredVersion = new VersioningAttribute(requiredVersion, versionCapExclusive, obsolete);
+                return this;
+            }
         }
 
         // The registry of all available windowing strategies
-        public Dictionary<string, CreateWindowMethod> Strategies { get; set; } = new Dictionary<string, CreateWindowMethod>();
+        public Dictionary<string, RegistryMethod> Strategies { get; set; } = new Dictionary<string, RegistryMethod>();
 
         // Storing the parsed selection
         public string MethodName { get; private set; } = "WindowByTotal"; // Default
@@ -177,15 +183,14 @@ public class TrackerWindow
         /// <summary>
         /// Registers a new custom Windowing strategy into the CLI parser.
         /// </summary>
-        public void AddSource(Delegate func, string name, string help, int[]? requiredVersion, string[] parameterNames, string[] defaultValues)
+        public RegistryMethod AddSource(Delegate func, string name, string help, string[] parameterNames, string[] defaultValues)
         {
             if (Strategies.ContainsKey(name)) throw new ArgumentException($"Collision on window strategy {name}");
 
-            var methodDef = new CreateWindowMethod
+            var methodDef = new RegistryMethod
             {
                 Method = func,
                 Help = help,
-                RequiredVersion = requiredVersion
             };
 
             var methodInfo = func.Method;
@@ -198,15 +203,16 @@ public class TrackerWindow
 
             for (int i = 0; i < reflectionParams.Length; i++)
             {
-                methodDef.Parameters.Add(new CreateWindowMethod.Parameter
+                methodDef.Parameters.Add(new RegistryMethod.Parameter
                 {
                     Name = parameterNames[i],
-                    Type = reflectionParams[i].ParameterType.Name,
+                    Type = reflectionParams[i].ParameterType,
                     Default = defaultValues[i]
                 });
             }
 
             Strategies[name] = methodDef;
+            return methodDef;
         }
 
         /// <summary>
@@ -239,10 +245,6 @@ public class TrackerWindow
                     defValues[i] = defAttr?.Value ?? "";
                 }
 
-                int[]? reqVer = versionAttr != null
-                    ? TrackerStore.ReadVersion("TruthInTheFlip.v", versionAttr.Version)
-                    : null;
-
                 // Create a generic delegate targeting the static method
                 Type delegateType = UtilT.GetDelegateType(parameters, method.ReturnType);
                 Delegate del = Delegate.CreateDelegate(delegateType, method);
@@ -251,10 +253,9 @@ public class TrackerWindow
                     del,
                     method.Name,
                     helpAttr?.Description ?? "No description provided.",
-                    reqVer,
                     paramNames,
                     defValues
-                );
+                ).RequiredVersion = versionAttr;
             }
 
             return this;
@@ -361,17 +362,38 @@ public class TrackerWindow
                         rawVal = ArgValues[i];
                         defI++;
                     }
-
-                    if (paramDef.Type == "Int64" || paramDef.Type == "long") parsedArgs[i] = long.Parse(rawVal);
-                    else if (paramDef.Type == "TimeSpan") parsedArgs[i] = TimeSpan.Parse(rawVal);
-                    else if (paramDef.Type == "Int32" || paramDef.Type == "int") parsedArgs[i] = int.Parse(rawVal);
-                    else if (paramDef.Type == "Double" || paramDef.Type == "double") parsedArgs[i] = double.Parse(rawVal);
-                    else if (paramDef.Type == "String" || paramDef.Type == "string") parsedArgs[i] = rawVal;
+                    
+                    // Handle string type directly
+                    if (paramDef.Type == typeof(string))
+                    {
+                        parsedArgs[i] = rawVal;
+                    }
                     else
                     {
-                        errorMessage($"Error: Unsupported parameter type '{paramDef.Type}' for '{MethodName}'.");
-                        exitStatus = -1;
-                        return;
+                        // Use reflection to find and invoke the Parse method
+                        var parseMethod = paramDef.Type.GetMethod("Parse", 
+                            BindingFlags.Public | BindingFlags.Static, 
+                            null, 
+                            new[] { typeof(string) }, 
+                            null);
+
+                        if (parseMethod == null)
+                        {
+                            errorMessage($"Error: Type '{paramDef.Type.Name}' does not have a Parse(string) method.");
+                            exitStatus = -1;
+                            return;
+                        }
+
+                        try
+                        {
+                            parsedArgs[i] = parseMethod.Invoke(null, new object[] { rawVal })!;
+                        }
+                        catch (Exception ex)
+                        {
+                            errorMessage($"Error parsing '{rawVal}' as {paramDef.Type.Name}: {ex.InnerException?.Message ?? ex.Message}");
+                            exitStatus = -1;
+                            return;
+                        }
                     }
                 }
 
@@ -414,12 +436,12 @@ Values:         {joinedArgs}
                 {
                     foreach (var param in kvp.Value.Parameters)
                     {
-                        methodTypeStr += $" <{param.Type}>";
+                        methodTypeStr += $" <{param.Type.Name}>";
                         defStr += $" \"{param.Default}\"";
                     }
                 }
 
-                string versionStr = kvp.Value.RequiredVersion != null ? $"v{TrackerStore.VersionPrint(kvp.Value.RequiredVersion)}" : "";
+                string versionStr = kvp.Value.RequiredVersion != null ? $"{kvp.Value.RequiredVersion.Version}" : "";
 
                 stringBuilder.AppendLine(UtilT.PadRight("") + UtilT.PadRight(methodTypeStr, 40) + UtilT.PadRight(defStr) + versionStr);
                 stringBuilder.AppendLine(UtilT.PadRight("") + $"  {kvp.Value.Help}");
@@ -442,19 +464,6 @@ Values:         {joinedArgs}
         public override string DisabledInfo()
         {
             return $"{NameString()}Disabled (Using default Lifetime processing)\n";
-        }
-
-        public override bool ValidateVersion(int[] target_version, SOut? errorMessage)
-        {
-            if (Enabled && RequiredVersion != null)
-            {
-                if (TrackerStore.VersionCompare(target_version, RequiredVersion) < 0)
-                {
-                    errorMessage?.Invoke($"Error: The chosen window strategy '{MethodName}' requires a TrackerRecord file of at least version {TrackerStore.VersionPrint(RequiredVersion)}, but the loaded file is version {TrackerStore.VersionPrint(target_version)}.");
-                    return false;
-                }
-            }
-            return true;
         }
     }
 }

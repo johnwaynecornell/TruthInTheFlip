@@ -16,6 +16,8 @@ public abstract class Option
         this.Name = name;
     }
 
+    public abstract bool ValidateVersion(string Version, SOut errorMessage);
+
     public bool ManualConfigurate(SOut message, SOut errorMessage, params string[] args)
     {
         List<String> command_args = new List<String>(args);
@@ -70,6 +72,12 @@ public class InfoOption : Option
     public virtual string HelpMessage { get; set; } = "Show state\n";
     
     // It just inherits TryParse. If it finds "-info", it sets Enabled = true.
+
+    public override bool ValidateVersion(string Version, SOut errorMessage)
+    {
+        return true;
+    }
+
     public override string GetHelp()
     {
         return NameString() + HelpMessage;
@@ -90,6 +98,15 @@ public class Options : Option , IEnumerable<Option>
     public Options() : base(null)
     {
         Enabled = true;
+    }
+
+    public override bool ValidateVersion(string Version, SOut errorMessage)
+    {
+        bool rc = true;
+        foreach (Option o in contents)
+            if (!o.ValidateVersion(Version, errorMessage))
+                rc = false;
+        return rc;
     }
 
     public override bool TryParse(List<String> command_args, int index, ref int status, SOut message, SOut errorMessage)

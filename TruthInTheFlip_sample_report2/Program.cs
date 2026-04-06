@@ -92,16 +92,12 @@ if (store.Version == null)
 int[]? ver = TrackerStore.ReadVersion("TruthInTheFlip.v", store.Version);
 
 if (ver == null) throw new NullReferenceException();
-if (TrackerStore.VersionCompare(ver, 1, 1, 0) > 0) HandleError($"{store.Path} Version {ver} newer than program");
-if (TrackerStore.VersionCompare(ver, 1, 1, 0) < 0) HandleError($"{store.Path} Version {ver} lower than the v1.1.0 required by this util");
+if (TrackerStore.VersionCompare(ver, 1, 1, 0) > 0) HandleError($"{store.Path} Version {store.Version} newer than program");
+if (TrackerStore.VersionCompare(ver, 1, 1, 0) < 0) HandleError($"{store.Path} Version {store.Version} lower than the v1.1.0 required by this util");
 
 
 bool validate_error = false;
-foreach (Option o in O)
-{
-    if (o is TrackerOption tracker_o) validate_error = !tracker_o.ValidateVersion(ver, HandleError) || validate_error;
-}
-
+validate_error = !O.ValidateVersion(store.Version, HandleError) || validate_error;
 if (validate_error) return -1;
 
 Tracker tail= (Tracker)store.LoadOrCreate(null);
