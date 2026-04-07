@@ -4,67 +4,23 @@ namespace TruthInTheFlip.Format.Options;
 
 public class RSourceOption : Option
 {
+    public DelegateMethodRegistry<Func<Action<byte[]>>> Registry { get; set; }
+    public DelegateMethodRegistry<Func<Action<byte[]>>>.RegistryParseResult? RegistryParseResult { get; set; }
+
     public RSourceOption() : base("-rsource")
     {
+        Registry = new DelegateMethodRegistry<Func<Action<byte[]>>>("random source");
     }
-    
-    public virtual string? Source { get; set; }
-
-    public Dictionary<string, Func<Action<byte[]>>> Sources { get; set; } = new Dictionary<string, Func<Action<byte[]>>>();
-    public Dictionary<string, string> Descriptions { get; set; } = new Dictionary<string, string>();
     
     public virtual RSourceOption AddDefaults()
     {
-        DefaultSource ??= "NET1";
-        AddSource("NET1", "System.Random", BitFactory.initRandom_Net);
-        AddSource("NET2", "System.Security.Cryptography.RandomNumberGenerator",() => (arr) => System.Security.Cryptography.RandomNumberGenerator.Fill(arr));
+        Registry.AddSource(() => BitFactory.initRandom_Net, "NET1", "System.Random", new string[] { }, new string[] { }).IsDefault = true;
+        Registry.AddSource(() => (Func<Action<byte[]>>)(() => (arr) => System.Security.Cryptography.RandomNumberGenerator.Fill(arr)), "NET2", "System.Security.Cryptography.RandomNumberGenerator", new string[]{}, new string[]{});
+
         return this;
     }
 
-    public virtual Func<Action<byte[]>>? SeedFunc =>  Source == null ? null : (Sources.ContainsKey(Source) ? Sources[Source] : null);
-    
-    public virtual void AddSource(String name, String description, Func<Action<byte[]>> func)
-    {
-        if (Sources.ContainsKey(name)) throw new ArgumentException($"collision on {name}");
-        Sources[name] = func;
-        Descriptions[name] = description;
-    }
-
-    public override string GetHelp()
-    {
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.AppendLine("  -rsource list       List random sources");
-        stringBuilder.AppendLine("  -rsource def        Default random source");
-        stringBuilder.AppendLine("  -rsource <string>   Random source string (default: NET1)");
-        return stringBuilder.ToString();
-    }
-
-    public virtual string List()
-    {
-        StringBuilder b = new StringBuilder();
-        
-        b.AppendLine($"{NameString()}Random sources:");
-        foreach (string key in Sources.Keys)
-        {
-            b.AppendLine(UtilT.PadRight("") + UtilT.PadRight($"  {key}") + Descriptions[key]);
-        }
-
-        b.AppendLine();
-        
-        return b.ToString();
-
-    }
-    
-    public override string Info()
-    {
-        StringBuilder b = new StringBuilder();
-
-        b.AppendLine("Random source:");
-        
-        b.AppendLine(UtilT.PadRight($"  Source = {Source}") + (Source == null ? "error" : Descriptions[Source]));
-        return b.ToString();
-        
-    }
+    public virtual Func<Action<byte[]>>? SeedFunc =>  RegistryParseResult?.Strategy;
 
     public override bool ValidateVersion(string Version, SOut errorMessage)
     {
@@ -77,35 +33,31 @@ public class RSourceOption : Option
         {
             return false;
         }
-        
-        if (index >= command_args.Count)
-        {
-            errorMessage($"Option \'{Name}\' missing parameters");
-            status = -1;
-            return false;
-        }
 
-        Source = command_args[index];
-        command_args.RemoveAt(index);
-
-        if (Source == "list")
-        {
-            message(List(), false);
+        if (!Registry.TryParse(this, command_args, index, ref status, message, errorMessage, out var res)) return false;
+        RegistryParseResult = res;
             
-            Enabled = false;
-            WantExit = true;
-
-            return true;
-        } else if (Source == "def")
-
-        {
-            Source = DefaultSource;
-        }
-
-        
         return true;
     }
 
-    public virtual string? DefaultSource { get; set; } = null;
-
+    public override string Info()
+    {
+        var res = UtilT.ThrowIfNull(RegistryParseResult, "RegistryParseResult");
+        return Registry.Info(this, res);
+    }
+        
+    public virtual string List()
+    {
+        return Registry.List(this);
+    }
+        
+    public override string GetHelp()
+    {
+        return Registry.GetHelp(this);
+    }
+        
+    public override string DisabledInfo()
+    {
+        return $"{NameString()}Disabled (Using default rsource)\n";
+    }
 }
