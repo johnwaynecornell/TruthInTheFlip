@@ -112,15 +112,14 @@ public class Options : Option , IEnumerable<Option>
     public override bool TryParse(List<String> command_args, int index, ref int status, SOut message, SOut errorMessage)
     {
         bool rc;
-        if (status != 0) return false;
+        
         foreach (Option o in contents)
         {
             rc = o.TryParse(command_args, index, ref status, message, errorMessage);
             
             if (o.WantExit) WantExit = true;
             
-            if (rc || status != 0)
-                return rc;
+            if (rc) return rc;
         }
 
         return false;

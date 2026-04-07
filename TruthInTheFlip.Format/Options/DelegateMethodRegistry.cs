@@ -14,8 +14,8 @@ public class DelegateMethodRegistry<T> : DelegateMethodRegistry
         public Delegate Method { get; set; } = default!;
         public string Help { get; set; } = "";
         public VersioningAttribute? RequiredVersion { get; set; }
-        
-        public string Name { get; set; }
+
+        public string Name { get; set; } = "";
         public bool IsDefault { get; set; } = false;
         
         public class Parameter
@@ -166,7 +166,7 @@ public class DelegateMethodRegistry<T> : DelegateMethodRegistry
 
         if (result.MethodName.ToLower() == "def")
         {
-            result.MethodName = (from v in Strategies.Values where v.IsDefault select v.Name).FirstOrDefault();
+            result.MethodName = UtilT.ThrowIfNull((from v in Strategies.Values where v.IsDefault select v.Name).FirstOrDefault(), "Default strategy not found");
             result.ArgValues.Add("def");
         }
         else
@@ -312,7 +312,7 @@ Values:         {joinedArgs}
 
             string versionStr = kvp.Value.RequiredVersion != null ? $"{kvp.Value.RequiredVersion.Version}" : "";
 
-            stringBuilder.AppendLine(UtilT.PadRight("") + UtilT.PadRight(methodTypeStr, 40) + UtilT.PadRight(defStr) +
+            stringBuilder.AppendLine(UtilT.PadRight("") + UtilT.PadRight(methodTypeStr +(kvp.Value.IsDefault ? " (default)" : ""), 40) + UtilT.PadRight(defStr) +
                                      versionStr);
             stringBuilder.AppendLine(UtilT.PadRight("") + $"  {kvp.Value.Help}");
         }

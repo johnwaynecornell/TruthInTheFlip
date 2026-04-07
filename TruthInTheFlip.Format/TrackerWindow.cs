@@ -170,7 +170,7 @@ public class TrackerWindow
         /// </summary>
         public override bool TryParse(List<string> command_args, int index, ref int status, SOut message, SOut errorMessage)
         {
-            if (!base.TryParse(command_args, index, ref status, message, errorMessage) || status != 0)
+            if (!base.TryParse(command_args, index, ref status, message, errorMessage))
             {
                 return false;
             }
