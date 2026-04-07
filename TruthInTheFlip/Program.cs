@@ -432,7 +432,7 @@ public class Program
         if (windowOption.Enabled) 
         {
             window = new TrackerWindow(store,
-                UtilT.ThrowIfNull(windowOption.WindowStrategy, "windowOption.WindowStrategy"));
+                UtilT.ThrowIfNull(windowOption.Strategy, "windowOption.Strategy"));
             //if (window != null) foreach (Tracker t in store.Enumerate()) window.Add(t);
             
             window.States.PopHead();   //we won't be using the default 'zero' entry

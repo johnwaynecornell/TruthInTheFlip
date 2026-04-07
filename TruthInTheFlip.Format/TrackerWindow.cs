@@ -144,131 +144,25 @@ public class TrackerWindow
     
     public class WindowOption : TrackerOption
     {
-        public class RegistryMethod
-        {
-            public Delegate Method { get; set; } = default!;
-            public string Help { get; set; } = "";
-            public VersioningAttribute? RequiredVersion { get; set; }
-
-            public class Parameter
-            {
-                public string Name { get; set; } = "";
-                public Type Type { get; set; } = default!;
-                public string Default { get; set; } = "";
-            }
-
-            public List<Parameter> Parameters { get; set; } = new List<Parameter>();
-            
-            public RegistryMethod Versioning(string requiredVersion, string? versionCapExclusive = null, bool obsolete = false)
-            {
-                RequiredVersion = new VersioningAttribute(requiredVersion, versionCapExclusive, obsolete);
-                return this;
-            }
-        }
-
-        // The registry of all available windowing strategies
-        public Dictionary<string, RegistryMethod> Strategies { get; set; } = new Dictionary<string, RegistryMethod>();
-
-        // Storing the parsed selection
-        public string MethodName { get; private set; } = "WindowByTotal"; // Default
-        public List<string> ArgValues { get; private set; } = new List<string> { "100000000000" }; // Default 100B
-
-        // The actual compiled delegate ready for use
-        public Func<Tracker, Tracker, bool>? WindowStrategy { get; private set; }
-
+        public DelegateMethodRegistry<Func<Tracker, Tracker, bool>> Registry { get; set; }
+        public DelegateMethodRegistry<Func<Tracker, Tracker, bool>>.RegistryParseResult? RegistryParseResult { get; set; }
+        
         public WindowOption() : base("-window")
         {
+            Registry = new DelegateMethodRegistry<Func<Tracker, Tracker, bool>>("window method");
         }
-
-        /// <summary>
-        /// Registers a new custom Windowing strategy into the CLI parser.
-        /// </summary>
-        public RegistryMethod AddSource(Delegate func, string name, string help, string[] parameterNames, string[] defaultValues)
-        {
-            if (Strategies.ContainsKey(name)) throw new ArgumentException($"Collision on window strategy {name}");
-
-            var methodDef = new RegistryMethod
-            {
-                Method = func,
-                Help = help,
-            };
-
-            var methodInfo = func.Method;
-            var reflectionParams = methodInfo.GetParameters();
-
-            if (parameterNames.Length != reflectionParams.Length || defaultValues.Length != reflectionParams.Length)
-            {
-                throw new ArgumentException($"Parameter count mismatch for strategy {name}. Expected {reflectionParams.Length}.");
-            }
-
-            for (int i = 0; i < reflectionParams.Length; i++)
-            {
-                methodDef.Parameters.Add(new RegistryMethod.Parameter
-                {
-                    Name = parameterNames[i],
-                    Type = reflectionParams[i].ParameterType,
-                    Default = defaultValues[i]
-                });
-            }
-
-            Strategies[name] = methodDef;
-            return methodDef;
-        }
-
-        /// <summary>
-        /// Scans host type for static methods with the correct attributes and loads them into the registry.
-        /// </summary>
-        public virtual WindowOption AddFromHostType(Type host)
-        {
-            var methods = host.GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
-                .Where(m => m.ReturnType == typeof(Func<Tracker, Tracker, bool>));
-
-            foreach (var method in methods)
-            {
-                var helpAttr =
-                    method.GetCustomAttributes(typeof(StringHelpAttribute), false).FirstOrDefault() as
-                        StringHelpAttribute;
-                var versionAttr =
-                    method.GetCustomAttributes(typeof(VersioningAttribute), false).FirstOrDefault() as
-                        VersioningAttribute;
-
-                var parameters = method.GetParameters();
-                string[] paramNames = new string[parameters.Length];
-                string[] defValues = new string[parameters.Length];
-
-                for (int i = 0; i < parameters.Length; i++)
-                {
-                    paramNames[i] = parameters[i].Name ?? $"arg{i}";
-                    var defAttr =
-                        parameters[i].GetCustomAttributes(typeof(StringDefaultAttribute), false).FirstOrDefault() as
-                            StringDefaultAttribute;
-                    defValues[i] = defAttr?.Value ?? "";
-                }
-
-                // Create a generic delegate targeting the static method
-                Type delegateType = UtilT.GetDelegateType(parameters, method.ReturnType);
-                Delegate del = Delegate.CreateDelegate(delegateType, method);
-
-                AddSource(
-                    del,
-                    method.Name,
-                    helpAttr?.Description ?? "No description provided.",
-                    paramNames,
-                    defValues
-                ).RequiredVersion = versionAttr;
-            }
-
-            return this;
-
-        }
-
+        
+        public Func<Tracker, Tracker, bool>? Strategy => RegistryParseResult?.Strategy;
+        
         /// <summary>
         /// Scans TrackerWindow for static methods with the correct attributes and loads them into the registry.
         /// </summary>
         public WindowOption AddDefaults()
         {
-            return AddFromHostType(typeof(TrackerWindow));
-            
+            Registry.AddFromHostType(typeof(TrackerWindow));
+            Registry.Strategies["WindowByTotal"].IsDefault = true;
+            return this;
+
         }
 
         /// <summary>
@@ -280,185 +174,27 @@ public class TrackerWindow
             {
                 return false;
             }
+
+            if (!Registry.TryParse(this, command_args, index, ref status, message, errorMessage, out var res)) return false;
+            RegistryParseResult = res;
             
-            if (index >= command_args.Count)
-            {
-                errorMessage($"Option \'{Name}\' missing strategy name parameter");
-                status = -1;
-                return false;
-            }
-
-            MethodName = command_args[index];
-            command_args.RemoveAt(index);
-            ArgValues.Clear();
-
-            if (MethodName == "list")
-            {
-                message(List(), false);
-                Enabled = false;
-                WantExit = true;
-                return true;
-            }
-
-            if (MethodName.ToLower() == "def")
-            {
-                MethodName = "WindowByTotal";
-                ArgValues.Add("def");
-            }
-            else
-            {
-                if (!Strategies.ContainsKey(MethodName))
-                {
-                    errorMessage($"Error: Unknown window strategy '{MethodName}'.");
-                    status = -1;
-                    return false;
-                }
-
-                int expectedParams = Strategies[MethodName].Parameters.Count;
-
-                // Slurp up the required number of parameters
-                for (int i = 0; i < expectedParams; i++)
-                {
-                    if (index >= command_args.Count)
-                    {
-                        errorMessage($"Option '{Name}' {MethodName} is missing parameter {i + 1} of {expectedParams}.");
-                        status = -1;
-                        return false;
-                    }
-                    ArgValues.Add(command_args[index]);
-                    command_args.RemoveAt(index);
-                    
-                    if (ArgValues.Last() == "def") break;
-                }
-            }
-            
-            CompileStrategy(errorMessage, ref status);
             return true;
-        }
-
-        protected virtual void CompileStrategy(SOut errorMessage, ref int exitStatus)
-        {
-            if (exitStatus != 0) return; 
-
-            try
-            {
-                if (!Strategies.TryGetValue(MethodName, out var strategyDef))
-                {
-                    errorMessage($"Error: Strategy '{MethodName}' not found in registry.");
-                    exitStatus = -1;
-                    return;
-                }
-
-                object[] parsedArgs = new object[strategyDef.Parameters.Count];
-
-                int defI=0;
-                for (int i = 0; i < strategyDef.Parameters.Count; i++)
-                {
-                    var paramDef = strategyDef.Parameters[i];
-                    string rawVal;
-                    if (ArgValues.Count > 0 && ArgValues[defI++] == "def") rawVal = paramDef.Default;
-                    else
-                    { 
-                        rawVal = ArgValues[i];
-                        defI++;
-                    }
-                    
-                    // Handle string type directly
-                    if (paramDef.Type == typeof(string))
-                    {
-                        parsedArgs[i] = rawVal;
-                    }
-                    else
-                    {
-                        // Use reflection to find and invoke the Parse method
-                        var parseMethod = paramDef.Type.GetMethod("Parse", 
-                            BindingFlags.Public | BindingFlags.Static, 
-                            null, 
-                            new[] { typeof(string) }, 
-                            null);
-
-                        if (parseMethod == null)
-                        {
-                            errorMessage($"Error: Type '{paramDef.Type.Name}' does not have a Parse(string) method.");
-                            exitStatus = -1;
-                            return;
-                        }
-
-                        try
-                        {
-                            parsedArgs[i] = parseMethod.Invoke(null, new object[] { rawVal })!;
-                        }
-                        catch (Exception ex)
-                        {
-                            errorMessage($"Error parsing '{rawVal}' as {paramDef.Type.Name}: {ex.InnerException?.Message ?? ex.Message}");
-                            exitStatus = -1;
-                            return;
-                        }
-                    }
-                }
-
-                WindowStrategy = (Func<Tracker, Tracker, bool>?)strategyDef.Method.DynamicInvoke(parsedArgs);
-                RequiredVersion = strategyDef.RequiredVersion;
-            }
-            catch (Exception ex)
-            {
-                errorMessage($"Error compiling window strategy: {ex.Message}");
-                exitStatus = -1;
-            }
         }
 
         public override string Info()
         {
-            if (!Strategies.TryGetValue(MethodName, out var def)) return "Error";
-            
-            string isDefault = (MethodName == "WindowByTotal" && ArgValues.Count > 0 && ArgValues[0] == "def") ? "(default)" : "";
-            string joinedArgs = string.Join(" ", ArgValues);
-            if (ArgValues.Count > 0 && ArgValues[0] == "def") joinedArgs += $" = \"{def.Parameters[0].Default}\"";
-            
-            return $@"
-TrackerWindow:  {MethodName}{isDefault}          //{def.Help}
-Values:         {joinedArgs}
-";
+            var res = UtilT.ThrowIfNull(RegistryParseResult, "RegistryParseResult");
+            return Registry.Info(this, res);
         }
         
         public virtual string List()
         {
-            StringBuilder stringBuilder = new StringBuilder();
-            
-            stringBuilder.AppendLine($"{NameString()}Available Windowing Strategies: ");
-
-            foreach (var kvp in Strategies)
-            {
-                string methodTypeStr = kvp.Key;
-                string defStr = "def=";
-                
-                if (kvp.Value.Parameters.Count > 0)
-                {
-                    foreach (var param in kvp.Value.Parameters)
-                    {
-                        methodTypeStr += $" <{param.Type.Name}>";
-                        defStr += $" \"{param.Default}\"";
-                    }
-                }
-
-                string versionStr = kvp.Value.RequiredVersion != null ? $"{kvp.Value.RequiredVersion.Version}" : "";
-
-                stringBuilder.AppendLine(UtilT.PadRight("") + UtilT.PadRight(methodTypeStr, 40) + UtilT.PadRight(defStr) + versionStr);
-                stringBuilder.AppendLine(UtilT.PadRight("") + $"  {kvp.Value.Help}");
-            }
-            
-            return stringBuilder.ToString();
+            return Registry.List(this);
         }
         
         public override string GetHelp()
         {
-            StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.AppendLine(UtilT.PadRight($"  {Name} list") + "List available window strategies");
-            stringBuilder.AppendLine(UtilT.PadRight($"  {Name} def") + "Use default view window");
-            stringBuilder.AppendLine(UtilT.PadRight($"  {Name} <string> [params...]") + "Configure view window");
-            stringBuilder.AppendLine(UtilT.PadRight($"  {Name} <string> def") + "Configure specific view window with default parameters");
-            
-            return stringBuilder.ToString();
+            return Registry.GetHelp(this);
         }
         
         public override string DisabledInfo()

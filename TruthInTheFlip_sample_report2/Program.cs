@@ -174,7 +174,7 @@ WatchVariables w = UtilT.ThrowIfNull(addWindow(wallclockTimeLength, "lifetime"),
 TrackerWindow? window = null;
 if (windowOption.Enabled)
     window = new TrackerWindow(store,
-        UtilT.ThrowIfNull(windowOption.WindowStrategy, "windowOption.WindowStrategy"));
+        UtilT.ThrowIfNull(windowOption.Strategy, "windowOption.Strategy"));
 
 t = null;
 foreach (ITracker fromStore in store.Enumerate())
