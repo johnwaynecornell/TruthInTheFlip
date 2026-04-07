@@ -65,10 +65,12 @@ public class Program
         InfoOption infoOption;
         RSourceOption rsourceOption;
         TrackerWindow.WindowOption windowOption;
+        AnticipationStrategies.AnticipationOption anticipationOption;
 
         O.Add(infoOption = new InfoOption());
         O.Add(rsourceOption = new RSourceOption().AddDefaults());
         O.Add(windowOption = new TrackerWindow.WindowOption().AddDefaults());
+        O.Add(anticipationOption = new AnticipationStrategies.AnticipationOption().AddDefaults());
 
         bool show = false;
         bool dump = false;
@@ -237,12 +239,6 @@ public class Program
             showHelp = true;
             rc = -1;
         }
-
-        Func<Action<byte[]>> seedFunc = BitFactory.initRandom_Net;
-        if (rsourceOption.Enabled)
-            seedFunc = UtilT.ThrowIfNull(rsourceOption.SeedFunc, "rsource enabled but not providing SeedFunc");
-        bitFactory.resetRandom = seedFunc;
-        bitFactory.Reset();
         
         if (O.WantExit)
             return rc;
@@ -279,6 +275,13 @@ public class Program
             return rc;
         }
 
+        Func<Action<byte[]>> seedFunc = BitFactory.initRandom_Net;
+        if (rsourceOption.Enabled)
+            seedFunc = UtilT.ThrowIfNull(rsourceOption.SeedFunc, "rsource enabled but not providing SeedFunc");
+        bitFactory.resetRandom = seedFunc;
+        bitFactory.Reset();
+        
+        
         fileName = cl_args[0];
 
         if (!windowOption.Enabled)
@@ -447,7 +450,12 @@ public class Program
         }
 
         TrackerRunner runner = new TrackerRunner(store, bitFactory);
-        //runner.anticipate_delegate = runner.MakeAnticipateDelegate(AnticipationStrategies.AlternatingMetaGuess);
+        //runner.anticipate_delegate = runner.MakeAnticipateDelegate(AnticipationStrategies.AlternatingMetaGuess());
+        if (anticipationOption.Enabled)
+        {
+            runner.anticipate_delegate = runner.MakeAnticipateDelegate(UtilT.ThrowIfNull(anticipationOption.Strategy, "anticipationOption.Strategy"));
+        }
+        
         
         
         while (runCondition == null || runCondition())
