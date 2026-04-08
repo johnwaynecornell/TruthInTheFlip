@@ -2,6 +2,22 @@ using TruthInTheFlip.Format.Options;
 
 namespace TruthInTheFlip.Format;
 
+// <summary>
+/// A collection of heuristics and guessing algorithms designed to test negentropy hypotheses.
+/// </summary>
+/// <remarks>
+/// The strategies defined here represent different approaches to predicting the next outcome 
+/// in a massive random sequence. By pitting various simple algorithms (like always guessing "Same", 
+/// alternating, or chasing streaks) against the PRNG over billions of flips, TruthInTheFlip can 
+/// measure if specific sequences or relationships occur more frequently than pure chance allows.
+/// 
+/// These static methods are automatically discovered and loaded into the CLI using 
+/// the <see cref="DelegateMethodRegistry"/>. You can test any strategy from the command line 
+/// simply by passing its method name to the <c>-anticipation</c> flag (e.g., <c>-anticipation ClassicMetaGuess</c>).
+/// 
+/// Note: All strategies must return a <see cref="TrackerRunner.GuessChange"/> delegate to ensure 
+/// completely thread-safe, lock-free evaluation during highly parallelized workloads.
+/// </remarks>
 public static class AnticipationStrategies
 {
     /// <summary>
@@ -146,18 +162,63 @@ public static class AnticipationStrategies
             return currentFlip != priorFlip;
         };
     }
+
+
+    /// <summary>
+    /// Random Heads/Tails.
+    /// </summary>
+    [StringHelp("Random Heads/Tails")]
+    public static TrackerRunner.GuessChange RandomHT(Func<Action<byte[]>> random_source)
+    {
+        BitFactory bitFactory = new BitFactory();
+        bitFactory.resetRandom = random_source;
+        bitFactory.Reset();
+    
+        // Create a ThreadLocal that initializes a new Consumer for each thread that accesses it
+        ThreadLocal<BitFactory.Consumer> consumer = new ThreadLocal<BitFactory.Consumer>(
+            () => new BitFactory.Consumer(bitFactory)
+        );
+    
+        return (bool currentFlip, bool priorFlip, Tracker t, bool lastGuess, bool currentOutcome) =>
+        {
+            // .Value will automatically initialize the Consumer for the current thread if it doesn't exist
+            return priorFlip ^ consumer.Value!.getBit();
+        };
+    }
+
+    /// <summary>
+    /// Random Same/Different.
+    /// </summary>
+    [StringHelp("Random Same/Different")]
+    public static TrackerRunner.GuessChange RandomSD(Func<Action<byte[]>> random_source)
+    {
+        BitFactory bitFactory = new BitFactory();
+        bitFactory.resetRandom = random_source;
+        bitFactory.Reset();
+    
+        // Capture a new ThreadLocal instance specific to this delegate
+        ThreadLocal<BitFactory.Consumer> consumer = new ThreadLocal<BitFactory.Consumer>(
+            () => new BitFactory.Consumer(bitFactory)
+        );
+    
+        return (bool currentFlip, bool priorFlip, Tracker t, bool lastGuess, bool currentOutcome) =>
+        {
+            return consumer.Value!.getBit();
+        };
+    }
     
     public class AnticipationOption : TrackerOption
     {
-        public DelegateMethodRegistry<TrackerRunner.GuessChange> Registry { get; set; }
-        public DelegateMethodRegistry<TrackerRunner.GuessChange>.RegistryParseResult? RegistryParseResult { get; set; }
+        public DelegateMethodRegistry Registry { get; set; }
+        public DelegateMethodRegistry.RegistryParseResult? RegistryParseResult { get; set; }
         
-        public AnticipationOption() : base("-anticipation")
+        public AnticipationOption(DelegateMethodRegistry random_sources) : base("-anticipation")
         {
-            Registry = new DelegateMethodRegistry<TrackerRunner.GuessChange>("anticipation");
+            Registry = new DelegateMethodRegistry(typeof(TrackerRunner.GuessChange), "anticipation");
+            Registry.AddTypeHandler(random_sources);
         }
         
-        public TrackerRunner.GuessChange? Strategy => RegistryParseResult?.Strategy;
+        public TrackerRunner.GuessChange? Strategy => RegistryParseResult?.Strategy as TrackerRunner.GuessChange;
         
         /// <summary>
         /// Scans TrackerWindow for static methods with the correct attributes and loads them into the registry.

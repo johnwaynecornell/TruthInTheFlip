@@ -144,15 +144,15 @@ public class TrackerWindow
     
     public class WindowOption : TrackerOption
     {
-        public DelegateMethodRegistry<Func<Tracker, Tracker, bool>> Registry { get; set; }
-        public DelegateMethodRegistry<Func<Tracker, Tracker, bool>>.RegistryParseResult? RegistryParseResult { get; set; }
+        public DelegateMethodRegistry Registry { get; set; }
+        public DelegateMethodRegistry.RegistryParseResult? RegistryParseResult { get; set; }
         
         public WindowOption() : base("-window")
         {
-            Registry = new DelegateMethodRegistry<Func<Tracker, Tracker, bool>>("window method");
+            Registry = new DelegateMethodRegistry(typeof(Func<Tracker, Tracker, bool>), "window method");
         }
         
-        public Func<Tracker, Tracker, bool>? Strategy => RegistryParseResult?.Strategy;
+        public Func<Tracker, Tracker, bool>? Strategy => RegistryParseResult?.Strategy as Func<Tracker, Tracker, bool>;
         
         /// <summary>
         /// Scans TrackerWindow for static methods with the correct attributes and loads them into the registry.

@@ -4,12 +4,12 @@ namespace TruthInTheFlip.Format.Options;
 
 public class RSourceOption : Option
 {
-    public DelegateMethodRegistry<Func<Action<byte[]>>> Registry { get; set; }
-    public DelegateMethodRegistry<Func<Action<byte[]>>>.RegistryParseResult? RegistryParseResult { get; set; }
+    public DelegateMethodRegistry Registry { get; set; }
+    public DelegateMethodRegistry.RegistryParseResult? RegistryParseResult { get; set; }
 
     public RSourceOption() : base("-rsource")
     {
-        Registry = new DelegateMethodRegistry<Func<Action<byte[]>>>("random source");
+        Registry = new DelegateMethodRegistry(typeof(Func<Action<byte[]>>),"random source");
     }
     
     public virtual RSourceOption AddDefaults()
@@ -20,7 +20,7 @@ public class RSourceOption : Option
         return this;
     }
 
-    public virtual Func<Action<byte[]>>? SeedFunc =>  RegistryParseResult?.Strategy;
+    public virtual Func<Action<byte[]>>? SeedFunc =>  RegistryParseResult?.Strategy as Func<Action<byte[]>>;
 
     public override bool ValidateVersion(string Version, SOut errorMessage)
     {

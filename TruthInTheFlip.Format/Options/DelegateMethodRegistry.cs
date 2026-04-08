@@ -5,10 +5,6 @@ namespace TruthInTheFlip.Format.Options;
 
 public class DelegateMethodRegistry
 {
-    
-}
-public class DelegateMethodRegistry<T> : DelegateMethodRegistry
-{
     public class RegistryMethod
     {
         public Delegate Method { get; set; } = default!;
@@ -17,7 +13,7 @@ public class DelegateMethodRegistry<T> : DelegateMethodRegistry
 
         public string Name { get; set; } = "";
         public bool IsDefault { get; set; } = false;
-        
+
         public class Parameter
         {
             public string Name { get; set; } = "";
@@ -34,26 +30,45 @@ public class DelegateMethodRegistry<T> : DelegateMethodRegistry
             return this;
         }
     }
-    
-    public string ElementDescription { get; set; } = "";
 
-    public DelegateMethodRegistry(string elementDescription)
+    public string ElementDescription { get; set; } = "";
+    public Type RegistryType { get; private set; }
+
+    public DelegateMethodRegistry(Type registryType, string elementDescription)
     {
         this.ElementDescription = elementDescription;
+        this.RegistryType = registryType;
     }
 
     // The registry of all available windowing strategies
     public Dictionary<string, RegistryMethod> Strategies { get; set; } = new Dictionary<string, RegistryMethod>();
 
+    public Dictionary<Type, DelegateMethodRegistry> TypeHandlers { get; set; } =
+        new Dictionary<Type, DelegateMethodRegistry>();
+
+    public DelegateMethodRegistry AddTypeHandler(DelegateMethodRegistry handler)
+    {
+        TypeHandlers[handler.RegistryType] = handler;
+        return this;
+
+    }
+
     public class RegistryParseResult
     {
+        public DelegateMethodRegistry Registry { get; private set; }
         public string MethodName { get; set; } = "";
         public RegistryMethod? strategyDef { get; set; }
-        public List<string> ArgValues { get; set; } = new();
-        public DelegateMethodRegistry<T>.RegistryMethod? Method { get; set; }
-        public T? Strategy { get; set; }
+        public List<object> ArgValues { get; set; } = new();
+        public DelegateMethodRegistry.RegistryMethod? Method { get; set; }
+        public object? Strategy { get; set; }
         public VersioningAttribute? RequiredVersion { get; set; }
+
+        public RegistryParseResult(DelegateMethodRegistry registry)
+        {
+            Registry = registry;
+        }
     }
+
     /// <summary>
     /// Registers a new custom Windowing strategy into the CLI parser.
     /// </summary>
@@ -98,7 +113,7 @@ public class DelegateMethodRegistry<T> : DelegateMethodRegistry
     public virtual DelegateMethodRegistry AddFromHostType(Type host)
     {
         var methods = host.GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
-            .Where(m => m.ReturnType == typeof(T));
+            .Where(m => m.ReturnType == RegistryType);
 
         foreach (var method in methods)
         {
@@ -138,19 +153,21 @@ public class DelegateMethodRegistry<T> : DelegateMethodRegistry
         return this;
     }
 
+
     public virtual bool TryParse(Option o, List<string> command_args, int index, ref int status, SOut message,
         SOut errorMessage, out RegistryParseResult? result)
     {
         result = null;
-        
+
         if (index >= command_args.Count)
         {
-            errorMessage($"Option \'{o.Name}\' missing {(ElementDescription != "" ? (ElementDescription+" ") : "")}strategy name parameter");
+            errorMessage(
+                $"Option \'{o.Name}\' missing {(ElementDescription != "" ? (ElementDescription + " ") : "")}strategy name parameter");
             status = -1;
             return false;
         }
-        
-        result = new RegistryParseResult();
+
+        result = new RegistryParseResult(this);
 
         result.MethodName = command_args[index];
         command_args.RemoveAt(index);
@@ -166,42 +183,72 @@ public class DelegateMethodRegistry<T> : DelegateMethodRegistry
 
         if (result.MethodName.ToLower() == "def")
         {
-            result.MethodName = UtilT.ThrowIfNull((from v in Strategies.Values where v.IsDefault select v.Name).FirstOrDefault(), "Default strategy not found");
-            result.ArgValues.Add("def");
+            result.MethodName =
+                UtilT.ThrowIfNull((from v in Strategies.Values where v.IsDefault select v.Name).FirstOrDefault(),
+                    "Default strategy not found");
+            if (this.Strategies[result.MethodName].Parameters.Count > 0) result.ArgValues.Add("def");
         }
         else
         {
             if (!Strategies.ContainsKey(result.MethodName))
             {
-                errorMessage($"Error: Unknown {(ElementDescription != "" ? (ElementDescription+" ") : "")}strategy '{result.MethodName}'.");
+                errorMessage(
+                    $"Error: Unknown {(ElementDescription != "" ? (ElementDescription + " ") : "")}strategy '{result.MethodName}'.");
                 status = -1;
                 return false;
             }
 
             int expectedParams = Strategies[result.MethodName].Parameters.Count;
 
+
             // Slurp up the required number of parameters
             for (int i = 0; i < expectedParams; i++)
             {
+
                 if (index >= command_args.Count)
                 {
-                    errorMessage($"Option '{o.Name}' {result.MethodName} is missing parameter {i + 1} of {expectedParams}.");
+                    errorMessage(
+                        $"Option '{o.Name}' {result.MethodName} is missing parameter {i + 1} of {expectedParams}.");
                     status = -1;
                     return false;
+                }
+
+                if (TypeHandlers.TryGetValue(Strategies[result.MethodName].Parameters[i].Type, out var handler))
+                {
+                    if (!handler.TryParse(o, command_args, index, ref status, message, errorMessage, out var res) ||
+                        status != 0)
+                    {
+                        errorMessage(
+                            $"Option '{o.Name}' {result.MethodName} parameter {i + 1} failed to parse: {message}");
+                        return false;
+                    }
+
+                    if (res == null)
+                    {
+                        errorMessage(
+                            $"Option '{o.Name}' {result.MethodName} parameter {i + 1} failed to parse: {message}");
+                        return false;
+                    }
+
+                    if (o.WantExit) return true;
+
+                    result.ArgValues.Add(res);
+                    continue;
+
                 }
 
                 result.ArgValues.Add(command_args[index]);
                 command_args.RemoveAt(index);
 
-                if (result.ArgValues.Last() == "def") break;
+                if (result.ArgValues.Last() as string == "def") break;
             }
         }
 
         CompileStrategy(result, errorMessage, ref status);
         return true;
     }
-    
-    
+
+
     protected virtual void CompileStrategy(RegistryParseResult result, SOut errorMessage, ref int exitStatus)
     {
         if (exitStatus != 0) return;
@@ -211,10 +258,12 @@ public class DelegateMethodRegistry<T> : DelegateMethodRegistry
             result.strategyDef = null;
             if (!Strategies.TryGetValue(result.MethodName, out var _strategyDef))
             {
-                errorMessage($"Error: {(ElementDescription != "" ? (ElementDescription+" ") : "")}Strategy '{result.MethodName}' not found in registry.");
+                errorMessage(
+                    $"Error: {(ElementDescription != "" ? (ElementDescription + " ") : "")}Strategy '{result.MethodName}' not found in registry.");
                 exitStatus = -1;
                 return;
             }
+
             result.strategyDef = _strategyDef;
 
             object[] parsedArgs = new object[result.strategyDef.Parameters.Count];
@@ -223,18 +272,23 @@ public class DelegateMethodRegistry<T> : DelegateMethodRegistry
             for (int i = 0; i < result.strategyDef.Parameters.Count; i++)
             {
                 var paramDef = result.strategyDef.Parameters[i];
-                string rawVal;
-                if (result.ArgValues.Count > 0 && result.ArgValues[defI++] == "def") rawVal = paramDef.Default;
+                string? rawVal;
+                if (result.ArgValues.Count > 0 && result.ArgValues[defI++] as string == "def")
+                    rawVal = paramDef.Default;
                 else
                 {
-                    rawVal = result.ArgValues[i];
+                    rawVal = result.ArgValues[i] as string;
                     defI++;
                 }
 
                 // Handle string type directly
                 if (paramDef.Type == typeof(string))
                 {
-                    parsedArgs[i] = rawVal;
+                    parsedArgs[i] = UtilT.ThrowIfNull(rawVal, "rawVal");
+                }
+                else if (rawVal == null)
+                {
+                    parsedArgs[i] = ((RegistryParseResult)result.ArgValues[i]).Strategy;
                 }
                 else
                 {
@@ -266,26 +320,72 @@ public class DelegateMethodRegistry<T> : DelegateMethodRegistry
                 }
             }
 
-            result.Strategy = (T?)result.strategyDef.Method.DynamicInvoke(parsedArgs);
+            result.Strategy = result.strategyDef.Method.DynamicInvoke(parsedArgs);
             result.RequiredVersion = result.strategyDef.RequiredVersion;
         }
         catch (Exception ex)
         {
-            errorMessage($"Error compiling {(ElementDescription != "" ? (ElementDescription+" ") : "")}strategy: {ex.Message}");
+            errorMessage(
+                $"Error compiling {(ElementDescription != "" ? (ElementDescription + " ") : "")}strategy: {ex.Message}");
             exitStatus = -1;
         }
     }
-    
+
     public virtual string Info(Option o, RegistryParseResult result)
     {
         if (!Strategies.TryGetValue(result.MethodName, out var def)) return "Error";
-            
+
         string isDefault = (result.strategyDef?.IsDefault == true) ? "(default)" : "";
-        string joinedArgs = string.Join(" ", result.ArgValues);
-        if ((result.ArgValues.Count > 0) && (result.ArgValues[0] == "def")) joinedArgs += $" = \"{def.Parameters[0].Default}\"";
-            
+
+        List<string> formattedArgs = new List<string>();
+        int argIndex = 0;
+
+        for (int i = 0; i < def.Parameters.Count; i++)
+        {
+            var param = def.Parameters[i];
+            string valStr;
+
+            if (argIndex < result.ArgValues.Count)
+            {
+                var arg = result.ArgValues[argIndex];
+                if (arg is string s && s.ToLower() == "def")
+                {
+                    valStr = $"def=\"{param.Default}\"";
+                    // If the user entered "def" and it's the last argument, it usually implies defaults for all remaining parameters
+                    if (argIndex < result.ArgValues.Count - 1)
+                    {
+                        argIndex++;
+                    }
+                }
+                else if (arg is RegistryParseResult nestedResult &&
+                         TypeHandlers.TryGetValue(param.Type, out var handler))
+                {
+                    // Recursively grab the info from the nested registry result
+                    string nestedInfo = handler.Info(o, nestedResult).Trim();
+
+                    // Indent the nested info for a clean tree-like display
+                    valStr = $"[\n    {nestedInfo.Replace("\n", "\n    ")}\n]";
+                    argIndex++;
+                }
+                else
+                {
+                    valStr = arg?.ToString() ?? "null";
+                    argIndex++;
+                }
+            }
+            else
+            {
+                // Unspecified arguments likely defaulted
+                valStr = $"implicit_def=\"{param.Default}\"";
+            }
+
+            formattedArgs.Add($"{param.Name}={valStr}");
+        }
+
+        string joinedArgs = formattedArgs.Count > 0 ? string.Join(", ", formattedArgs) : "None";
+
         return $@"
-TrackerWindow:  {result.MethodName}{isDefault}          //{def.Help}
+{ElementDescription}:  {result.MethodName}{isDefault}          //{def.Help}
 Values:         {joinedArgs}
 ";
     }
@@ -294,7 +394,8 @@ Values:         {joinedArgs}
     {
         StringBuilder stringBuilder = new StringBuilder();
 
-        stringBuilder.AppendLine($"{o.NameString()}Available {(ElementDescription != "" ? (ElementDescription+" ") : "")}Strategies: ");
+        stringBuilder.AppendLine(
+            $"{o.NameString()}Available {(ElementDescription != "" ? (ElementDescription + " ") : "")}Strategies: ");
 
         foreach (var kvp in Strategies)
         {
@@ -305,14 +406,20 @@ Values:         {joinedArgs}
             {
                 foreach (var param in kvp.Value.Parameters)
                 {
-                    methodTypeStr += $" <{param.Type.Name}>";
+                    string name;
+                    if (TypeHandlers.TryGetValue(param.Type, out var handler)) name = handler.ElementDescription;
+                    else name = param.Type.Name;
+
+                    methodTypeStr += $" <{name}>";
                     defStr += $" \"{param.Default}\"";
                 }
             }
 
             string versionStr = kvp.Value.RequiredVersion != null ? $"{kvp.Value.RequiredVersion.Version}" : "";
 
-            stringBuilder.AppendLine(UtilT.PadRight("") + UtilT.PadRight(methodTypeStr +(kvp.Value.IsDefault ? " (default)" : ""), 40) + UtilT.PadRight(defStr) +
+            stringBuilder.AppendLine(UtilT.PadRight("") +
+                                     UtilT.PadRight(methodTypeStr + (kvp.Value.IsDefault ? " (default)" : ""), 40) +
+                                     UtilT.PadRight(defStr) +
                                      versionStr);
             stringBuilder.AppendLine(UtilT.PadRight("") + $"  {kvp.Value.Help}");
         }
@@ -323,13 +430,16 @@ Values:         {joinedArgs}
     public virtual string GetHelp(Option o)
     {
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.AppendLine(UtilT.PadRight($"  {o.Name} list") + $"List available {(ElementDescription != "" ? (ElementDescription+" ") : "")}strategies");
-        stringBuilder.AppendLine(UtilT.PadRight($"  {o.Name} def") + $"Use default {(ElementDescription != "" ? (ElementDescription+" ") : "")}");
-        stringBuilder.AppendLine(UtilT.PadRight($"  {o.Name} <string> [params...]") + $"Configure {(ElementDescription != "" ? (ElementDescription+" ") : "")}");
-        stringBuilder.AppendLine(UtilT.PadRight($"  {o.Name} <string> def") + $"Configure specific {(ElementDescription != "" ? (ElementDescription+" ") : "")}with default parameters");
-            
+        stringBuilder.AppendLine(UtilT.PadRight($"  {o.Name} list") +
+                                 $"List available {(ElementDescription != "" ? (ElementDescription + " ") : "")}strategies");
+        stringBuilder.AppendLine(UtilT.PadRight($"  {o.Name} def") +
+                                 $"Use default {(ElementDescription != "" ? (ElementDescription + " ") : "")}");
+        stringBuilder.AppendLine(UtilT.PadRight($"  {o.Name} <string> [params...]") +
+                                 $"Configure {(ElementDescription != "" ? (ElementDescription + " ") : "")}");
+        stringBuilder.AppendLine(UtilT.PadRight($"  {o.Name} <string> def") +
+                                 $"Configure specific {(ElementDescription != "" ? (ElementDescription + " ") : "")}with default parameters");
+
         return stringBuilder.ToString();
     }
-
-
+    
 }

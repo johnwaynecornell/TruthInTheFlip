@@ -70,7 +70,7 @@ public class Program
         O.Add(infoOption = new InfoOption());
         O.Add(rsourceOption = new RSourceOption().AddDefaults());
         O.Add(windowOption = new TrackerWindow.WindowOption().AddDefaults());
-        O.Add(anticipationOption = new AnticipationStrategies.AnticipationOption().AddDefaults());
+        O.Add(anticipationOption = new AnticipationStrategies.AnticipationOption(rsourceOption.Registry).AddDefaults());
 
         bool show = false;
         bool dump = false;
