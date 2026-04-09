@@ -288,7 +288,8 @@ public class DelegateMethodRegistry
                 }
                 else if (rawVal == null)
                 {
-                    parsedArgs[i] = ((RegistryParseResult)result.ArgValues[i]).Strategy;
+                    if (result == null || result.ArgValues == null) throw new ArgumentNullException(nameof(result), "Result or ArgValues cannot be null");
+                    parsedArgs[i] = UtilT.ThrowIfNull(((RegistryParseResult)result.ArgValues[i]).Strategy, "Strategy");
                 }
                 else
                 {
