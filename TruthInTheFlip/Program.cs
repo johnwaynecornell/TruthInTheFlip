@@ -277,7 +277,7 @@ public class Program
 
         Func<Action<byte[]>> seedFunc = BitFactory.initRandom_Net;
         if (rsourceOption.Enabled)
-            seedFunc = UtilT.ThrowIfNull(rsourceOption.SeedFunc, "rsource enabled but not providing SeedFunc");
+            bitFactory = UtilT.ThrowIfNull(rsourceOption.BitFactory, "rsource enabled but not providing BitFactory");
         bitFactory.resetRandom = seedFunc;
         bitFactory.Reset();
         

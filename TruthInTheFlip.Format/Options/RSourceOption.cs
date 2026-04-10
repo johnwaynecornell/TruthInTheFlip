@@ -9,18 +9,55 @@ public class RSourceOption : Option
 
     public RSourceOption() : base("-rsource")
     {
-        Registry = new DelegateMethodRegistry(typeof(Func<Action<byte[]>>),"random source");
+        Registry = new DelegateMethodRegistry(typeof(BitFactory),"random source");
     }
+    
+    public static Dictionary<string, BitFactory> FactoryStorage = new Dictionary<string, BitFactory>();
     
     public virtual RSourceOption AddDefaults()
     {
-        Registry.AddSource(() => BitFactory.initRandom_Net, "NET1", "System.Random", new string[] { }, new string[] { }).IsDefault = true;
-        Registry.AddSource(() => (Func<Action<byte[]>>)(() => (arr) => System.Security.Cryptography.RandomNumberGenerator.Fill(arr)), "NET2", "System.Security.Cryptography.RandomNumberGenerator", new string[]{}, new string[]{});
 
+        Registry.AddFromHostType(GetType());
+        Registry.Strategies["NET1"].IsDefault = true;
+        
         return this;
     }
 
-    public virtual Func<Action<byte[]>>? SeedFunc =>  RegistryParseResult?.Strategy as Func<Action<byte[]>>;
+    [StringHelp("System.Random")]
+    public static BitFactory NET1()
+    {
+        lock(FactoryStorage)
+        {
+            if (!FactoryStorage.ContainsKey("NET1"))
+            {
+                FactoryStorage["NET1"] = new BitFactory();
+                FactoryStorage["NET1"].resetRandom = Format.BitFactory.initRandom_Net;
+                FactoryStorage["NET1"].Reset();
+            }
+
+            return FactoryStorage["NET1"];
+        }
+    }
+
+    [StringHelp("System.Security.Cryptography.RandomNumberGenerator")]
+    public static BitFactory NET2()
+    {
+        lock(FactoryStorage)
+        {
+            if (!FactoryStorage.ContainsKey("NET2"))
+            {
+                FactoryStorage["NET2"] = new BitFactory();
+                FactoryStorage["NET2"].resetRandom =
+                    (() => (arr) => System.Security.Cryptography.RandomNumberGenerator.Fill(arr));
+                FactoryStorage["NET2"].Reset();
+            }
+
+            return FactoryStorage["NET2"];
+        }
+    }
+
+    
+    public virtual BitFactory? BitFactory =>  RegistryParseResult?.Strategy as BitFactory;
 
     public override bool ValidateVersion(string Version, SOut errorMessage)
     {

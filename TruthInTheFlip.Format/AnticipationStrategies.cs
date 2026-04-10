@@ -168,12 +168,8 @@ public static class AnticipationStrategies
     /// Random Heads/Tails.
     /// </summary>
     [StringHelp("Random Heads/Tails")]
-    public static TrackerRunner.GuessChange RandomHT(Func<Action<byte[]>> random_source)
+    public static TrackerRunner.GuessChange RandomHT(BitFactory bitFactory)
     {
-        BitFactory bitFactory = new BitFactory();
-        bitFactory.resetRandom = random_source;
-        bitFactory.Reset();
-    
         // Create a ThreadLocal that initializes a new Consumer for each thread that accesses it
         ThreadLocal<BitFactory.Consumer> consumer = new ThreadLocal<BitFactory.Consumer>(
             () => new BitFactory.Consumer(bitFactory)
@@ -190,12 +186,8 @@ public static class AnticipationStrategies
     /// Random Same/Different.
     /// </summary>
     [StringHelp("Random Same/Different")]
-    public static TrackerRunner.GuessChange RandomSD(Func<Action<byte[]>> random_source)
+    public static TrackerRunner.GuessChange RandomSD(BitFactory bitFactory)
     {
-        BitFactory bitFactory = new BitFactory();
-        bitFactory.resetRandom = random_source;
-        bitFactory.Reset();
-    
         // Capture a new ThreadLocal instance specific to this delegate
         ThreadLocal<BitFactory.Consumer> consumer = new ThreadLocal<BitFactory.Consumer>(
             () => new BitFactory.Consumer(bitFactory)
