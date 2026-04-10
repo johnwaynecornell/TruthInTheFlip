@@ -55,6 +55,7 @@ public class Program
     public static int Main(string[] command_line_args)
     {
         BitFactory bitFactory = new BitFactory();
+        bitFactory.resetRandom =  BitFactory.initRandom_Net;
 
         //fillArray = QuantisInterop.initQuantis_Linux();
 
@@ -274,11 +275,9 @@ public class Program
                         
             return rc;
         }
-
-        Func<Action<byte[]>> seedFunc = BitFactory.initRandom_Net;
+        
         if (rsourceOption.Enabled)
             bitFactory = UtilT.ThrowIfNull(rsourceOption.BitFactory, "rsource enabled but not providing BitFactory");
-        bitFactory.resetRandom = seedFunc;
         bitFactory.Reset();
         
         
