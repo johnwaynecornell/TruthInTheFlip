@@ -70,7 +70,19 @@ public class Tracker : ITracker
     protected long batchMemberStartTimestamp;
     protected long wallclockStartTimestamp;
 
+    
+    /// <summary>
+    /// The absolute tracker being referenced. In a windowed view, this represents the total accumulated data.
+    /// When calculating a window: this = Source - From, where Source provides the endpoint data.
+    /// </summary>
     public Tracker Source { get; set;}
+
+    /// <summary>
+    /// The baseline tracker to subtract from Source when creating a windowed view. 
+    /// If null, this tracker represents absolute data (not a window).
+    /// When calculating a window: this = Source - From, where From provides the starting point to subtract.
+    /// </summary>
+    public Tracker? From { get; set; }
 
     public virtual void WallclockBegin()
     {

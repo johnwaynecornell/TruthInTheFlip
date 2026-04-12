@@ -212,6 +212,7 @@ public class UtilT
     {
         Tracker C = (Tracker)store.NewTracker();
         C.Source = A;
+        C.From = B;
 
         C.total = A.total - B.total;
         C.heads = A.heads - B.heads;
