@@ -67,12 +67,15 @@ public class Program
         RSourceOption rsourceOption;
         TrackerWindow.WindowOption windowOption;
         AnticipationStrategies.AnticipationOption anticipationOption;
+        PrintOption printOption;
+
 
         O.Add(infoOption = new InfoOption());
         O.Add(rsourceOption = new RSourceOption().AddDefaults());
         O.Add(windowOption = new TrackerWindow.WindowOption().AddDefaults());
         O.Add(anticipationOption = new AnticipationStrategies.AnticipationOption(rsourceOption.Registry).AddDefaults());
-
+        O.Add(printOption = new PrintOption().AddDefaults());
+        
         bool show = false;
         bool dump = false;
         bool createIfDoesntExsist = false;
@@ -288,6 +291,12 @@ public class Program
 
         store = TrackerStore.Default(fileName);
         store.concise = concise;
+        
+        // Apply the chosen print delegate if enabled
+        if (printOption.Enabled && printOption.Strategy != null)
+        {
+            store.print_delegate = printOption.Strategy;
+        }
 
         //v1.0.1 compat
         // store.print_delegate = (store, tracker) =>

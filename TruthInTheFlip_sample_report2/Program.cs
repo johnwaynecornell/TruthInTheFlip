@@ -12,9 +12,11 @@ bool showHelp = false;
 Options O = new Options();
 TrackerWindow.WindowOption windowOption;
 InfoOption infoOption;
+PrintOption printOption;
 
 O.Add(infoOption = new InfoOption());
 O.Add(windowOption = new TrackerWindow.WindowOption().AddDefaults());
+O.Add(printOption = new PrintOption().AddDefaults());
 
 SOut errorMessage = (s, n) => Console.Error.Write(s +(n ? "\n" : ""));
 SOut message =  (s, n) => Console.Write(s +(n ? "\n" : ""));
@@ -96,6 +98,9 @@ if (TrackerStore.VersionCompare(ver, 1, 1, 0) > 0) HandleError($"{store.Path} Ve
 if (TrackerStore.VersionCompare(ver, 1, 1, 0) < 0) HandleError($"{store.Path} Version {store.Version} lower than the v1.1.0 required by this util");
 
 
+if (printOption.Enabled) store.print_delegate = printOption.Strategy;
+
+
 bool validate_error = false;
 validate_error = !O.ValidateVersion(store.Version, HandleError) || validate_error;
 if (validate_error) return -1;
@@ -143,6 +148,7 @@ Func<TimeSpan, string, WatchVariables?> addWindow = (TimeSpan window, string lab
         WatchVariables variables = new();
 
         variables.watchers["Z"] = new Watch(tracker => tracker.ZScore);
+        variables.watchers["ZAdjusted"] = new Watch(tracker => tracker.ZScore - Math.Abs(tracker.ZScoreHeads));
         variables.watchers["a"] = new Watch(tracker => tracker.AnticipatedPercentage);
 
         watchers.Add(variables);
@@ -244,6 +250,13 @@ Func<WatchVariables, string> print = (wv) =>
         builder.Append($" | aAtMaxZ= {Tracker.FormatOffset(maxHolder.AnticipatedPercentage, "0.00000e+00")}");
     }
 
+    Tracker? bestAdjustedHolder = wv["ZAdjusted"].maxHolder;
+    if (bestAdjustedHolder != null)
+    {
+        builder.Append($" | TrueZ= {Tracker.FormatWithPlus(bestAdjustedHolder.ZScore, "F6")}");
+        builder.Append($" (ZHeads: {Tracker.FormatWithPlus(bestAdjustedHolder.ZScoreHeads, "F4")})");
+    }
+    
     builder.Append($" | z= {Tracker.FormatWithPlus(wv["Z"].average, "F6")}");
     
     builder.Append($" | a= {Tracker.FormatOffset(wv["a"].average, "0.000e+00")}");
@@ -313,6 +326,14 @@ if (ZMax != null)
 {
     message($"To achieve from ZMax we can claim a win rate of: {Tracker.FormatOffset(ZCompass(ZMax.anticipated, ZMax.total, 3.0) * 100, "0.00000e+00")}");
 }
+
+Tracker ? ZAdjusted = w["ZAdjusted"].maxHolder;
+
+if (ZAdjusted != null)
+{
+    message($"To achieve from ZAdjusted we can claim a win rate of: {Tracker.FormatOffset(ZCompass(ZAdjusted.anticipated, ZAdjusted.total, 3.0) * 100, "0.00000e+00")}");
+}
+
 
 message($"File compute time: {wallclockTimeLength}");
 

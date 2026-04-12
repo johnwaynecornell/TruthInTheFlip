@@ -37,3 +37,10 @@
 *   Utilized highly optimized, isolated `ThreadLocal<BitFactory.Consumer>` instances bound directly to the closure of the generated strategy delegates.
 *   Anticipation strategies are now completely thread-safe, massively parallelizable, and generate zero lock-contention or lookup overhead during billions of coin flips.
 
+**Architecture & API Update: RNG Source State Encapsulation**
+*   **Breaking API Change:** `RSourceOption` now resolves and returns fully encapsulated `BitFactory` objects rather than raw `Func<Action<byte[]>>` delegates.
+*   Introduced a thread-safe `FactoryStorage` caching layer. Randomness sources (like `NET1` and `NET2`) now act as true singletons. 
+*   This vital change allows multiple systems to share the exact same `BitFactory` instance, paving the way for serializing RNG states and efficiently multiplexing limited hardware entropy sources (like QRNGs) across massive parallel workloads.
+
+**Feature: CLI**
+*   Add -print through PrintOptions class for command line selection of print_delegates
