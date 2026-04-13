@@ -169,7 +169,7 @@ for (int i=0; i<4; i++)
 }
 
 int day = 1;
-for (int i=0; i<2; i++) 
+for (int i=0; i<4; i++) 
 { 
     addWindow(TimeSpan.FromDays(day), $"last {day}day");
     day *= 2;
@@ -331,7 +331,7 @@ Tracker ? ZAdjusted = w["ZAdjusted"].maxHolder;
 
 if (ZAdjusted != null)
 {
-    message($"To achieve from ZAdjusted we can claim a win rate of: {Tracker.FormatOffset(ZCompass(ZAdjusted.anticipated, ZAdjusted.total, 3.0) * 100, "0.00000e+00")}");
+    message($"To achieve from TrueZ we can claim a win rate of: {Tracker.FormatOffset(ZCompass(ZAdjusted.anticipated, ZAdjusted.total, 3.0) * 100, "0.00000e+00")}");
 }
 
 
