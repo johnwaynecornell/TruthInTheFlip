@@ -236,7 +236,9 @@ File compute time: 5.01:15:36.9955102
 
 Although crypto is highly resilient, I am chalking this up as indicative and believe QRNG entropy will be 3.00 or better.
 
-20260417_123247: Forming crypto_RandomSD.tkr to serve as a control that will speak the truth about crypto3.tkr
+__________________________________________________________
+
+20260417_123247 EDT: Forming crypto_RandomSD.tkr to serve as a control that will speak the truth about crypto3.tkr
 
 ~/src/NewAge/DotNet/TruthInTheFlip/TruthInTheFlip/bin/Debug/net8.0/TruthInTheFlip  -anticipation RandomSD NET2 -rsource NET2 -create -record -window def crypto_RandomSD.tkr -print Detailed
 I expect these beautifully plain numbers to continue with TrueZ eventually topping off lower than crypto3.tkr (aAtTrueZ= 50+3.62972e-04%)
@@ -258,3 +260,34 @@ To achieve exactly Z=3.0, we can claim a win rate of: 50-4.11151e-04%
 To achieve from ZMax we can claim a win rate of: 50-9.15660e-04%
 To achieve from TrueZ we can claim a win rate of: 50-5.20214e-04%
 File compute time: 03:46:33.9100807
+
+______________________________________________________________________________________________________
+
+20260417_161357 EDT:
+Note on RandomSD same-source controls:
+
+The RandomSD NET2 run should be understood as a same-provider randomized anticipation control, not as a fully independent external predictor. The flip stream and the RandomSD anticipation stream are both divided from the same cryptographic randomness service, but the runner still preserves fair temporal order: the prior anticipation is scored against the current flip before the next anticipation state is computed. In that sense, RandomSD does not know the current answer before the guess is judged; it is another consumer of the same washed entropy source.
+
+For NET2 this is acceptable and useful because cryptographic whitening is specifically designed to erase usable relation between draws. Any dependency is therefore micro-level — implementation order, buffering, thread scheduling, provider state — rather than a macro-level predictive channel. This makes RandomSD a good “same-source noise control,” while leaving room for a separate distinction in future QRNG tests between external-random controls, same-source controls, and serialized raw-entropy controls.
+
+
+crypto_RandomSD.tkr : 20260417_201542.80 | 281600000000 flips → heads: 50+1.5e-04% | aHeads: 50+6.3e-06% | aTails: 50+1.2e-04% | aSame: 50+7.5e-05% | aDiff: 50+5.3e-05% | a: 50+6.4e-05% | base: 50+6.4e-05% | Z: 0.403817 | [RATE] H/T: 50+2.2e-04%/ 50-9.0e-05% S/D: 50+7.5e-05%/ 50+5.3e-05% | threadTime: 3:20:29:33.6503322 | wallclock: 0:05:27:01.8540957 | flips/sec: 12777103.4307 | Z(1.96) in 2:01:02:32.5366297 | Z(3.00) in 4:21:48:51.8844407
+Entry Record:
+total,heads,tails,anticipated,baseAnticipated,anticipatedHeads,anticipatedTails,cumulativeTicks,batchTotal,wallclockTimeNs,batchWallclockTimeNs,utcBeginTimeMs,utcEndTimeMs,betHeads,betSame,anticipatedSame
+181600000000,90800221743,90799778257,90799922630,90799922630,45400058083,45399864547,2082920688390,200000000,12454673988800,13206179100,1776449761329,1776449774535,90799971793,90800069971,45399892145
+
+Final Record:
+total,heads,tails,anticipated,baseAnticipated,anticipatedHeads,anticipatedTails,cumulativeTicks,batchTotal,wallclockTimeNs,batchWallclockTimeNs,utcBeginTimeMs,utcEndTimeMs,betHeads,betSame,anticipatedSame
+281600000000,140800376076,140799623924,140799986479,140799986479,70400138383,70399848096,3329736503322,200000000,19621854095700,15653636800,1776456927147,1776456942800,140799914211,140800167190,70399978194
+
+last 1hr |  78.8235% time above 50% | minZ= -0.483936 | maxZ= +1.247575 | ZHeadsAtMaxZ= +1.270141 | aAtMaxZ= 50+1.97259e-04% | TrueZ= +0.785510 (ZHeads: +0.7289) | aAtTrueZ= 50+1.24200e-04% | z= +0.457212 | a= 50+7.229e-05%
+last 2hr |  59.6421% time above 50% | minZ= -0.749833 | maxZ= +1.247575 | ZHeadsAtMaxZ= +1.270141 | aAtMaxZ= 50+1.97259e-04% | TrueZ= +0.785510 (ZHeads: +0.7289) | aAtTrueZ= 50+1.24200e-04% | z= +0.170116 | a= 50+2.690e-05%
+last 4hr |  38.8834% time above 50% | minZ= -1.390138 | maxZ= +1.247575 | ZHeadsAtMaxZ= +1.270141 | aAtMaxZ= 50+1.97259e-04% | TrueZ= +0.785510 (ZHeads: +0.7289) | aAtTrueZ= 50+1.24200e-04% | z= -0.172082 | a= 50-2.834e-05%
+lifetime |  34.2330% time above 50% | minZ= -2.078186 | maxZ= +1.247575 | ZHeadsAtMaxZ= +1.270141 | aAtMaxZ= 50+1.97259e-04% | TrueZ= +0.413538 (ZHeads: +0.0066) | aAtTrueZ= 50+8.31748e-05% | z= -0.227927 | a= 50-6.955e-05%
+
+To achieve exactly Z=3.0, we can claim a win rate of: 50-2.87468e-04%
+To achieve from ZMax we can claim a win rate of: 50-2.77083e-04%
+To achieve from TrueZ we can claim a win rate of: 50-5.20214e-04%
+File compute time: 05:27:01.8540957
+
+
