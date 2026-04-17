@@ -235,3 +235,26 @@ To achieve from TrueZ we can claim a win rate of: 50-3.42977e-05%
 File compute time: 5.01:15:36.9955102
 
 Although crypto is highly resilient, I am chalking this up as indicative and believe QRNG entropy will be 3.00 or better.
+
+20260417_123247: Forming crypto_RandomSD.tkr to serve as a control that will speak the truth about crypto3.tkr
+
+~/src/NewAge/DotNet/TruthInTheFlip/TruthInTheFlip/bin/Debug/net8.0/TruthInTheFlip  -anticipation RandomSD NET2 -rsource NET2 -create -record -window def crypto_RandomSD.tkr -print Detailed
+I expect these beautifully plain numbers to continue with TrueZ eventually topping off lower than crypto3.tkr (aAtTrueZ= 50+3.62972e-04%)
+
+crypto_RandomSD.tkr : 20260417_183513.94 | 197200000000 flips → heads: 50+1.8e-04% | aHeads: 50+4.3e-06% | aTails: 50+2.8e-05% | aSame: 50-5.8e-05% | aDiff: 50+9.1e-05% | a: 50+1.6e-05% | base: 50+1.6e-05% | Z: 0.102401 | [RATE] H/T: 50+2.0e-04%/ 50-1.6e-04% S/D: 50-5.8e-05%/ 50+9.1e-05% | threadTime: 2:15:21:01.6196886 | wallclock: 0:03:46:33.9100807 | flips/sec: 9804402.1766 | Z(1.96) in 43:03:07:41.4057338 | Z(3.00) in 101:04:52:31.9347157
+Entry Record:
+total,heads,tails,anticipated,baseAnticipated,anticipatedHeads,anticipatedTails,cumulativeTicks,batchTotal,wallclockTimeNs,batchWallclockTimeNs,utcBeginTimeMs,utcEndTimeMs,betHeads,betSame,anticipatedSame
+97200000000,48600100875,48599899125,48599839128,48599839128,24299956004,24299883124,1145496618059,200000000,6574718427300,17713639800,1776443875973,1776443893686,48599972005,48600117506,24299918348
+
+Final Record:
+total,heads,tails,anticipated,baseAnticipated,anticipatedHeads,anticipatedTails,cumulativeTicks,batchTotal,wallclockTimeNs,batchWallclockTimeNs,utcBeginTimeMs,utcEndTimeMs,betHeads,betSame,anticipatedSame
+197200000000,98600281592,98599718408,98599855319,98599855319,49300048508,49299806811,2280616196886,200000000,13593910080700,20399009500,1776450893543,1776450913942,98599960105,98600022213,49299841602
+
+last 1hr |  35.0195% time above 50% | minZ= -1.049427 | maxZ= +0.475202 | ZHeadsAtMaxZ= +1.337182 | aAtMaxZ= 50+7.51360e-05% | TrueZ= +0.436647 (ZHeads: +1.0230) | aAtTrueZ= 50+6.90400e-05% | z= -0.255505 | a= 50-4.040e-05%
+last 2hr |  34.6979% time above 50% | minZ= -1.270325 | maxZ= +0.475202 | ZHeadsAtMaxZ= +1.337182 | aAtMaxZ= 50+7.51360e-05% | TrueZ= +0.436647 (ZHeads: +1.0230) | aAtTrueZ= 50+6.90400e-05% | z= -0.284527 | a= 50-4.511e-05%
+lifetime |  26.6734% time above 50% | minZ= -2.078186 | maxZ= +0.848686 | ZHeadsAtMaxZ= -2.365727 | aAtMaxZ= 50+3.61225e-04% | TrueZ= +0.413538 (ZHeads: +0.0066) | aAtTrueZ= 50+8.31748e-05% | z= -0.389273 | a= 50-1.094e-04%
+
+To achieve exactly Z=3.0, we can claim a win rate of: 50-4.11151e-04%
+To achieve from ZMax we can claim a win rate of: 50-9.15660e-04%
+To achieve from TrueZ we can claim a win rate of: 50-5.20214e-04%
+File compute time: 03:46:33.9100807

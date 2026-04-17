@@ -255,6 +255,7 @@ Func<WatchVariables, string> print = (wv) =>
     {
         builder.Append($" | TrueZ= {Tracker.FormatWithPlus(bestAdjustedHolder.ZScore, "F6")}");
         builder.Append($" (ZHeads: {Tracker.FormatWithPlus(bestAdjustedHolder.ZScoreHeads, "F4")})");
+        builder.Append($" | aAtTrueZ= {Tracker.FormatOffset(bestAdjustedHolder.AnticipatedPercentage, "0.00000e+00")}");
     }
     
     builder.Append($" | z= {Tracker.FormatWithPlus(wv["Z"].average, "F6")}");
