@@ -290,4 +290,52 @@ To achieve from ZMax we can claim a win rate of: 50-2.77083e-04%
 To achieve from TrueZ we can claim a win rate of: 50-5.20214e-04%
 File compute time: 05:27:01.8540957
 
+________________________________________________________________________________________________________
 
+20260418_202333 EDT: The simulation continues as expected with aTrue lower as expected,
+ 
+ ../../../../TruthInTheFlip_sample_report2/bin/Debug/net8.0/TruthInTheFlip_sample_report2 -window def $NewAgeData/Documents/Trackers/crypt3D.tkr -print Detailed
+ crypto3.tkr : 20260414_130055.40 | 8917800000000 flips → heads: 50+6.9e-05% (Z:+0.4393) | a: 50-7.5e-05% (Z:-0.4754) | aHeads: 50-1.4e-04% | aTails: 50-5.6e-06% | aSame: 50-6.5e-05% | aDiff: 50-8.5e-05% | [RATE] H/T: 50-5.7e-06%/ 50-1.4e-04% S/D: 50-6.5e-05%/ 50-8.5e-05% | wallclock: 5.01:15:36 | fps: 229076 | Z(1.96) unreachable | Z(3.00) unreachable
+ Entry Record:
+ total,heads,tails,anticipated,baseAnticipated,anticipatedHeads,anticipatedTails,cumulativeTicks,batchTotal,wallclockTimeNs,batchWallclockTimeNs,utcBeginTimeMs,utcEndTimeMs,betHeads,betSame,anticipatedSame
+ 8817800000000,4408901902543,4408898097457,4408900881908,4408900881908,2204450440816,2204450441092,71670214904393,200000000,431590176737800,10133119800,1776166697373,1776166707506,4408898097181,4408897651852,2204450441081
+ 
+ Final Record:
+ total,heads,tails,anticipated,baseAnticipated,anticipatedHeads,anticipatedTails,cumulativeTicks,batchTotal,wallclockTimeNs,batchWallclockTimeNs,utcBeginTimeMs,utcEndTimeMs,betHeads,betSame,anticipatedSame
+ 8917800000000,4458901972002,4458898027998,4458900806735,4458900806735,2229450403170,2229450403565,72531797581926,200000000,436536995510200,9216083600,1776171646187,1776171655403,4458898027603,4458897641874,2229450403420
+ 
+ last 1hr  |   2.7548% time above 50% | minZ= -1.654858 | maxZ= +0.228456 | ZHeadsAtMaxZ= +1.158089 | aAtMaxZ= 50+3.61220e-05% | TrueZ= -0.046226 (ZHeads: +0.7030) | aAtTrueZ= 50-7.30900e-06% | z= -0.645070 | a= 50-1.020e-04%
+ last 2hr  |  24.3935% time above 50% | minZ= -1.654858 | maxZ= +1.728937 | ZHeadsAtMaxZ= +0.322192 | aAtMaxZ= 50+2.73369e-04% | TrueZ= +1.728937 (ZHeads: +0.3222) | aAtTrueZ= 50+2.73369e-04% | z= -0.251228 | a= 50-3.972e-05%
+ last 4hr  |  62.5000% time above 50% | minZ= -1.654858 | maxZ= +1.728937 | ZHeadsAtMaxZ= +0.322192 | aAtMaxZ= 50+2.73369e-04% | TrueZ= +1.728937 (ZHeads: +0.3222) | aAtTrueZ= 50+2.73369e-04% | z= +0.260665 | a= 50+4.121e-05%
+ last 8hr  |  71.0692% time above 50% | minZ= -1.654858 | maxZ= +2.217408 | ZHeadsAtMaxZ= -0.544475 | aAtMaxZ= 50+3.50603e-04% | TrueZ= +2.210388 (ZHeads: -0.5083) | aAtTrueZ= 50+3.49493e-04% | z= +0.423671 | a= 50+6.699e-05%
+ last 1day |  47.8847% time above 50% | minZ= -2.659444 | maxZ= +2.217408 | ZHeadsAtMaxZ= -0.544475 | aAtMaxZ= 50+3.50603e-04% | TrueZ= +2.210388 (ZHeads: -0.5083) | aAtTrueZ= 50+3.49493e-04% | z= -0.113448 | a= 50-1.794e-05%
+ last 2day |  47.4589% time above 50% | minZ= -2.659444 | maxZ= +2.782760 | ZHeadsAtMaxZ= -0.344827 | aAtMaxZ= 50+4.39993e-04% | TrueZ= +2.645144 (ZHeads: -0.1702) | aAtTrueZ= 50+4.18234e-04% | z= -0.020708 | a= 50-3.274e-06%
+ last 4day |  47.5721% time above 50% | minZ= -2.978549 | maxZ= +2.782760 | ZHeadsAtMaxZ= -0.344827 | aAtMaxZ= 50+4.39993e-04% | TrueZ= +2.645144 (ZHeads: -0.1702) | aAtTrueZ= 50+4.18234e-04% | z= -0.006917 | a= 50-1.094e-06%
+ lifetime  |  51.1471% time above 50% | minZ= -3.522556 | maxZ= +2.955167 | ZHeadsAtMaxZ= +0.658880 | aAtMaxZ= 50+4.67253e-04% | TrueZ= +2.783083 (ZHeads: +0.1457) | aAtTrueZ= 50+4.40044e-04% | z= +0.057811 | a= 50+8.864e-06%
+ 
+ To achieve exactly Z=3.0, we can claim a win rate of: 50-4.11836e-05%
+ To achieve from ZMax we can claim a win rate of: 50-7.08853e-06%
+ To achieve from TrueZ we can claim a win rate of: 50-3.42977e-05%
+ File compute time: 5.01:15:36.9955102
+ 
+../../../../TruthInTheFlip_sample_report2/bin/Debug/net8.0/TruthInTheFlip_sample_report2 -window def $NewAgeData/Documents/Trackers/crypto_RandomSD.tkr -print Detailed
+crypto_RandomSD.tkr : 20260419_002320.44 | 1762000000000 flips → heads: 50-6.2e-05% (Z:-0.3904) | a: 50-5.0e-04% (Z:-3.1439) | aHeads: 50-6.9e-04% | aTails: 50-3.1e-04% | aSame: 50-6.1e-04% | aDiff: 50-3.9e-04% | [RATE] H/T: 50-5.6e-04%/ 50-4.4e-04% S/D: 50-6.1e-04%/ 50-3.9e-04% | wallclock: 1.09:34:23 | fps: 827378 | Z(1.96) unreachable | Z(3.00) unreachable
+Entry Record:
+total,heads,tails,anticipated,baseAnticipated,anticipatedHeads,anticipatedTails,cumulativeTicks,batchTotal,wallclockTimeNs,batchWallclockTimeNs,utcBeginTimeMs,utcEndTimeMs,betHeads,betSame,anticipatedSame
+1662000000000,831000255303,830999744697,830999609113,830999609113,415499894190,415499714923,19053487404066,200000000,113983040093500,13413502600,1776551305309,1776551318723,830999923964,830999557001,415499445370
+
+Final Record:
+total,heads,tails,anticipated,baseAnticipated,anticipatedHeads,anticipatedTails,cumulativeTicks,batchTotal,wallclockTimeNs,batchWallclockTimeNs,utcBeginTimeMs,utcEndTimeMs,betHeads,betSame,anticipatedSame
+1762000000000,881000193576,880999806424,880999112014,880999112014,440499519753,440499592261,20237884963582,200000000,120863688166100,16626988000,1776558183815,1776558200441,880999733916,880999614639,440499171229
+
+last 1hr  |   0.0000% time above 50% | minZ= -3.368907 | maxZ= -2.086072 | ZHeadsAtMaxZ= +0.674849 | aAtMaxZ= 50-3.29837e-04% | TrueZ= -2.671878 (ZHeads: +0.0072) | aAtTrueZ= 50-4.22461e-04% | z= -2.768337 | a= 50-4.377e-04%
+last 2hr  |   9.7328% time above 50% | minZ= -3.368907 | maxZ= +1.273835 | ZHeadsAtMaxZ= -0.895873 | aAtMaxZ= 50+2.01411e-04% | TrueZ= +1.194424 (ZHeads: -0.7106) | aAtTrueZ= 50+1.88855e-04% | z= -1.704465 | a= 50-2.695e-04%
+last 4hr  |  16.1290% time above 50% | minZ= -3.368907 | maxZ= +1.273835 | ZHeadsAtMaxZ= -0.895873 | aAtMaxZ= 50+2.01411e-04% | TrueZ= +1.194424 (ZHeads: -0.7106) | aAtTrueZ= 50+1.88855e-04% | z= -1.010522 | a= 50-1.598e-04%
+last 8hr  |  13.6298% time above 50% | minZ= -3.368907 | maxZ= +1.273835 | ZHeadsAtMaxZ= -0.895873 | aAtMaxZ= 50+2.01411e-04% | TrueZ= +1.194424 (ZHeads: -0.7106) | aAtTrueZ= 50+1.88855e-04% | z= -0.760317 | a= 50-1.202e-04%
+last 1day |  29.7943% time above 50% | minZ= -3.368907 | maxZ= +1.567547 | ZHeadsAtMaxZ= -0.138438 | aAtMaxZ= 50+2.47851e-04% | TrueZ= +1.533806 (ZHeads: -0.0303) | aAtTrueZ= 50+2.42516e-04% | z= -0.300852 | a= 50-4.757e-05%
+lifetime  |  32.9285% time above 50% | minZ= -3.368907 | maxZ= +1.928098 | ZHeadsAtMaxZ= -0.060425 | aAtMaxZ= 50+3.04859e-04% | TrueZ= +1.904912 (ZHeads: -0.0183) | aAtTrueZ= 50+3.01193e-04% | z= -0.265979 | a= 50-4.741e-05%
+
+To achieve exactly Z=3.0, we can claim a win rate of: 50-1.63399e-04%
+To achieve from ZMax we can claim a win rate of: 50-1.69483e-04%
+To achieve from TrueZ we can claim a win rate of: 50-1.73149e-04%
+File compute time: 1.09:34:23.6881661
