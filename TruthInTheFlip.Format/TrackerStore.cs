@@ -86,7 +86,7 @@ public class TrackerStore : ITrackerStore
     /// Executes a file operation with a transient retry mechanism. 
     /// Perfect for overcoming brief file locks caused by antivirus or concurrent readers.
     /// </summary>
-    protected virtual T RetryIO<T>(Func<T> operation, int maxAttempts = 12, int delayMs = 500)
+    protected virtual T RetryIO<T>(Func<T> operation, int maxAttempts = 120, int delayMs = 500)
     {
         for (int i = 0; i < maxAttempts; i++)
         {
@@ -109,7 +109,7 @@ public class TrackerStore : ITrackerStore
     /// <summary>
     /// Safely opens a file stream using a retry mechanism and allows concurrent readers.
     /// </summary>
-    public virtual Stream NewFileStream(string path, FileMode mode, FileAccess access = FileAccess.ReadWrite,
+    public virtual Stream NewFileStream(string path, FileMode mode, FileAccess access = FileAccess.Read,
         FileShare share = FileShare.Read)
     {
         return RetryIO(() => new FileStream(path, mode, access, share));
