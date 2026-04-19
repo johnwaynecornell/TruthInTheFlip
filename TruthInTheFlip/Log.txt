@@ -294,7 +294,7 @@ ________________________________________________________________________________
 
 20260418_202333 EDT: The simulation continues as expected with aTrue lower as expected,
  
- ../../../../TruthInTheFlip_sample_report2/bin/Debug/net8.0/TruthInTheFlip_sample_report2 -window def $NewAgeData/Documents/Trackers/crypt3D.tkr -print Detailed
+ ../../../../TruthInTheFlip_sample_report2/bin/Debug/net8.0/TruthInTheFlip_sample_report2 -window def $NewAgeData/Documents/Trackers/crypto3.tkr -print Detailed
  crypto3.tkr : 20260414_130055.40 | 8917800000000 flips → heads: 50+6.9e-05% (Z:+0.4393) | a: 50-7.5e-05% (Z:-0.4754) | aHeads: 50-1.4e-04% | aTails: 50-5.6e-06% | aSame: 50-6.5e-05% | aDiff: 50-8.5e-05% | [RATE] H/T: 50-5.7e-06%/ 50-1.4e-04% S/D: 50-6.5e-05%/ 50-8.5e-05% | wallclock: 5.01:15:36 | fps: 229076 | Z(1.96) unreachable | Z(3.00) unreachable
  Entry Record:
  total,heads,tails,anticipated,baseAnticipated,anticipatedHeads,anticipatedTails,cumulativeTicks,batchTotal,wallclockTimeNs,batchWallclockTimeNs,utcBeginTimeMs,utcEndTimeMs,betHeads,betSame,anticipatedSame
@@ -339,3 +339,31 @@ To achieve exactly Z=3.0, we can claim a win rate of: 50-1.63399e-04%
 To achieve from ZMax we can claim a win rate of: 50-1.69483e-04%
 To achieve from TrueZ we can claim a win rate of: 50-1.73149e-04%
 File compute time: 1.09:34:23.6881661
+
+_______________________________________________________________________________________
+20260419_084919 EDT:
+For full transparency: in crypto_RandomSD.tkr, both the measured flip stream and the RandomSD control stream are sliced from the same WHITENED cryptographic source. If the whitening process is effectively serial, this may raise a same-source ordering concern somewhat analogous to drawing from the future of the same entropy service. My current view is that any such effect should remain microscopic rather than macro-level, since one measure is evaluated as true/false and the other as same/different, while cryptographic whitening is specifically designed to destroy exploitable relation between draws.
+
+And an update on the crypto_RandomSD.tkr:
+time_stamp.sh ; ../../../../TruthInTheFlip_sample_report2/bin/Debug/net8.0/TruthInTheFlip_sample_report2 -window def $NewAgeData/Documents/Trackers/crypto_RandomSD.tkr -print Detailed
+20260419_090501
+crypto_RandomSD.tkr : 20260419_130500.91 | 2422800000000 flips → heads: 50-1.2e-05% (Z:-0.0745) | a: 50+6.0e-05% (Z:+0.3812) | aHeads: 50+1.4e-04% | aTails: 50-1.5e-05% | aSame: 50+2.2e-04% | aDiff: 50-1.0e-04% | [RATE] H/T: 50+4.9e-05%/ 50+7.2e-05% S/D: 50+2.2e-04%/ 50-1.0e-04% | wallclock: 1.22:15:57 | fps: 600395 | Z(1.96) in 49.00:41:08 | Z(3.00) in 117.10:49:59
+Entry Record:
+total,heads,tails,anticipated,baseAnticipated,anticipatedHeads,anticipatedTails,cumulativeTicks,batchTotal,wallclockTimeNs,batchWallclockTimeNs,utcBeginTimeMs,utcEndTimeMs,betHeads,betSame,anticipatedSame
+2322800000000,1161399994506,1161400005494,1161399653866,1161399653866,580699661375,580699992491,26630688049636,200000000,159442043096900,14467063000,1776596770390,1776596784857,1161399674378,1161400042496,580699508808
+
+Final Record:
+total,heads,tails,anticipated,baseAnticipated,anticipatedHeads,anticipatedTails,cumulativeTicks,batchTotal,wallclockTimeNs,batchWallclockTimeNs,utcBeginTimeMs,utcEndTimeMs,betHeads,betSame,anticipatedSame
+2422800000000,1211399982731,1211400017269,1211399714143,1211399714143,605699723403,605699990740,27897493496522,200000000,166557001244500,14844859500,1776603886073,1776603900918,1211399749932,1211400215542,605699705957
+
+last 1hr  |  85.0806% time above 50% | minZ= -0.256246 | maxZ= +1.192413 | ZHeadsAtMaxZ= +0.050470 | aAtMaxZ= 50+1.88537e-04% | TrueZ= +1.192413 (ZHeads: +0.0505) | aAtTrueZ= 50+1.88537e-04% | z= +0.329495 | a= 50+5.210e-05%
+last 2hr  |  91.5187% time above 50% | minZ= -0.256246 | maxZ= +1.371328 | ZHeadsAtMaxZ= +0.057218 | aAtMaxZ= 50+2.16826e-04% | TrueZ= +1.371328 (ZHeads: +0.0572) | aAtTrueZ= 50+2.16826e-04% | z= +0.394711 | a= 50+6.241e-05%
+last 4hr  |  93.0300% time above 50% | minZ= -0.256935 | maxZ= +1.818974 | ZHeadsAtMaxZ= -0.548750 | aAtMaxZ= 50+2.87605e-04% | TrueZ= +1.371328 (ZHeads: +0.0572) | aAtTrueZ= 50+2.16826e-04% | z= +0.597037 | a= 50+9.440e-05%
+last 8hr  |  77.8363% time above 50% | minZ= -2.536899 | maxZ= +2.645391 | ZHeadsAtMaxZ= +0.515198 | aAtMaxZ= 50+4.18273e-04% | TrueZ= +2.388797 (ZHeads: -0.0521) | aAtTrueZ= 50+3.77702e-04% | z= +0.519225 | a= 50+8.210e-05%
+last 1day |  53.2929% time above 50% | minZ= -3.368907 | maxZ= +2.645391 | ZHeadsAtMaxZ= +0.515198 | aAtMaxZ= 50+4.18273e-04% | TrueZ= +2.388797 (ZHeads: -0.0521) | aAtTrueZ= 50+3.77702e-04% | z= +0.006247 | a= 50+9.878e-07%
+lifetime  |  44.1060% time above 50% | minZ= -3.368907 | maxZ= +2.645391 | ZHeadsAtMaxZ= +0.515198 | aAtMaxZ= 50+4.18273e-04% | TrueZ= +2.388797 (ZHeads: -0.0521) | aAtTrueZ= 50+3.77702e-04% | z= -0.084282 | a= 50-1.722e-05%
+
+To achieve exactly Z=3.0, we can claim a win rate of: 50-1.08167e-04%
+To achieve from ZMax we can claim a win rate of: 50-5.60685e-05%
+To achieve from TrueZ we can claim a win rate of: 50-9.66396e-05%
+File compute time: 1.22:15:57.0012445
