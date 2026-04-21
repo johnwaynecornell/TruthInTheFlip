@@ -36,7 +36,33 @@ A simple example:
 The goal is to measure whether an anticipation strategy yields a success rate meaningfully above 50% over a sufficiently large run, evaluated through ongoing statistical telemetry such as Z-score tracking.
 
 ---
+## Reading the Results
 
+As the project has evolved, one distinction has become especially important:
+
+**local edge excursion is not the same thing as long-arc settlement.**
+
+A run may produce strong local adjusted peaks while still settling weakly over time. For that reason, TruthInTheFlip now treats edge behavior in three related ways:
+
+- **Excursion**: how strongly the edge flares locally
+- **Settlement**: where the edge tends to finish
+- **Persistence**: how often the edge remains at or above chance
+
+This distinction matters because peak statistics alone can overstate the apparent strength of a run. A high local `TrueZ` may be real and still fail to represent durable behavior across the broader history.
+
+To support this, the reporting utilities now serve different roles:
+
+- **`TruthInTheFlip_sample_report2`** emphasizes named windows such as `last 1hr`, `last 1day`, and `lifetime`
+- **`TruthInTheFlip_sample_report3`** emphasizes comparable segments and separates excursion from settlement
+
+`sample_report3` introduces three project metrics for segment-based interpretation:
+
+- **Edge Excursion Score** = median(best `TrueZ` per segment)
+- **Edge Settlement Score** = mean(end `TrueZ` per segment)
+- **Edge Persistence Index** = settlement × fraction of segment states at or above chance
+
+These are project metrics intended to tell a truer story about edge behavior. They are not standard published statistics, but practical instruments for distinguishing what the edge can do, what it keeps, and how often it holds.
+---
 ## Architecture
 
 ### Core Domain: `TruthInTheFlip.Format`
@@ -178,7 +204,8 @@ The repository includes supporting sample tools for working with `.tkr` datasets
     Lightweight reporting utility for inspecting stored tracker history.
 *   **TruthInTheFlip.sample\_report2**  
     A more advanced reporting tool that demonstrates windowed analysis over historical tracker data.
-
+*   **TruthInTheFlip_sample_report3**  
+    Segment-oriented reporting utility for separating local edge excursion from long-arc settlement and persistence.
 * * *
 
 Notes

@@ -290,13 +290,13 @@ public class UtilT
         return input + new string(' ', int.Max(0, L - input.Length));
     }
     
-    public static T ThrowIfNull<T>(T? value, string message) where T : class
+    public static T ThrowIfNull<T>(T? value, string message) 
     {
         if (value == null) throw new ArgumentNullException(message);
         return value;
     }
     
-    public static T ThrowIfNull<T>(T? value, Func<string> message) where T : class
+    public static T ThrowIfNull<T>(T? value, Func<string> message)
     {
         if (value == null) throw new ArgumentNullException(message());
         return value;
