@@ -688,3 +688,86 @@ Worst settlement segment:
 
 File compute time: 3.21:32:08.2855542
 
+______________________________________________________________________________________________________________________
+20260422_132528 EDT:
+
+crypto_RandomSD.tkr has now reached comparable compute time to the earlier crypto3.tkr reference, and the run is being extended until it reaches the full length of crypto3.tkr. At this checkpoint the segmented interpretation remains intact: local adjusted excursions are still present, but they are not maturing into durable average settlement. The current segment scores remain weaker on settlement than on excursion — `Edge Excursion Score = +0.602787`, `Edge Settlement Score = -0.762374`, `Edge Persistence Index = -0.375673` — which continues to support the distinction between what the edge can do locally and what it can keep over time.
+
+This is now a fairer comparison point because the RandomSD control has reached similar compute time even if it matures more slowly. The standout segment remains the same (`idx 36`), still serving as both best excursion and best settlement segment, while the broader run remains mixed-to-negative in average segment settlement. For now I regard this as a log milestone rather than a new blog milestone: the control has had time to breathe, and the broader segmented story has held.
+
+
+TruthInTheFlip_sample_report3/bin/Debug/net8.0/TruthInTheFlip_sample_report3 $NewAgeData/Documents/Trackers/crypto_RandomSD.tkr -window def -grade all
+crypto_RandomSD.tkr : 20260422_170346.45 | 6256800000000 flips → heads: 50+1.4e-04% | aHeads: 50-8.1e-05% | aTails: 50+1.1e-04% | aSame: 50-1.7e-04% | aDiff: 50+2.0e-04% | a: 50+1.3e-05% | base: 50+1.3e-05% | Z: 0.081720 | [RATE] H/T: 50+1.6e-04%/ 50-1.3e-04% S/D: 50-1.7e-04%/ 50+2.0e-04% | threadTime: 86:17:59:08.4823286 | wallclock: 5:02:07:28.7376946 | flips/sec: 11001100.1100 | Z(1.96) in 60:09:59:31.8821795 | Z(3.00) in 141:16:23:39.4074386
+
+segments              : 63
+Edge Excursion Score  : +0.602787   // median(best TrueZ per segment)
+Edge Settlement Score : -0.762374   // mean(end TrueZ per segment)
+Edge Persistence Index: -0.375673   // settlement * fraction positive
+
+avgBestTrueZ          : +0.550464
+medianBestTrueZ       : +0.602787
+avgEndTrueZ           : -0.762374
+medianEndTrueZ        : -0.783771
+avgMeanTrueZ          : -0.772044
+avgPctAbove50         :  49.2768%
+
+bestTrueZ >= 1.96     :   6.3492%
+bestTrueZ >= 3.00     :   1.5873%
+endTrueZ  >= 0.00     :  20.6349%
+endTrueZ  >= 1.96     :   1.5873%
+meanTrueZ >= 0.00     :  15.8730%
+
+idx | span                  | bestTrueZ | aAtBestTrueZ     | endTrueZ  | meanTrueZ | %>50
+----+-----------------------+-----------+------------------+-----------+-----------+---------
+  ...
+  (0 through 48 removed for brevity)
+  ...
+ 49 | 4,900,000,000,000..4… | -1.028860 |  50-1.62567e-04% | -2.179328 | -2.040616 |   0.400%
+ 50 | 5,000,000,000,000..5… | -0.349368 |  50-4.32040e-05% | -0.783771 | -1.491155 |  48.400%
+ 51 | 5,100,000,000,000..5… | +0.790614 |  50+1.26426e-04% | +0.600656 | -0.225102 |  89.000%
+ 52 | 5,200,000,000,000..5… | +0.843538 |  50+1.65881e-04% | -1.664889 | -1.057301 |  13.000%
+ 53 | 5,300,000,000,000..5… | +0.182849 |  50+1.55838e-04% | -0.071202 | -1.136184 |  26.000%
+ 54 | 5,400,000,000,000..5… | +1.391219 |  50+2.50872e-04% | -0.394444 | -0.065308 | 100.000%
+ 55 | 5,500,000,000,000..5… | -0.065940 |  50+1.54086e-04% | -0.396708 | -1.274923 |  38.600%
+ 56 | 5,600,000,000,000..5… | +1.806173 |  50+2.95924e-04% | +0.376975 | +0.640974 | 100.000%
+ 57 | 5,700,000,000,000..5… | +0.978080 |  50+1.98542e-04% | -0.594489 | -0.243799 |  99.400%
+ 58 | 5,800,000,000,000..5… | +1.104432 |  50+1.96794e-04% | +0.381396 | +0.082161 | 100.000%
+ 59 | 5,900,000,000,000..5… | +0.377911 |  50+5.98450e-05% | -0.113469 | -0.408464 |  23.600%
+ 60 | 6,000,000,000,000..6… | +1.005471 |  50+1.61796e-04% | -1.738032 | -0.687216 |  83.800%
+ 61 | 6,100,000,000,000..6… | +0.491121 |  50+8.67940e-05% | +0.149949 | -1.080348 |   7.800%
+ 62 | 6,200,000,000,000..6… | +0.286876 |  50+1.13017e-04% | -0.831306 | -0.356195 |  81.404%
+
+Best excursion segment:
+  idx         : 36
+  bestTrueZ   : +4.027199
+  meanTrueZ   : +2.529274
+  endTrueZ    : +2.078805
+  pctAbove50  : 100.0000%
+  best ZHeads : +0.170251
+  aAtTrueZ    : 50+6.63675e-04%
+  end ZHeads  : +0.288014
+  end a       : 50+3.74227e-04%
+
+Best settlement segment:
+  idx         : 36
+  bestTrueZ   : +4.027199
+  meanTrueZ   : +2.529274
+  endTrueZ    : +2.078805
+  pctAbove50  : 100.0000%
+  best ZHeads : +0.170251
+  aAtTrueZ    : 50+6.63675e-04%
+  end ZHeads  : +0.288014
+  end a       : 50+3.74227e-04%
+
+Worst settlement segment:
+  idx         : 28
+  bestTrueZ   : -1.907726
+  meanTrueZ   : -3.988874
+  endTrueZ    : -4.131921
+  pctAbove50  : 0.2000%
+  best ZHeads : -1.912691
+  aAtTrueZ    : 50+7.85000e-07%
+  end ZHeads  : -3.202280
+  end a       : 50-1.46989e-04%
+
+File compute time: 5.02:07:28.7376946
