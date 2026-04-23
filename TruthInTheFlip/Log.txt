@@ -771,3 +771,77 @@ Worst settlement segment:
   end a       : 50-1.46989e-04%
 
 File compute time: 5.02:07:28.7376946
+______________________________________________________________________
+Assesment + Poetry at:
+https://johncornell.net/truthintheflip-the-edge-keeps-its-own-counsel/
+
+0260423_062651 EDT:
+crypto_RandomSD.tkr : 20260423_102645.50 | 7142800000000 flips → heads: 50+1.0e-04% | aHeads: 50-1.8e-04% | aTails: 50+1.2e-04% | aSame: 50+7.7e-06% | aDiff: 50-6.7e-05% | a: 50-3.0e-05% | base: 50-3.0e-05% | Z: -0.189130 | [RATE] H/T: 50+7.5e-05%/ 50-1.3e-04% S/D: 50+7.7e-06%/ 50-6.7e-05% | threadTime: 98:17:30:29.1635167 | wallclock: 5:19:30:18.2239143 | flips/sec: 9811135.6390 | Z(1.96) unreachable | Z(3.00) unreachable
+
+segments              : 72
+Edge Excursion Score  : +0.550293   // median(best TrueZ per segment)
+Edge Settlement Score : -0.774696   // mean(end TrueZ per segment)
+Edge Persistence Index: -0.376076   // settlement * fraction positive
+
+avgBestTrueZ          : +0.513719
+medianBestTrueZ       : +0.550293
+avgEndTrueZ           : -0.774696
+medianEndTrueZ        : -0.805967
+avgMeanTrueZ          : -0.796459
+avgPctAbove50         :  48.5450%
+
+bestTrueZ >= 1.96     :   5.5556%
+bestTrueZ >= 3.00     :   1.3889%
+endTrueZ  >= 0.00     :  19.4444%
+endTrueZ  >= 1.96     :   1.3889%
+meanTrueZ >= 0.00     :  13.8889%
+
+idx | span                  | bestTrueZ | aAtBestTrueZ     | endTrueZ  | meanTrueZ | %>50
+----+-----------------------+-----------+------------------+-----------+-----------+---------
+   ...
+   (0 through 62 removed for brevity)
+   ...
+ 63 | 6,300,000,000,000..6… | -1.143612 |  50-4.23980e-05% | -1.834418 | -2.269019 |  10.400%
+ 64 | 6,400,000,000,000..6… | +0.418572 |  50+1.02767e-04% | -0.475860 | -1.016787 |  72.600%
+ 65 | 6,500,000,000,000..6… | +0.929406 |  50+1.88315e-04% | +0.230511 | -0.165935 |  96.400%
+ 66 | 6,600,000,000,000..6… | +0.520340 |  50+1.28430e-04% | -0.914385 | -1.259913 |  23.600%
+ 67 | 6,700,000,000,000..6… | +0.479983 |  50+7.62700e-05% | -1.477169 | -0.650647 |  34.800%
+ 68 | 6,800,000,000,000..6… | -0.419931 |  50+5.05860e-05% | -0.631583 | -1.397293 |   7.200%
+ 69 | 6,900,000,000,000..6… | +1.156805 |  50+1.93656e-04% | -0.237658 | -0.068160 |  99.600%
+ 70 | 7,000,000,000,000..7… | -0.241718 |  50+3.76400e-05% | -0.995814 | -1.230131 |   1.400%
+ 71 | 7,100,000,000,000..7… | +0.237898 |  50+9.40700e-05% | -0.851665 | -0.538096 |  57.209%
+
+Best excursion segment:
+  idx         : 36
+  bestTrueZ   : +4.027199
+  meanTrueZ   : +2.529274
+  endTrueZ    : +2.078805
+  pctAbove50  : 100.0000%
+  best ZHeads : +0.170251
+  aAtTrueZ    : 50+6.63675e-04%
+  end ZHeads  : +0.288014
+  end a       : 50+3.74227e-04%
+
+Best settlement segment:
+  idx         : 36
+  bestTrueZ   : +4.027199
+  meanTrueZ   : +2.529274
+  endTrueZ    : +2.078805
+  pctAbove50  : 100.0000%
+  best ZHeads : +0.170251
+  aAtTrueZ    : 50+6.63675e-04%
+  end ZHeads  : +0.288014
+  end a       : 50+3.74227e-04%
+
+Worst settlement segment:
+  idx         : 28
+  bestTrueZ   : -1.907726
+  meanTrueZ   : -3.988874
+  endTrueZ    : -4.131921
+  pctAbove50  : 0.2000%
+  best ZHeads : -1.912691
+  aAtTrueZ    : 50+7.85000e-07%
+  end ZHeads  : -3.202280
+  end a       : 50-1.46989e-04%
+
+File compute time: 5.19:30:18.2239143
