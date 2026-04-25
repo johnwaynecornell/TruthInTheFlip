@@ -935,3 +935,18 @@ Worst settlement segment:
   end a       : 50-1.46989e-04%
 
 File compute time: 7.20:00:11.0355179
+
+________________________________________________________________________
+20260425_131520
+
+New metrics have been added to sample_report3, further justifying continued growth of the same-source RandomSD control. At present, the control still appears to carry meaningful influence from its standout jackpot segment, and I suspect both new measures may remain volatile for a time before settling into a clearer comparative picture.
+
+crypto3.tkr:
+Retained Anticipation: 50+1.00995e-04%
+Settlement Adjusted Anticipation: 50+1.46679e-04%
+
+crypto_RandomSD.tkr:
+Retained Anticipation: 50+8.43545e-05%
+Settlement Adjusted Anticipation: 50+1.73739e-04%
+
+At this stage, Retained Anticipation favors the subject, while Settlement Adjusted Anticipation currently favors the control, likely reflecting the continued influence of strong positive-settling segments in the control. For now I regard these as informative but still maturing measures rather than settled final comparators.

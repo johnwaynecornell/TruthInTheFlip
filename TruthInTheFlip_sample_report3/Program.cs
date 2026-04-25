@@ -292,6 +292,32 @@ if (grade >= Grade.High)
 
 if (grade >= Grade.All)
 {
+    //RetainedAnticipation = Σ(segmentMeanA * pctAbove50Fraction) / Σ(pctAbove50Fraction)
+    //SettlementAdjustedAnticipation = mean(segmentMeanA * clampPositive(segmentEndTrueZ))
+    double sumPctAbove50Fraction = 0;
+    double sumRetainedAnticipation = 0;
+
+    double sumSegmentEndTrueZ = 0;
+    double sumSettlementAdjustedAnticipation = 0;
+
+    foreach (SegmentStats s in segments)
+    {
+        sumPctAbove50Fraction += s.PctAbove50;
+        sumRetainedAnticipation += s.MeanA * s.PctAbove50;
+        
+        double segmentEndTrueZ = double.Max(0, s.EndTrueZ);
+        sumSegmentEndTrueZ += segmentEndTrueZ;
+        sumSettlementAdjustedAnticipation += s.MeanA * segmentEndTrueZ;
+    }
+    
+    double retainedAnticipation = sumRetainedAnticipation / sumPctAbove50Fraction;
+    message($"Retained Anticipation: {Tracker.FormatOffset(retainedAnticipation, "0.00000e+00")}");
+
+    double settlementAdjustedAnticipation = sumSettlementAdjustedAnticipation / sumSegmentEndTrueZ;
+    message($"Settlement Adjusted Anticipation: {Tracker.FormatOffset(settlementAdjustedAnticipation, "0.00000e+00")}");
+    
+    message();
+
     SegmentStats? bestExcursion = segments.OrderByDescending(s => s.BestTrueZ).FirstOrDefault();
     SegmentStats? bestSettlement = segments.OrderByDescending(s => s.EndTrueZ).FirstOrDefault();
     SegmentStats? worstSettlement = segments.OrderBy(s => s.EndTrueZ).FirstOrDefault();
@@ -371,10 +397,12 @@ sealed class SegmentStats
     public long Count;
     public long Good;
     public double SumTrueZ;
+    public double SumA;
 
     public double BestTrueZ = double.NegativeInfinity;
 
     public double MeanTrueZ => Count == 0 ? double.NaN : SumTrueZ / Count;
+    public double MeanA => Count == 0 ? double.NaN : SumA / Count;
     public double EndTrueZ => EndState == null ? double.NaN : EndState.ZScore - Math.Abs(EndState.ZScoreHeads);
     public double PctAbove50 => Count == 0 ? double.NaN : (Good / (double)Count) * 100.0;
 
@@ -389,6 +417,7 @@ sealed class SegmentStats
         }
 
         SumTrueZ += trueZ;
+        SumA += t.AnticipatedPercentage;
         Count++;
 
         if ((t.anticipated << 1) >= t.total)
