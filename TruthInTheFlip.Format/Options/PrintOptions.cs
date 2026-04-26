@@ -47,7 +47,7 @@ public class PrintOption : TrackerOption
                 
                 // Using Wallclock for smooth FPS
                 double durationSeconds = Math.Max(0.001, t.Source.wallclockTimeNs / 1_000_000_000.0); 
-                double fps = t.total / durationSeconds; // Lifetime FPS based on wallclock
+                double fps = t.Source.total / durationSeconds; // Lifetime FPS based on wallclock
 
                 TimeSpan ts1 = new TimeSpan((long)((proof1 / fps) * TimeSpan.TicksPerSecond));
                 TimeSpan ts2 = new TimeSpan((long)((proof2 / fps) * TimeSpan.TicksPerSecond));
@@ -88,7 +88,7 @@ public class PrintOption : TrackerOption
                 
                 // Using Wallclock for smooth FPS
                 double durationSeconds = Math.Max(0.001, t.Source.wallclockTimeNs / 1_000_000_000.0); 
-                double fps = t.total / durationSeconds; // Lifetime FPS based on wallclock
+                double fps = t.Source.total / durationSeconds; // Lifetime FPS based on wallclock
 
                 TimeSpan ts1 = new TimeSpan((long)((proof1 / fps) * TimeSpan.TicksPerSecond));
                 TimeSpan ts2 = new TimeSpan((long)((proof2 / fps) * TimeSpan.TicksPerSecond));
