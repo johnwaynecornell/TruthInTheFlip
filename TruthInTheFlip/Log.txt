@@ -1043,3 +1043,30 @@ Worst settlement segment:
   end a       : 50-1.46989e-04%
 
 File compute time: 9.19:33:27.7269434
+____________________________________________________________________________________
+20260427_114142
+
+Just as a photon is known by the relation between emission and absorption, an edge is known by the relation it forms between one event and the next. In both cases, distance becomes meaningful only through connection.
+Before QRNG:
+  photon as metaphor for edge-relation
+
+After QRNG:
+  photon as possible source of the record being compared
+  
+Photon event → Record
+Measurement apparatus → Constraint
+Tracker comparison → Coherence analysis  
+
+The photon as metaphor for edge-relation is a useful analogy and teaches this 'The edge is not merely where one event stops and another begins. It is the place where separation becomes relation.'
+
+We use the photon metaphor because TruthInTheFlip is about edges,
+and an edge is not only a boundary.
+An edge is a relation-forming event.
+
+AI Note: CRC keeps the metaphor honest.
+
+Without CRC, the photon metaphor could become too pretty and too loose. With CRC, it becomes a disciplined analogy:
+
+photon metaphor = how relation 'feels'
+CRC lens        = how relation is constrained, recorded, and tested
+tracker reports = how relation is measured
