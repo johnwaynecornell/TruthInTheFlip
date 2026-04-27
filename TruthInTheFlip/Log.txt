@@ -950,3 +950,96 @@ Retained Anticipation: 50+8.43545e-05%
 Settlement Adjusted Anticipation: 50+1.73739e-04%
 
 At this stage, Retained Anticipation favors the subject, while Settlement Adjusted Anticipation currently favors the control, likely reflecting the continued influence of strong positive-settling segments in the control. For now I regard these as informative but still maturing measures rather than settled final comparators.
+
+________________________________________________________________________
+20260427_063733 EDT:
+At 117 segments, the same-source RandomSD control appears mature enough to support the current overall comparison. While local excursion remains real, the broader segment profile continues to show negative average settlement and persistence, with no sign of a reversal in the overall story. I may leave it running as a living control, but it no longer appears necessary for establishing the present conclusion.
+
+more at
+https://johncornell.net/truthintheflip-at-the-current-horizon 
+'At this point, there is nothing absurd about treating Shannon neg-entropy as a partially quantifiable class of order.'
+
+crypto_RandomSD.tkr : 20260427_103725.83 | 11696600000000 flips → heads: 50+6.4e-05% | aHeads: 50+1.9e-04% | aTails: 50-1.4e-04% | aSame: 50+2.4e-04% | aDiff: 50-1.9e-04% | a: 50+2.6e-05% | base: 50+2.6e-05% | Z: 0.165172 | [RATE] H/T: 50+9.0e-05%/ 50-3.8e-05% S/D: 50+2.4e-04%/ 50-1.9e-04% | threadTime: 168:00:27:42.9338678 | wallclock: 9:19:33:27.7269434 | flips/sec: 9808729.7695 | Z(1.96) in 16:11:56:20.5788607 | Z(3.00) in 38:19:23:53.9175723
+
+segments              : 117
+Edge Excursion Score  : +0.520340   // median(best TrueZ per segment)
+Edge Settlement Score : -0.767360   // mean(end TrueZ per segment)
+Edge Persistence Index: -0.372968   // settlement * fraction positive
+
+avgBestTrueZ          : +0.555967
+medianBestTrueZ       : +0.520340
+avgEndTrueZ           : -0.767360
+medianEndTrueZ        : -0.778799
+avgMeanTrueZ          : -0.766003
+avgPctAbove50         :  48.6041%
+
+bestTrueZ >= 1.96     :   5.1282%
+bestTrueZ >= 3.00     :   1.7094%
+endTrueZ  >= 0.00     :  23.0769%
+endTrueZ  >= 1.96     :   0.8547%
+meanTrueZ >= 0.00     :  14.5299%
+
+idx | span                  | bestTrueZ | aAtBestTrueZ     | endTrueZ  | meanTrueZ | %>50
+----+-----------------------+-----------+------------------+-----------+-----------+---------
+   ...
+   (0 through 95 removed for brevity)
+   ...
+ 96 | 9,600,000,000,000..9… | +1.125815 |  50+2.77091e-04% | +0.643928 | -0.736737 |  50.800%
+ 97 | 9,700,000,000,000..9… | +1.510165 |  50+2.52591e-04% | +0.054897 | +0.343937 | 100.000%
+ 98 | 9,800,000,000,000..9… | +0.928021 |  50+1.52329e-04% | -2.361589 | -0.217694 |  78.000%
+ 99 | 9,900,000,000,000..9… | +1.287610 |  50+3.47122e-04% | +1.197377 | -1.031133 |  82.200%
+100 | 10,000,000,000,000..… | +1.482248 |  50+3.48450e-04% | -3.861736 | -2.015487 |  38.600%
+101 | 10,100,000,000,000..… | -0.228437 |  50-3.12170e-05% | -1.492797 | -1.862038 |   0.000%
+102 | 10,200,000,000,000..… | -0.015672 |  50+6.52200e-06% | -2.682579 | -1.388894 |   0.200%
+103 | 10,300,000,000,000..… | -1.360665 |  50-1.01490e-04% | -1.470320 | -2.259412 |   0.000%
+104 | 10,400,000,000,000..… | +1.151246 |  50+2.92317e-04% | +0.873959 | -0.080380 |  73.600%
+105 | 10,500,000,000,000..… | +2.418409 |  50+3.84504e-04% | +1.820125 | +1.252703 | 100.000%
+106 | 10,600,000,000,000..… | +1.935485 |  50+3.14682e-04% | +0.551337 | +0.861519 | 100.000%
+107 | 10,700,000,000,000..… | +0.991621 |  50+2.71191e-04% | -2.193887 | -0.801814 |  60.600%
+108 | 10,800,000,000,000..… | +0.254437 |  50+6.11000e-05% | -0.947380 | -0.774767 |  54.600%
+109 | 10,900,000,000,000..… | -0.301795 |  50+5.96980e-05% | -2.031340 | -1.845391 |   7.400%
+110 | 11,000,000,000,000..… | -0.919660 |  50-9.71850e-05% | -1.113900 | -1.731993 |   0.000%
+111 | 11,100,000,000,000..… | -0.619591 |  50-8.24730e-05% | -2.427921 | -1.618346 |   0.000%
+112 | 11,200,000,000,000..… | -0.567641 |  50-3.01200e-05% | -2.079881 | -1.896200 |   0.000%
+113 | 11,300,000,000,000..… | -0.267535 |  50-3.67140e-05% | -0.267535 | -1.901606 |   1.800%
+114 | 11,400,000,000,000..… | +1.531055 |  50+2.44325e-04% | +0.539061 | +0.567125 |  98.600%
+115 | 11,500,000,000,000..… | +1.237444 |  50+2.07372e-04% | -2.200174 | -0.034240 |  56.400%
+116 | 11,600,000,000,000..… | +0.164527 |  50+2.64190e-05% | -0.241067 | -0.739523 |  45.248%
+
+Retained Anticipation: 50+8.57301e-05%
+Settlement Adjusted Anticipation: 50+1.77728e-04%
+
+Best excursion segment:
+  idx         : 36
+  bestTrueZ   : +4.027199
+  meanTrueZ   : +2.529274
+  endTrueZ    : +2.078805
+  pctAbove50  : 100.0000%
+  best ZHeads : +0.170251
+  aAtTrueZ    : 50+6.63675e-04%
+  end ZHeads  : +0.288014
+  end a       : 50+3.74227e-04%
+
+Best settlement segment:
+  idx         : 36
+  bestTrueZ   : +4.027199
+  meanTrueZ   : +2.529274
+  endTrueZ    : +2.078805
+  pctAbove50  : 100.0000%
+  best ZHeads : +0.170251
+  aAtTrueZ    : 50+6.63675e-04%
+  end ZHeads  : +0.288014
+  end a       : 50+3.74227e-04%
+
+Worst settlement segment:
+  idx         : 28
+  bestTrueZ   : -1.907726
+  meanTrueZ   : -3.988874
+  endTrueZ    : -4.131921
+  pctAbove50  : 0.2000%
+  best ZHeads : -1.912691
+  aAtTrueZ    : 50+7.85000e-07%
+  end ZHeads  : -3.202280
+  end a       : 50-1.46989e-04%
+
+File compute time: 9.19:33:27.7269434
