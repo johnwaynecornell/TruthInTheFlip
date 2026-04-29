@@ -1070,3 +1070,65 @@ Without CRC, the photon metaphor could become too pretty and too loose. With CRC
 photon metaphor = how relation 'feels'
 CRC lens        = how relation is constrained, recorded, and tested
 tracker reports = how relation is measured
+_______________________________________________________________________________
+20260429_074813 EDT:
+Stopped crypto_RandomSD.tkr after an operationally continuous run of almost 12 days due to system reboot / crash-risk concerns. The stop was infrastructure-driven, not result-driven.
+
+Final checkpoint:
+  flips                  : 13,597,200,000,000
+  wallclock              : 11:20:42:21.8677148
+  flips/sec              : 8,853,083.0862
+  aggregate Z            : +2.208320
+  segments               : 136
+
+Segmented profile:
+  Edge Excursion Score   : +0.564264
+  Edge Settlement Score  : -0.738076
+  Edge Persistence Index : -0.363341
+  avgBestTrueZ           : +0.614859
+  avgEndTrueZ            : -0.738076
+  avgMeanTrueZ           : -0.757290
+  avgPctAbove50          : 49.2282%
+  endTrueZ >= 0          : 23.5294%
+  meanTrueZ >= 0         : 13.9706%
+
+Notable sovereign segment:
+  idx                    : 36
+  bestTrueZ              : +4.027199
+  meanTrueZ              : +2.529274
+  endTrueZ               : +2.078805
+  pctAbove50             : 100.0000%
+
+Worst settlement segment:
+  idx                    : 28
+  bestTrueZ              : -1.907726
+  meanTrueZ              : -3.988874
+  endTrueZ               : -4.131921
+  pctAbove50             : 0.2000%
+
+Interpretive note:
+  This control checkpoint is especially useful because it ended with a positive aggregate Z score while still showing negative edge settlement and negative persistence. That makes it a stronger comparison rather than a weaker one. The control demonstrates that local brilliance and even aggregate lift can occur without producing the same durable segmented edge profile observed in crypto3.tkr. This supports the current TruthInTheFlip distinction between excursion, settlement, and persistence, and preserves the comparison as unbiased because the stop was caused by system maintenance rather than by a favorable interpretive endpoint.
+
+CRC note:
+  The control became a strong example of record-pressure: apparent order appeared locally and aggregate Z remained positive, but the segmented record did not preserve durable settlement coherence.
+
+116 | 11,600,000,000,000..… | +0.164527 |  50+2.64190e-05% | -0.037555 | -0.719745 |  47.000%
+117 | 11,700,000,000,000..… | -0.093312 |  50-8.51100e-06% | -1.423107 | -1.919863 |   2.000%
+118 | 11,800,000,000,000..… | +0.564258 |  50+2.13563e-04% | -1.506882 | -0.370278 |  93.600%
+119 | 11,900,000,000,000..… | +0.086608 |  50+8.18280e-05% | -0.075370 | -2.126069 |  11.400%
+120 | 12,000,000,000,000..… | +0.852316 |  50+1.53002e-04% | -2.964218 | -0.959652 |  34.600%
+121 | 12,100,000,000,000..… | -0.647540 |  50-2.73950e-05% | -0.855428 | -1.829372 |   0.000%
+122 | 12,200,000,000,000..… | -0.481944 |  50-2.49350e-05% | -2.273304 | -1.669301 |   0.600%
+123 | 12,300,000,000,000..… | +2.132368 |  50+3.67136e-04% | +1.736470 | -0.872676 |  35.800%
+124 | 12,400,000,000,000..… | +2.097963 |  50+3.49681e-04% | -3.515371 | -0.512041 |  68.600%
+125 | 12,500,000,000,000..… | -1.072347 |  50+2.79850e-05% | -1.810998 | -2.808376 |   7.400%
+126 | 12,600,000,000,000..… | -0.065813 |  50+4.43790e-05% | -0.765069 | -0.904681 |  11.000%
+127 | 12,700,000,000,000..… | +1.431765 |  50+3.24677e-04% | +1.373415 | -0.210696 |  77.600%
+128 | 12,800,000,000,000..… | +2.451379 |  50+4.01718e-04% | -0.978048 | -0.060078 |  92.800%
+129 | 12,900,000,000,000..… | +0.280007 |  50+1.21030e-04% | -0.423600 | -0.550152 |  82.600%
+130 | 13,000,000,000,000..… | +1.041300 |  50+3.46309e-04% | -0.387613 | -0.358819 | 100.000%
+131 | 13,100,000,000,000..… | +0.077621 |  50+1.65726e-04% | -0.756259 | -0.862568 |  97.800%
+132 | 13,200,000,000,000..… | +3.116482 |  50+5.41306e-04% | +2.051098 | +1.046908 | 100.000%
+133 | 13,300,000,000,000..… | +2.102643 |  50+3.67472e-04% | -0.758017 | -0.102019 |  54.600%
+134 | 13,400,000,000,000..… | +0.991785 |  50+1.81149e-04% | +0.571892 | -0.506677 |  36.200%
+135 | 13,500,000,000,000..… | +3.707157 |  50+5.88712e-04% | +1.959638 | +2.187566 | 100.000%
