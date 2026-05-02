@@ -1132,3 +1132,9 @@ CRC note:
 133 | 13,300,000,000,000..… | +2.102643 |  50+3.67472e-04% | -0.758017 | -0.102019 |  54.600%
 134 | 13,400,000,000,000..… | +0.991785 |  50+1.81149e-04% | +0.571892 | -0.506677 |  36.200%
 135 | 13,500,000,000,000..… | +3.707157 |  50+5.88712e-04% | +1.959638 | +2.187566 | 100.000%
+
+_______________________________________________________
+20260502_143408
+Introduced .net10, future log entries will look more like this:
+TruthInTheFlip_sample_report3/bin/Debug/net10.0/TruthInTheFlip_sample_report3 -window def -print Detailed $NewAgeData/Documents/Trackers/crypto_RandomSD.tkr
+net8.0 is available(for the time being) in the TruthInTheFlip_sample_report3/bin/Debug/net8.0/ directory.

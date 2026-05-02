@@ -37,11 +37,12 @@ The `Tracker` handles the logic evaluation, mathematical logging, and high-preci
 ## Getting Started
 
 ### Prerequisites
-* .NET 8.0 SDK (or newer)
+* .NET 8.0 SDK for the supported baseline build.
+* .NET 10.0 SDK to build and run the newer high-performance target.
 
 ### Running the Simulation
 1. Clone the repository.
-2. Build the project: `dotnet build`
+2. Build the project: `dotnet build` for both or `dotnet buld -f net8.0` or `dotnet build -f net10.0` 
 3. Run the simulation using the command-line interface:
 
 ```bash
