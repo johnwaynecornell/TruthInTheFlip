@@ -15,7 +15,6 @@ public static class QuantisInterop
     {
         // The Quantis API groups PCI and PCI Express under the same value.
         PCI = 1,
-        PCIe = PCI,
         USB = 2
     }
 
@@ -28,7 +27,7 @@ public static class QuantisInterop
 
         void AssertReady();
 
-        bool SetSourceEntropyMode(bool enable = true);
+        bool SetSourceEntropyMode(bool ? enable = true);
 
         bool? CurrentSourceEntropyMode { get; }
     }
@@ -63,9 +62,15 @@ public static class QuantisInterop
         
         public static int CountDevices(DeviceType deviceType)
         {
-            return OperatingSystem.IsWindows() ? QuantisCountWindows(deviceType) : QuantisCountLinux(deviceType);
-        }
+            if (OperatingSystem.IsWindows())
+                return QuantisCountWindows(deviceType);
 
+            if (OperatingSystem.IsLinux())
+                return QuantisCountLinux(deviceType);
+
+            throw new PlatformNotSupportedException(
+                "Quantis device enumeration currently supports Windows and Linux.");
+        }
         protected abstract int GetModulesMask(
             DeviceType deviceType,
             uint deviceNumber);
@@ -181,24 +186,27 @@ public static class QuantisInterop
             }
         }
 
-        public bool SetSourceEntropyMode(bool enable = true)
+        public bool SetSourceEntropyMode(bool ? enable = true)
         {
             lock (stateLock)
             {
-                if (CurrentSourceEntropyMode.HasValue)
+                if (enable != null)
                 {
-                    if (CurrentSourceEntropyMode.Value != enable)
+                    if (CurrentSourceEntropyMode.HasValue)
                     {
-                        throw new InvalidOperationException(
-                            $"Quantis {DeviceType} device {DeviceNumber} " +
-                            $"was already initialized with source entropy mode " +
-                            $"{CurrentSourceEntropyMode.Value}.");
-                    }
+                        if (CurrentSourceEntropyMode.Value != enable)
+                        {
+                            throw new InvalidOperationException(
+                                $"Quantis {DeviceType} device {DeviceNumber} " +
+                                $"was already initialized with source entropy mode " +
+                                $"{CurrentSourceEntropyMode.Value}.");
+                        }
 
-                    return true;
+                        return true;
+                    }
                 }
 
-                if (enable)
+                if (enable == true)
                 {
                     int rc = DisableExtractor(DeviceType, DeviceNumber);
 
@@ -208,7 +216,8 @@ public static class QuantisInterop
 
                 /*
                  * When enable is false, no native operation is performed.
-                 * This means: preserve the device/API default processing mode.
+                 * This means: preserve the device/API default processing mode. An explicit mode set will be looked into.
+                 * enable == null means the caller has relinquished control over the mode.
                  */
                 CurrentSourceEntropyMode = enable;
                 return true;
@@ -233,12 +242,6 @@ public static class QuantisInterop
 
         private static class Imports
         {
-            [DllImport(
-                "Quantis",
-                EntryPoint = "QuantisCount",
-                CallingConvention = CallingConvention.Cdecl)]
-            internal static extern int QuantisCount(DeviceType deviceType);
-
             [DllImport(
                 "Quantis",
                 EntryPoint = "QuantisGetModulesMask",
