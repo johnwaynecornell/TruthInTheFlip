@@ -12,8 +12,6 @@ The algorithm explores the natural properties of randomness—specifically, the 
 
 The goal is to measure whether this meta-anticipation yields a success rate statistically greater than 50% over a massive dataset, evaluated via continuous Z-score calculation.
 
-The goal is to measure whether this meta-anticipation yields a success rate statistically greater than 50% over a massive dataset, evaluated via continuous Z-score calculation.
-
 ## Architecture & Performance
 
 To achieve the massive sample sizes required for statistical proof (100+ billion iterations), the harness is heavily optimized for CPU-bound parallel processing and decoupled for maximum extensibility.
