@@ -32,6 +32,30 @@ public static class QuantisInterop
 
         void AssertReady();
     }
+    
+    [DllImport(
+        "Quantis",
+        EntryPoint = "QuantisCount",
+        CallingConvention = CallingConvention.Cdecl)]
+    internal static extern int QuantisCountWindows(DeviceType deviceType);
+        
+    [DllImport(
+        "quantis",
+        EntryPoint = "QuantisCount",
+        CallingConvention = CallingConvention.Cdecl)]
+    internal static extern int QuantisCountLinux(DeviceType deviceType);
+        
+    public static int CountDevices(DeviceType deviceType)
+    {
+        if (OperatingSystem.IsWindows())
+            return QuantisCountWindows(deviceType);
+
+        if (OperatingSystem.IsLinux())
+            return QuantisCountLinux(deviceType);
+
+        throw new PlatformNotSupportedException(
+            "Quantis device enumeration currently supports Windows and Linux.");
+    }
 
     private abstract class SimpleQuantBase : ISimpleQuant
     {
@@ -46,30 +70,7 @@ public static class QuantisInterop
         public DeviceType DeviceType { get; }
 
         public uint DeviceNumber { get; }
-
-        [DllImport(
-            "Quantis",
-            EntryPoint = "QuantisCount",
-            CallingConvention = CallingConvention.Cdecl)]
-        internal static extern int QuantisCountWindows(DeviceType deviceType);
         
-        [DllImport(
-            "quantis",
-            EntryPoint = "QuantisCount",
-            CallingConvention = CallingConvention.Cdecl)]
-        internal static extern int QuantisCountLinux(DeviceType deviceType);
-        
-        public static int CountDevices(DeviceType deviceType)
-        {
-            if (OperatingSystem.IsWindows())
-                return QuantisCountWindows(deviceType);
-
-            if (OperatingSystem.IsLinux())
-                return QuantisCountLinux(deviceType);
-
-            throw new PlatformNotSupportedException(
-                "Quantis device enumeration currently supports Windows and Linux.");
-        }
         protected abstract int GetModulesMask(
             DeviceType deviceType,
             uint deviceNumber);
