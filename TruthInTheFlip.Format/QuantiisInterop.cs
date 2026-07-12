@@ -10,6 +10,11 @@ public static class QuantisInterop
      * This code remains under active development and requires validation
      * against the Quantis headers distributed with the installed SDK.
      */
+    
+    /*
+     * In order to allow compilation without binary dependencies, DllImport is used over the Quantis managed wrapper
+     */
+    
 
     public enum DeviceType
     {
@@ -23,13 +28,9 @@ public static class QuantisInterop
         DeviceType DeviceType { get; }
         uint DeviceNumber { get; }
 
-        int Read(byte[] buffer, nuint size);
+        nint Read(byte[] buffer, nint size, bool sourceEntropy);
 
         void AssertReady();
-
-        bool SetSourceEntropyMode(bool ? enable = true);
-
-        bool? CurrentSourceEntropyMode { get; }
     }
 
     private abstract class SimpleQuantBase : ISimpleQuant
@@ -45,8 +46,6 @@ public static class QuantisInterop
         public DeviceType DeviceType { get; }
 
         public uint DeviceNumber { get; }
-
-        public bool? CurrentSourceEntropyMode { get; private set; }
 
         [DllImport(
             "Quantis",
@@ -83,144 +82,124 @@ public static class QuantisInterop
             DeviceType deviceType,
             uint deviceNumber);
 
-        protected abstract int DisableExtractor(
-            DeviceType deviceType,
-            uint deviceNumber);
-
-        protected abstract int ReadNative(
+        protected abstract nint ReadNative(
             DeviceType deviceType,
             uint deviceNumber,
             byte[] buffer,
-            nuint size);
+            nint size,
+            bool sourceEntropy);
 
-        public int Read(byte[] buffer, nuint size)
+        public nint Read(byte[] buffer, nint size, bool sourceEntropy)
         {
             ArgumentNullException.ThrowIfNull(buffer);
 
-            if (size > (nuint)buffer.Length)
+            if (size > (nint)buffer.Length)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(size),
                     "The requested read size exceeds the destination buffer.");
             }
 
-            return ReadNative(DeviceType, DeviceNumber, buffer, size);
+            nint bytesRead = ReadNative(DeviceType, DeviceNumber, buffer, size, sourceEntropy);
+            if (bytesRead < 0)
+            {
+                throw CreateNativeException(
+                    "QuantisRead",
+                    (int)bytesRead);
+            }
+            
+            if (bytesRead != size)
+            {
+                throw new InvalidOperationException($"QRNG random read failed. Expected {size} bytes, got {bytesRead}.");
+            }
+
+            return bytesRead;
         }
 
         public void AssertReady()
         {
-            int count = CountDevices(DeviceType);
-
-            if (count < 0)
+            try
             {
-                throw CreateNativeException(
-                    "QuantisCount",
-                    count);
-            }
 
-            if (DeviceNumber >= (uint)count)
-            {
-                throw new InvalidOperationException(
-                    $"Quantis {DeviceType} device {DeviceNumber} is unavailable. " +
-                    $"{count} device(s) of that type were detected.");
-            }
+                int count = CountDevices(DeviceType);
 
-            int modulesMask = GetModulesMask(DeviceType, DeviceNumber);
-
-            if (modulesMask < 0)
-            {
-                throw CreateNativeException(
-                    "QuantisGetModulesMask",
-                    modulesMask);
-            }
-
-            if (modulesMask == 0)
-            {
-                throw new InvalidOperationException(
-                    $"Quantis {DeviceType} device {DeviceNumber} " +
-                    "does not report any installed entropy modules.");
-            }
-
-            int modulesPower = GetModulesPower(DeviceType, DeviceNumber);
-
-            if (modulesPower < 0)
-            {
-                throw CreateNativeException(
-                    "QuantisGetModulesPower",
-                    modulesPower);
-            }
-
-            if (modulesPower == 0)
-            {
-                throw new InvalidOperationException(
-                    $"Quantis {DeviceType} device {DeviceNumber} " +
-                    "reports that its entropy modules are not powered.");
-            }
-
-            int modulesStatus = GetModulesStatus(DeviceType, DeviceNumber);
-
-            if (modulesStatus < 0)
-            {
-                throw CreateNativeException(
-                    "QuantisGetModulesStatus",
-                    modulesStatus);
-            }
-
-            if (modulesStatus == 0)
-            {
-                throw new InvalidOperationException(
-                    $"Quantis {DeviceType} device {DeviceNumber} " +
-                    "has no enabled and functional entropy modules.");
-            }
-
-            if ((modulesStatus & modulesMask) != modulesMask)
-            {
-                int unavailableMask = modulesMask & ~modulesStatus;
-
-                throw new InvalidOperationException(
-                    $"Quantis {DeviceType} device {DeviceNumber} " +
-                    $"has unavailable entropy modules. " +
-                    $"Installed mask: 0x{modulesMask:X}; " +
-                    $"functional mask: 0x{modulesStatus:X}; " +
-                    $"unavailable mask: 0x{unavailableMask:X}.");
-            }
-        }
-
-        public bool SetSourceEntropyMode(bool ? enable = true)
-        {
-            lock (stateLock)
-            {
-                if (enable != null)
+                if (count < 0)
                 {
-                    if (CurrentSourceEntropyMode.HasValue)
-                    {
-                        if (CurrentSourceEntropyMode.Value != enable)
-                        {
-                            throw new InvalidOperationException(
-                                $"Quantis {DeviceType} device {DeviceNumber} " +
-                                $"was already initialized with source entropy mode " +
-                                $"{CurrentSourceEntropyMode.Value}.");
-                        }
-
-                        return true;
-                    }
+                    throw CreateNativeException(
+                        "QuantisCount",
+                        count);
                 }
 
-                if (enable == true)
+                if (DeviceNumber >= (uint)count)
                 {
-                    int rc = DisableExtractor(DeviceType, DeviceNumber);
-
-                    if (rc != 0)
-                        return false;
+                    throw new InvalidOperationException(
+                        $"Quantis {DeviceType} device {DeviceNumber} is unavailable. " +
+                        $"{count} device(s) of that type were detected.");
                 }
 
-                /*
-                 * When enable is false, no native operation is performed.
-                 * This means: preserve the device/API default processing mode. An explicit mode set will be looked into.
-                 * enable == null means the caller has relinquished control over the mode.
-                 */
-                CurrentSourceEntropyMode = enable;
-                return true;
+                int modulesMask = GetModulesMask(DeviceType, DeviceNumber);
+
+                if (modulesMask < 0)
+                {
+                    throw CreateNativeException(
+                        "QuantisGetModulesMask",
+                        modulesMask);
+                }
+
+                if (modulesMask == 0)
+                {
+                    throw new InvalidOperationException(
+                        $"Quantis {DeviceType} device {DeviceNumber} " +
+                        "does not report any installed entropy modules.");
+                }
+
+                int modulesPower = GetModulesPower(DeviceType, DeviceNumber);
+
+                if (modulesPower < 0)
+                {
+                    throw CreateNativeException(
+                        "QuantisGetModulesPower",
+                        modulesPower);
+                }
+
+                if (modulesPower == 0)
+                {
+                    throw new InvalidOperationException(
+                        $"Quantis {DeviceType} device {DeviceNumber} " +
+                        "reports that its entropy modules are not powered.");
+                }
+
+                int modulesStatus = GetModulesStatus(DeviceType, DeviceNumber);
+
+                if (modulesStatus < 0)
+                {
+                    throw CreateNativeException(
+                        "QuantisGetModulesStatus",
+                        modulesStatus);
+                }
+
+                if (modulesStatus == 0)
+                {
+                    throw new InvalidOperationException(
+                        $"Quantis {DeviceType} device {DeviceNumber} " +
+                        "has no enabled and functional entropy modules.");
+                }
+
+                if ((modulesStatus & modulesMask) != modulesMask)
+                {
+                    int unavailableMask = modulesMask & ~modulesStatus;
+
+                    throw new InvalidOperationException(
+                        $"Quantis {DeviceType} device {DeviceNumber} " +
+                        $"has unavailable entropy modules. " +
+                        $"Installed mask: 0x{modulesMask:X}; " +
+                        $"functional mask: 0x{modulesStatus:X}; " +
+                        $"unavailable mask: 0x{unavailableMask:X}.");
+                }
+            }
+            catch (DllNotFoundException except)
+            {
+                throw new InvalidOperationException("Quantis Dll not available. If you are using Quantis, please ensure your platform dll (libquantis.so or Quantis.dll) is available on path or next to binary", except);
             }
         }
 
@@ -265,28 +244,26 @@ public static class QuantisInterop
             internal static extern int QuantisGetModulesPower(
                 DeviceType deviceType,
                 uint deviceNumber);
-
-            /*
-             * This import is still provisional. Verify its existence and
-             * signature against the SDK installed with the device.
-             */
-            [DllImport(
-                "Quantis",
-                EntryPoint = "QuantisDisableExtractor",
-                CallingConvention = CallingConvention.Cdecl)]
-            internal static extern int QuantisDisableExtractor(
-                DeviceType deviceType,
-                uint deviceNumber);
-
+            
             [DllImport(
                 "Quantis",
                 EntryPoint = "QuantisRead",
                 CallingConvention = CallingConvention.Cdecl)]
-            internal static extern int QuantisRead(
+            internal static extern nint QuantisRead(
                 DeviceType deviceType,
                 uint deviceNumber,
                 byte[] buffer,
-                nuint size);
+                nint size);
+            
+            [DllImport(
+                "Quantis",
+                EntryPoint = "QuantisReadRaw",
+                CallingConvention = CallingConvention.Cdecl)]
+            internal static extern nint QuantisReadRaw(
+                DeviceType deviceType,
+                uint deviceNumber,
+                byte[] buffer,
+                nint size);
         }
         
         protected override int GetModulesMask(
@@ -304,17 +281,13 @@ public static class QuantisInterop
             uint deviceNumber) =>
             Imports.QuantisGetModulesPower(deviceType, deviceNumber);
 
-        protected override int DisableExtractor(
-            DeviceType deviceType,
-            uint deviceNumber) =>
-            Imports.QuantisDisableExtractor(deviceType, deviceNumber);
-
-        protected override int ReadNative(
+        
+        protected override nint ReadNative(
             DeviceType deviceType,
             uint deviceNumber,
             byte[] buffer,
-            nuint size) =>
-            Imports.QuantisRead(deviceType, deviceNumber, buffer, size);
+            nint size, bool sourceEntropy) =>
+            sourceEntropy ? Imports.QuantisReadRaw(deviceType, deviceNumber, buffer, size) : Imports.QuantisRead(deviceType, deviceNumber, buffer, size);
     }
 
     private sealed class LinuxQuant : SimpleQuantBase
@@ -349,27 +322,26 @@ public static class QuantisInterop
             internal static extern int QuantisGetModulesPower(
                 DeviceType deviceType,
                 uint deviceNumber);
-
-            /*
-             * Provisional until verified against the installed SDK.
-             */
-            [DllImport(
-                "quantis",
-                EntryPoint = "QuantisDisableExtractor",
-                CallingConvention = CallingConvention.Cdecl)]
-            internal static extern int QuantisDisableExtractor(
-                DeviceType deviceType,
-                uint deviceNumber);
-
+            
             [DllImport(
                 "quantis",
                 EntryPoint = "QuantisRead",
                 CallingConvention = CallingConvention.Cdecl)]
-            internal static extern int QuantisRead(
+            internal static extern nint QuantisRead(
                 DeviceType deviceType,
                 uint deviceNumber,
                 byte[] buffer,
-                nuint size);
+                nint size);
+            
+            [DllImport(
+                "quantis",
+                EntryPoint = "QuantisReadRaw",
+                CallingConvention = CallingConvention.Cdecl)]
+            internal static extern nint QuantisReadRaw(
+                DeviceType deviceType,
+                uint deviceNumber,
+                byte[] buffer,
+                nint size);
         }
         
         protected override int GetModulesMask(
@@ -386,18 +358,12 @@ public static class QuantisInterop
             DeviceType deviceType,
             uint deviceNumber) =>
             Imports.QuantisGetModulesPower(deviceType, deviceNumber);
-
-        protected override int DisableExtractor(
-            DeviceType deviceType,
-            uint deviceNumber) =>
-            Imports.QuantisDisableExtractor(deviceType, deviceNumber);
-
-        protected override int ReadNative(
+        protected override nint ReadNative(
             DeviceType deviceType,
             uint deviceNumber,
             byte[] buffer,
-            nuint size) =>
-            Imports.QuantisRead(deviceType, deviceNumber, buffer, size);
+            nint size, bool sourceEntropy) =>
+            sourceEntropy ? Imports.QuantisReadRaw(deviceType, deviceNumber, buffer, size) : Imports.QuantisRead(deviceType, deviceNumber, buffer, size);
     }
 
     private static readonly object DevicesLock = new();
@@ -441,12 +407,7 @@ public static class QuantisInterop
         {
             device.AssertReady();
 
-            if (!device.SetSourceEntropyMode(enforcePureEntropy))
-            {
-                throw new InvalidOperationException(
-                    "The requested Quantis entropy-source mode was not delivered.");
-            }
-
+            
             Console.WriteLine(
                 enforcePureEntropy
                     ? "Quantis QRNG initialized: source entropy mode active."
@@ -456,9 +417,9 @@ public static class QuantisInterop
             {
                 ArgumentNullException.ThrowIfNull(buffer);
 
-                int bytesRead = device.Read(
+                nint bytesRead = device.Read(
                     buffer,
-                    (nuint)buffer.Length);
+                    (nint)buffer.Length, enforcePureEntropy);
 
                 if (bytesRead < 0)
                 {
