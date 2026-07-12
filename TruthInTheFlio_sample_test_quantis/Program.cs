@@ -33,24 +33,30 @@ Dump("\nentropy random:", buffer);
 
 void Dump(string message, byte[] buffer)
 {
-    StringBuilder sb = new StringBuilder();
-    sb.AppendLine(message);
+    Console.WriteLine(message);
     
+    StringBuilder sb = new StringBuilder();
     int c = 0;
+    
     for (int position = 0; position < buffer.Length; position += 8)
     {
         sb.Append("[ ");
-        sb.Append(BitConverter.ToString(buffer, position, 8));
-        sb.Append(" ]");
+        
+        int length = Math.Min(8, buffer.Length - position);
+        sb.Append(BitConverter.ToString(buffer, position, length));
+        sb.Append(" ] ");
 
         c++;
         if (c == 16)
         {
-            sb.AppendLine();
+            Console.WriteLine(sb.ToString());
+            sb.Clear(); // Reset for the next line
             c = 0;
         }
     }
     
-    Console.WriteLine(sb.ToString());
+    if (sb.Length > 0)
+    {
+        Console.WriteLine(sb.ToString());
+    }
 }
-    
