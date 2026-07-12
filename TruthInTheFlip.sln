@@ -12,6 +12,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TruthInTheFlip_sample_repor
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TruthInTheFlip_sample_report3", "TruthInTheFlip_sample_report3\TruthInTheFlip_sample_report3.csproj", "{F9D0A6D4-36C8-4716-9447-132A40F7F998}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TruthInTheFlio_sample_test_quantis", "TruthInTheFlio_sample_test_quantis\TruthInTheFlio_sample_test_quantis.csproj", "{4CA1A303-5E30-46C8-A429-581521FA0E8D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -42,5 +44,9 @@ Global
 		{F9D0A6D4-36C8-4716-9447-132A40F7F998}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F9D0A6D4-36C8-4716-9447-132A40F7F998}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F9D0A6D4-36C8-4716-9447-132A40F7F998}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4CA1A303-5E30-46C8-A429-581521FA0E8D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4CA1A303-5E30-46C8-A429-581521FA0E8D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4CA1A303-5E30-46C8-A429-581521FA0E8D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4CA1A303-5E30-46C8-A429-581521FA0E8D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
