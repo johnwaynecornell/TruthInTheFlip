@@ -406,13 +406,9 @@ public static class QuantisInterop
         return () =>
         {
             device.AssertReady();
-
             
-            Console.WriteLine(
-                enforcePureEntropy
-                    ? "Quantis QRNG initialized: source entropy mode active."
-                    : "Quantis QRNG initialized: default processing mode active.");
-
+            Console.WriteLine($"Quantis QRNG initialized.  {deviceType} Dev{deviceNumber}{ ((!enforcePureEntropy) ? " not" : "")} using source entropy");
+                
             return buffer =>
             {
                 ArgumentNullException.ThrowIfNull(buffer);
