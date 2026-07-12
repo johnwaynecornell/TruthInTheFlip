@@ -3,15 +3,23 @@ using TruthInTheFlip.Format;
 
 try
 {
-    if (QuantisInterop.CountDevices(QuantisInterop.DeviceType.PCI)<1)
+    int count = QuantisInterop.CountDevices(QuantisInterop.DeviceType.PCI);
+
+    if (count < 0)
     {
-        Console.WriteLine("No Quantis PCI device found");
+        Console.Error.WriteLine("Quantis detection: 'QuantisCount' returned: " + count);
+        return;
+    }   
+    
+    if (count<1)
+    {
+        Console.Error.WriteLine("No Quantis PCI device found");
         return;
     }
 } catch (Exception ex)
 {
-    Console.WriteLine("Quantis hardware/drivers not detected. Skipping hardware entropy test.");
-    Console.WriteLine("Quantis.dll for Windows and libquantis.so for Linux should be resolvable or in binary directory.");
+    Console.Error.WriteLine("Quantis hardware/drivers not detected. Skipping hardware entropy test.");
+    Console.Error.WriteLine("Quantis.dll for Windows and libquantis.so for Linux should be resolvable or in binary directory.");
     return;
 }
 
