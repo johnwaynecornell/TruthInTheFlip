@@ -3,7 +3,7 @@ using TruthInTheFlip.Format;
 
 try
 {
-    int count = QuantisInterop.CountDevices(QuantisInterop.DeviceType.PCI);
+    int count = QuantisInterop.QuantisCount(QuantisInterop.DeviceType.PCI);
 
     if (count < 0)
     {

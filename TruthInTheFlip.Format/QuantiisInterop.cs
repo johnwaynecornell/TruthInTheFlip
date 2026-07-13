@@ -8,11 +8,12 @@ public static class QuantisInterop
 {
     /*
      * This code remains under active development and requires validation
-     * against the Quantis headers distributed with the installed SDK.
+     *  against the Quantis headers distributed with the installed SDK.
+     *  Validation has begun. Updates soon.
      */
     
     /*
-     * In order to allow compilation without binary dependencies, DllImport is used over the Quantis managed wrapper
+     * In order to allow compilation without binary dependencies, DllImport is used
      */
     
 
@@ -32,31 +33,13 @@ public static class QuantisInterop
 
         void AssertReady();
     }
-    
+
     [DllImport(
         "Quantis",
         EntryPoint = "QuantisCount",
         CallingConvention = CallingConvention.Cdecl)]
-    internal static extern int QuantisCountWindows(DeviceType deviceType);
-        
-    [DllImport(
-        "quantis",
-        EntryPoint = "QuantisCount",
-        CallingConvention = CallingConvention.Cdecl)]
-    internal static extern int QuantisCountLinux(DeviceType deviceType);
-        
-    public static int CountDevices(DeviceType deviceType)
-    {
-        if (OperatingSystem.IsWindows())
-            return QuantisCountWindows(deviceType);
-
-        if (OperatingSystem.IsLinux())
-            return QuantisCountLinux(deviceType);
-
-        throw new PlatformNotSupportedException(
-            "Quantis device enumeration currently supports Windows and Linux.");
-    }
-
+    public static extern int QuantisCount(DeviceType deviceType);
+    
     private abstract class SimpleQuantBase : ISimpleQuant
     {
         private readonly object stateLock = new();
@@ -122,7 +105,7 @@ public static class QuantisInterop
             try
             {
 
-                int count = CountDevices(DeviceType);
+                int count = QuantisCount(DeviceType);
 
                 if (count < 0)
                 {
@@ -213,9 +196,9 @@ public static class QuantisInterop
         }
     }
 
-    private sealed class WindowsQuant : SimpleQuantBase
+    private sealed class ModernQuant : SimpleQuantBase
     {
-        public WindowsQuant(uint deviceNumber, DeviceType deviceType)
+        public ModernQuant(uint deviceNumber, DeviceType deviceType)
             : base(deviceNumber, deviceType)
         {
         }
@@ -288,87 +271,9 @@ public static class QuantisInterop
             uint deviceNumber,
             byte[] buffer,
             nint size, bool sourceEntropy) =>
-            sourceEntropy ? Imports.QuantisReadRaw(deviceType, deviceNumber, buffer, size) : Imports.QuantisRead(deviceType, deviceNumber, buffer, size);
+            sourceEntropy ? Imports.QuantisRead(deviceType, deviceNumber, buffer, size) : Imports.QuantisRead(deviceType, deviceNumber, buffer, size);
     }
-
-    private sealed class LinuxQuant : SimpleQuantBase
-    {
-        public LinuxQuant(uint deviceNumber, DeviceType deviceType)
-            : base(deviceNumber, deviceType)
-        {
-        }
-
-        private static class Imports
-        {
-            [DllImport(
-                "quantis",
-                EntryPoint = "QuantisGetModulesMask",
-                CallingConvention = CallingConvention.Cdecl)]
-            internal static extern int QuantisGetModulesMask(
-                DeviceType deviceType,
-                uint deviceNumber);
-
-            [DllImport(
-                "quantis",
-                EntryPoint = "QuantisGetModulesStatus",
-                CallingConvention = CallingConvention.Cdecl)]
-            internal static extern int QuantisGetModulesStatus(
-                DeviceType deviceType,
-                uint deviceNumber);
-
-            [DllImport(
-                "quantis",
-                EntryPoint = "QuantisGetModulesPower",
-                CallingConvention = CallingConvention.Cdecl)]
-            internal static extern int QuantisGetModulesPower(
-                DeviceType deviceType,
-                uint deviceNumber);
-            
-            [DllImport(
-                "quantis",
-                EntryPoint = "QuantisRead",
-                CallingConvention = CallingConvention.Cdecl)]
-            internal static extern nint QuantisRead(
-                DeviceType deviceType,
-                uint deviceNumber,
-                byte[] buffer,
-                nint size);
-            
-            [DllImport(
-                "quantis",
-                EntryPoint = "QuantisReadRaw",
-                CallingConvention = CallingConvention.Cdecl)]
-            internal static extern nint QuantisReadRaw(
-                DeviceType deviceType,
-                uint deviceNumber,
-                byte[] buffer,
-                nint size);
-        }
-        
-        protected override int GetModulesMask(
-            DeviceType deviceType,
-            uint deviceNumber) =>
-            Imports.QuantisGetModulesMask(deviceType, deviceNumber);
-
-        protected override int GetModulesStatus(
-            DeviceType deviceType,
-            uint deviceNumber) =>
-            Imports.QuantisGetModulesStatus(deviceType, deviceNumber);
-
-        protected override int GetModulesPower(
-            DeviceType deviceType,
-            uint deviceNumber) =>
-            Imports.QuantisGetModulesPower(deviceType, deviceNumber);
-        protected override nint ReadNative(
-            DeviceType deviceType,
-            uint deviceNumber,
-            byte[] buffer,
-            nint size, bool sourceEntropy) =>
-            sourceEntropy ? Imports.QuantisReadRaw(deviceType, deviceNumber, buffer, size) : Imports.QuantisRead(deviceType, deviceNumber, buffer, size);
-    }
-
-    private static readonly object DevicesLock = new();
-
+    
     private static readonly Dictionary<
         (uint Number, DeviceType Type),
         ISimpleQuant> Devices = new();
@@ -380,35 +285,21 @@ public static class QuantisInterop
     {
         ISimpleQuant device;
 
-        lock (DevicesLock)
+        
+        if (!Devices.TryGetValue(
+                (deviceNumber, deviceType),
+                out device!))
         {
-            if (!Devices.TryGetValue(
-                    (deviceNumber, deviceType),
-                    out device!))
-            {
-                if (OperatingSystem.IsWindows())
-                {
-                    device = new WindowsQuant(deviceNumber, deviceType);
-                }
-                else if (OperatingSystem.IsLinux())
-                {
-                    device = new LinuxQuant(deviceNumber, deviceType);
-                }
-                else
-                {
-                    throw new PlatformNotSupportedException(
-                        "Quantis interop currently supports Windows and Linux.");
-                }
-
-                Devices[(deviceNumber, deviceType)] = device;
-            }
+            device = new ModernQuant(deviceNumber, deviceType);
+            Devices[(deviceNumber, deviceType)] = device;
         }
-
+        
         return () =>
         {
             device.AssertReady();
             
             Console.WriteLine($"Quantis QRNG initialized.  {deviceType} Dev{deviceNumber}{ ((!enforcePureEntropy) ? " not" : "")} using source entropy");
+            Console.WriteLine("Source Entropy gimped using QuantisRead until update");
                 
             return buffer =>
             {
