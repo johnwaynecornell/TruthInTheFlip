@@ -373,20 +373,21 @@ public class DelegateMethodRegistry
                 }
                 else if (arg is RegistryParseResult nestedResult)
                 {
+                    // Recursively grab the info from the nested registry result
+
+                    string nestedInfo;
+                    
                     if (param.Type == RegistryType)
                     {
-                        string nestedInfo = Info(o, nestedResult).Trim();
-                        valStr = $"[\n    {nestedInfo.Replace("\n", "\n    ")}\n]";
+                        nestedInfo = Info(o, nestedResult).Trim();
                     }
                     else if (TypeHandlers.TryGetValue(param.Type, out var handler))
                     {
-                        // Recursively grab the info from the nested registry result
-                        string nestedInfo = handler.Info(o, nestedResult).Trim();
-
-                        // Indent the nested info for a clean tree-like display
-                        valStr = $"[\n    {nestedInfo.Replace("\n", "\n    ")}\n]";
+                        nestedInfo = handler.Info(o, nestedResult).Trim();
                     } else throw new InvalidOperationException($"No handler found for type {param.Type}");
 
+                    // Indent the nested info for a clean tree-like display
+                    valStr = $"[\n    {nestedInfo.Replace("\n", "\n    ")}\n]";
                     argIndex++;
                 }
                 else
