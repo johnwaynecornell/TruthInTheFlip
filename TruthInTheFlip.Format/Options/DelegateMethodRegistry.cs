@@ -284,9 +284,11 @@ public class DelegateMethodRegistry
             {
                 var paramDef = result.strategyDef.Parameters[i];
                 string? rawVal;
-                if (result.ArgValues.Count > 0 && defI < result.ArgValues.Count && result.ArgValues[defI++] as string == "def")
+                if (result.ArgValues.Count > 0 && defI < result.ArgValues.Count && result.ArgValues[defI] as string == "def")
+                {
                     rawVal = paramDef.Default;
-                else
+                    defI++;
+                } else
                 {
                     rawVal = result.ArgValues[i] as string;
                     defI++;
@@ -369,14 +371,22 @@ public class DelegateMethodRegistry
                         argIndex++;
                     }
                 }
-                else if (arg is RegistryParseResult nestedResult &&
-                         TypeHandlers.TryGetValue(param.Type, out var handler))
+                else if (arg is RegistryParseResult nestedResult)
                 {
-                    // Recursively grab the info from the nested registry result
-                    string nestedInfo = handler.Info(o, nestedResult).Trim();
+                    if (param.Type == RegistryType)
+                    {
+                        string nestedInfo = Info(o, nestedResult).Trim();
+                        valStr = $"[\n    {nestedInfo.Replace("\n", "\n    ")}\n]";
+                    }
+                    else if (TypeHandlers.TryGetValue(param.Type, out var handler))
+                    {
+                        // Recursively grab the info from the nested registry result
+                        string nestedInfo = handler.Info(o, nestedResult).Trim();
 
-                    // Indent the nested info for a clean tree-like display
-                    valStr = $"[\n    {nestedInfo.Replace("\n", "\n    ")}\n]";
+                        // Indent the nested info for a clean tree-like display
+                        valStr = $"[\n    {nestedInfo.Replace("\n", "\n    ")}\n]";
+                    } else throw new InvalidOperationException($"No handler found for type {param.Type}");
+
                     argIndex++;
                 }
                 else
