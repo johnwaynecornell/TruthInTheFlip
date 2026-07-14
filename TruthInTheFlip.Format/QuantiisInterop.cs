@@ -66,7 +66,7 @@ public static class QuantisInterop
             DeviceType deviceType,
             uint deviceNumber);
 
-        protected abstract nint ReadNative(
+        protected abstract int ReadNative(
             DeviceType deviceType,
             uint deviceNumber,
             byte[] buffer,
@@ -228,28 +228,19 @@ public static class QuantisInterop
             internal static extern int QuantisGetModulesPower(
                 DeviceType deviceType,
                 uint deviceNumber);
-            
+
             [DllImport(
                 "Quantis",
                 EntryPoint = "QuantisRead",
                 CallingConvention = CallingConvention.Cdecl)]
-            internal static extern nint QuantisRead(
+            internal static extern int QuantisRead(
                 DeviceType deviceType,
                 uint deviceNumber,
                 byte[] buffer,
                 nint size);
-            
-            [DllImport(
-                "Quantis",
-                EntryPoint = "QuantisReadRaw",
-                CallingConvention = CallingConvention.Cdecl)]
-            internal static extern nint QuantisReadRaw(
-                DeviceType deviceType,
-                uint deviceNumber,
-                byte[] buffer,
-                nint size);
+
         }
-        
+
         protected override int GetModulesMask(
             DeviceType deviceType,
             uint deviceNumber) =>
@@ -264,14 +255,110 @@ public static class QuantisInterop
             DeviceType deviceType,
             uint deviceNumber) =>
             Imports.QuantisGetModulesPower(deviceType, deviceNumber);
-
         
-        protected override nint ReadNative(
+        protected long entropyOffset = 0;
+        protected int entropyBit = 0;
+        protected byte[] entropyBuffer = null;
+        protected int entropyLength;
+
+        public const nint QUANTIS_MAX_READ_SIZE = (16 * 1024 * 1024);
+        
+        protected override int ReadNative(
             DeviceType deviceType,
             uint deviceNumber,
             byte[] buffer,
-            nint size, bool sourceEntropy) =>
-            sourceEntropy ? Imports.QuantisRead(deviceType, deviceNumber, buffer, size) : Imports.QuantisRead(deviceType, deviceNumber, buffer, size);
+            nint size, bool sourceEntropy) 
+
+        {
+            nint position;
+            if (sourceEntropy)
+            {
+                if (size > QUANTIS_MAX_READ_SIZE)
+                {
+                    byte[] entropyBuffer = new byte[QUANTIS_MAX_READ_SIZE];
+
+                    position = 0;
+                    
+                    while (position < size)
+                    {
+                        int readSize = Imports.QuantisRead(deviceType, deviceNumber, entropyBuffer, Math.Min(QUANTIS_MAX_READ_SIZE, size-position));
+                        Array.Copy(entropyBuffer, 0, buffer, position, readSize);
+                        position += readSize;
+                    }
+                    return (int) size;
+                }
+                return Imports.QuantisRead(deviceType, deviceNumber, buffer, size);
+            }
+            
+            if (entropyBuffer == null)
+            {
+                entropyBuffer = new byte[32 * 1024];
+                entropyOffset = entropyBuffer.Length;
+                entropyBit = 0;
+            }
+
+            position = 0;
+            int position_bit = 0;
+            
+            Func<int> getRaw = () =>
+            {
+                if (entropyOffset >= entropyLength)
+                {
+                    int r = Imports.QuantisRead(
+                        deviceType,
+                        deviceNumber,
+                        entropyBuffer,
+                        entropyBuffer.Length);
+
+                    if (r < 0)
+                        throw new InvalidOperationException(
+                            $"QuantisRead failed with error code {r}.");
+
+                    if (r == 0)
+                        throw new InvalidOperationException(
+                            "QuantisRead returned no data.");
+
+                    entropyOffset = 0;
+                    entropyLength = r;
+                    entropyBit = 0;
+                }
+                
+                int bit = ((entropyBuffer[entropyOffset]) >> entropyBit) & 1;
+                entropyBit++;
+                if (entropyBit == 8)
+                {
+                    entropyOffset++;
+                    entropyBit = 0;
+                }
+                return bit;
+            };
+            
+            while (position < size)
+            {
+                int bit1 = getRaw();
+                int bit2 = getRaw();
+
+                if (bit1 == bit2)
+                    continue;
+
+                if (position_bit == 0)
+                    buffer[position] = 0;
+
+                // 01 -> 0; 10 -> 1
+                if (bit1 != 0)
+                    buffer[position] |= (byte)(1 << position_bit);
+
+                position_bit++;
+
+                if (position_bit == 8)
+                {
+                    position++;
+                    position_bit = 0;
+                }
+            }
+            
+            return (int) position;
+        }
     }
     
     private static readonly Dictionary<
@@ -297,10 +384,12 @@ public static class QuantisInterop
         return () =>
         {
             device.AssertReady();
-            
-            Console.WriteLine($"Quantis QRNG initialized.  {deviceType} Dev{deviceNumber}{ ((!enforcePureEntropy) ? " not" : "")} using source entropy");
-            Console.WriteLine("Source Entropy gimped using QuantisRead until update");
-                
+
+            if (enforcePureEntropy) Console.WriteLine(
+                    $"Quantis QRNG initialized.  {deviceType} Dev {deviceNumber} using source entropy");
+            else Console.WriteLine(
+                    $"Quantis QRNG initialized.  {deviceType} Dev {deviceNumber} source entropy + VonNeumannWhitener");
+
             return buffer =>
             {
                 ArgumentNullException.ThrowIfNull(buffer);
