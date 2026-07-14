@@ -213,6 +213,17 @@ public class DelegateMethodRegistry
                     return false;
                 }
 
+                if (Strategies[result.MethodName].Parameters[i].Type == RegistryType)
+                {
+                    if (!TryParse(o, command_args, index, ref status, message, errorMessage, out var result2))
+                    {
+                        return false;
+                    }
+                    
+                    result.ArgValues.Add(result2);
+                    continue;
+                    
+                } else
                 if (TypeHandlers.TryGetValue(Strategies[result.MethodName].Parameters[i].Type, out var handler))
                 {
                     if (!handler.TryParse(o, command_args, index, ref status, message, errorMessage, out var res) ||
@@ -273,7 +284,7 @@ public class DelegateMethodRegistry
             {
                 var paramDef = result.strategyDef.Parameters[i];
                 string? rawVal;
-                if (result.ArgValues.Count > 0 && result.ArgValues[defI++] as string == "def")
+                if (result.ArgValues.Count > 0 && defI < result.ArgValues.Count && result.ArgValues[defI++] as string == "def")
                     rawVal = paramDef.Default;
                 else
                 {

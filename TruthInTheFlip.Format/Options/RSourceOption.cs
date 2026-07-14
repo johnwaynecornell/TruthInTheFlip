@@ -55,6 +55,36 @@ public class RSourceOption : Option
             return FactoryStorage["NET2"];
         }
     }
+    
+    [StringHelp("IDQ Quantis QRNG")]
+    public static BitFactory Quantis(string type, int deviceNumber)
+    {
+        QuantisInterop.DeviceType deviceType = Enum.Parse<QuantisInterop.DeviceType>(type);
+        
+        BitFactory result = new BitFactory();
+        result.resetRandom = QuantisInterop.QuantisFactory(true, (uint) deviceNumber, deviceType);
+        result.Reset();
+        return result;
+    }
+    
+    [StringHelp("Apply Von Neumann Whitener to a random source")]
+    public static BitFactory Whiten(BitFactory Source)
+    {
+        BitFactory result = new BitFactory();
+
+        result.resetRandom = () =>
+        {
+            RandomWhitener whitener = new RandomWhitener(Source);
+            return (byte[] arr) =>
+            {
+                whitener.Fill(arr);
+            };
+        };
+            
+        result.Reset();
+        return result;
+    }
+    
 
     
     public virtual BitFactory? BitFactory =>  RegistryParseResult?.Strategy as BitFactory;
