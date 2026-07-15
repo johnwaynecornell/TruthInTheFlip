@@ -123,7 +123,18 @@ Instead:
 
 This keeps the runtime source pluggable while preserving throughput.
 
-Random sources are injected through delegates, making it easy to swap between pseudo-random, cryptographic, or future hardware-backed sources.
+### Registered Sources
+
+The `-rsource` option allows selection and configuration of the entropy provider.
+
+*   **`NET1`**: Uses `System.Random` (Pseudo-random).
+*   **`NET2`**: Uses `System.Security.Cryptography.RandomNumberGenerator` (Cryptographic).
+*   **`Quantis <DeviceType> <DeviceNumber>`**: Native IDQ Quantis QRNG hardware.
+    *   `DeviceType`: `PCI` or `USB`.
+    *   `DeviceNumber`: Typically `0`.
+*   **`Whiten <Source>`**: Decorator that applies a Von Neumann whitener to the specified `Source`.
+
+> **Note on Quantis:** Using the `Quantis` source requires the IDQ SDK (`Quantis.dll` on Windows or `libquantis.so` on Linux) to be available in the system path or the application directory.
 
 ---
 
@@ -185,11 +196,21 @@ Example
 
 Start a new recorded run using cryptographic randomness and the default telemetry window:
 
+```bash
 ./TruthInTheFlip MyRun.tkr -create -record -rsource NET2 -window def
+```
 
-Example with explicit anticipation strategy:
+Example using Quantis hardware:
 
-./TruthInTheFlip MyRun.tkr -create -record -rsource NET2 -anticipate def -window def -info
+```bash
+./TruthInTheFlip MyRun.tkr -create -record -rsource Quantis PCI 0 -window def
+```
+
+Example with explicit anticipation strategy and nested whitening:
+
+```bash
+./TruthInTheFlip MyRun.tkr -create -record -rsource Whiten NET1 -anticipate def -window def -info
+```
 
 * * *
 

@@ -1,4 +1,14 @@
 ### 📝 Changelog 
+## 📝 Changelog / Release Notes: Quantis QRNG Support & Von Neumann Whitening
+
+**Feature: Native Hardware Entropy & Software Whitening**
+
+*   Introduced the `QuantisInterop` module, providing a robust P/Invoke bridge to IDQ Quantis QRNG hardware.
+*   Added support for both PCI/PCIe and USB Quantis devices with comprehensive diagnostic checks (`AssertReady`).
+*   Implemented a software-based `RandomWhitener` using the Von Neumann algorithm to eliminate bias from any entropy source.
+*   Expanded `-rsource` options to include `Quantis <type> <deviceNumber>` and `Whiten <Source>`.
+*   Quantis support includes native access to IDQ hardware entropy sources.
+
 ## 📝 Changelog / Release Notes: TruthInTheFlip CLI Unification & Windowing Engine
 
 **Refactor: Harmonize CLI handling and introduce dynamic Options Registry**
