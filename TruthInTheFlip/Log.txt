@@ -1138,3 +1138,35 @@ _______________________________________________________
 Introduced .net10, future log entries will look more like this:
 TruthInTheFlip_sample_report3/bin/Debug/net10.0/TruthInTheFlip_sample_report3 -window def -print Detailed $NewAgeData/Documents/Trackers/crypto_RandomSD.tkr
 net8.0 is available(for the time being) in the TruthInTheFlip_sample_report3/bin/Debug/net8.0/ directory.
+
+_______________________________________________________
+_______________________________________________________
+_______________________________________________________
+
+20260715_173441
+I have aquired a CDQ Quantic PCI and refined the interface to the device.
+  
+I have begun a new Tracker Quant.tkr using the new interface.
+//./TruthInTheFlip $NewAgeData/Documents/Trackers/Quant.tkr -record -create -print Detailed -window def -rsource Quantis PCI 0 -info
+
+=== Run Configuration Info ===
+File:                 /data/jwc/Documents/Trackers/Quant.tkr
+record:               True
+Supports:             TruthInTheFlip.v1.1.0
+Tracker Version:      1.1.0
+Total Flips:          0
+creating file
+
+[Options]
+
+random source:  Quantis          //IDQ Quantis QRNG
+Values:         type=PCI, deviceNumber=0
+
+window method:  WindowByTotal(default)          //Creates a bounding function that defines a window based on a maximum number of total flips.
+Values:         window=def="100000000000"
+  -anticipation       Disabled (Using default Anticipation processing)
+
+print format:  Detailed          //Detailed telemetry including underlying PRNG drift (ZHeads).
+Values:         None
+==============================
+
