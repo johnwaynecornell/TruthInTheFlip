@@ -20,6 +20,34 @@ Dump("\nwhite random:", buffer);
 fill(buffer);
 Dump("\nentropy random:", buffer);
 
+for (int pow2 = 0; pow2 <= 10; pow2++)
+{
+    int chunk = (1 << pow2);
+    int blockSize = 1024 * chunk;
+    int iterations = (1024>>pow2) * 5;
+
+    buffer = new byte[blockSize];
+
+    var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+    long totalBytes = 0;
+
+    for (int i = 0; i < iterations; i++)
+    {
+        fill(buffer);
+        totalBytes += buffer.Length;
+    }
+
+    stopwatch.Stop();
+
+    double mibPerSecond =
+        totalBytes / 1024.0 / 1024.0 / stopwatch.Elapsed.TotalSeconds;
+
+    Console.WriteLine(
+        $"2^{pow2}({chunk})KB buffer size, {totalBytes} bytes "+
+        $"{totalBytes:N0} bytes in {stopwatch.Elapsed}: " +
+        $"{mibPerSecond:F2} MiB/s");
+}
 
 void Dump(string message, byte[] buffer)
 {
