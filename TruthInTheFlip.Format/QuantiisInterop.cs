@@ -169,14 +169,13 @@ public static class QuantisInterop
                         $"Quantis {DeviceType} device {DeviceNumber} " +
                         "has no enabled and functional entropy modules.");
                 }
-
-                if ((modulesStatus & modulesMask) != modulesMask)
+                
+                int unavailableMask = modulesMask & ~modulesStatus;
+                if (unavailableMask != 0)
                 {
-                    int unavailableMask = modulesMask & ~modulesStatus;
-
-                    throw new InvalidOperationException(
-                        $"Quantis {DeviceType} device {DeviceNumber} " +
-                        $"has unavailable entropy modules. " +
+                    Console.Error.WriteLine(
+                        $"Quantis warning: {DeviceType} device {DeviceNumber} " +
+                        $"is operating with a partial module set. " +
                         $"Installed mask: 0x{modulesMask:X}; " +
                         $"functional mask: 0x{modulesStatus:X}; " +
                         $"unavailable mask: 0x{unavailableMask:X}.");
