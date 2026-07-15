@@ -1,27 +1,9 @@
-﻿using System.Text;
+﻿using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Text;
 using TruthInTheFlip.Format;
 
-try
-{
-    int count = QuantisInterop.QuantisCount(QuantisInterop.DeviceType.PCI);
-
-    if (count < 0)
-    {
-        Console.Error.WriteLine("Quantis detection: 'QuantisCount' returned: " + count);
-        return;
-    }   
-    
-    if (count<1)
-    {
-        Console.Error.WriteLine("No Quantis PCI device found");
-        return;
-    }
-} catch (Exception ex)
-{
-    Console.Error.WriteLine("Quantis hardware/drivers not detected. Skipping hardware entropy test.");
-    Console.Error.WriteLine("Quantis.dll for Windows and libquantis.so for Linux should be resolvable or in binary directory.");
-    return;
-}
+if (!QuantisInterop.EnsureSDK()) Environment.Exit(1);
 
 Random r = new Random();
 Func<Action<byte[]>>? resetRandom = QuantisInterop.QuantisFactory(true, 0, QuantisInterop.DeviceType.PCI);

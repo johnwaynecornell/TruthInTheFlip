@@ -47,4 +47,9 @@ The `Tracker` handles the logic evaluation, mathematical logging, and high-preci
 dotnet run -- [file_path] [options]
 ```
 ### Swapping the Random Source
-To test against a physical QRNG or a static file, simply update the `initRandom_Net()` delegate in `BitFactory.cs` to pipe your byte stream directly into the buffers.
+To see implemented sources including QRNG use
+```bash
+dotnet run -- [file_path] [options] -rsource list
+```
+
+To test against a static file, simply update the `initRandom_Net()` delegate in `BitFactory.cs` to pipe your byte stream directly into the buffers.

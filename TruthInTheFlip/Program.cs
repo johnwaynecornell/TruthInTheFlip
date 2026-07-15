@@ -1,6 +1,7 @@
 ﻿using TruthInTheFlip.Format;
 using TruthInTheFlip.Format.Options;
 using System.Diagnostics;
+using System.Reflection;
 using TruthInTheFlip;
 
 public class Program
@@ -61,6 +62,8 @@ public class Program
 
         List<String> cl_args = new(command_line_args);
 
+        QuantisInterop.CallingAssembly = Assembly.GetCallingAssembly();
+        
         Options O = new Options();
 
         InfoOption infoOption;

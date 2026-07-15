@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 namespace TruthInTheFlip.Format;
@@ -365,6 +366,62 @@ public static class QuantisInterop
         (uint Number, DeviceType Type),
         ISimpleQuant> Devices = new();
 
+    static bool? hasSDK = null;
+    
+    public static Assembly CallingAssembly = null;
+    
+    public static bool EnsureSDK()
+    {
+        Assembly caller = CallingAssembly;
+        
+        if (hasSDK != null) return hasSDK.Value;
+        
+        hasSDK = true;
+        
+        try
+        {
+            int count = QuantisInterop.QuantisCount(QuantisInterop.DeviceType.PCI);
+
+            if (count < 0)
+            {
+                Console.Error.WriteLine("Quantis detection: 'QuantisCount' returned: " + count);
+                hasSDK = false;
+            } else if (count < 1)
+            {
+                Console.Error.WriteLine("No Quantis PCI device found");
+                hasSDK = false;
+            }
+        }
+        catch (DllNotFoundException ex)
+        {
+            Console.Error.WriteLine("Quantis hardware/drivers not detected. Skipping hardware entropy test.");
+            Console.Error.WriteLine(
+                "the IDQ library, Quantis.dll for Windows and libQuantis.so for Linux should be resolvable by OS set paths accordingly");
+            hasSDK = false;
+        }
+        catch (BadImageFormatException ex)
+        {
+            nint bits = Marshal.SizeOf(typeof(nint)) * 8;
+    
+            Console.Error.WriteLine("The Quantis library did not load due to a BadImageFormatException.");
+            Console.Error.WriteLine($"This usually means that the library does not run on {bits}-bit systems.");
+
+            if (bits == 64 && OperatingSystem.IsWindows())
+            {
+                if (caller == null) caller = Assembly.GetCallingAssembly();
+                
+                Console.WriteLine();
+                Console.Error.WriteLine("To resolve this on Windows without needing to rebuild the IDQ Quantis SDK, ensure you build TruthInTheFlip.sln for x86:");
+                Console.Error.WriteLine("  dotnet build -c Release -p:Platform=x86");
+                Console.Error.WriteLine("Then run with the 32-bit .NET runtime:");
+                Console.Error.WriteLine($"  \"C:\\Program Files (x86)\\dotnet\\dotnet.exe\" \"{caller.Location}\"");
+            }
+            hasSDK = false;
+        }
+
+        return hasSDK.Value;
+    }
+
     public static Func<Action<byte[]>> QuantisFactory(
         bool enforcePureEntropy,
         uint deviceNumber,
@@ -372,7 +429,8 @@ public static class QuantisInterop
     {
         ISimpleQuant device;
 
-        
+        if (!EnsureSDK()) Environment.Exit(1);
+
         if (!Devices.TryGetValue(
                 (deviceNumber, deviceType),
                 out device!))
