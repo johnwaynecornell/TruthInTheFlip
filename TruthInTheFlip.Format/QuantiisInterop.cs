@@ -187,7 +187,7 @@ public static class QuantisInterop
             }
         }
 
-        private static Exception CreateNativeException(
+        protected static Exception CreateNativeException(
             string operation,
             int errorCode)
         {
@@ -196,11 +196,20 @@ public static class QuantisInterop
         }
     }
 
-    private sealed class ModernQuant : SimpleQuantBase
+    private sealed class ModernQuant : SimpleQuantBase , IDisposable
     {
+        public IntPtr deviceHandle;
+        private readonly object readLock = new();
+        private bool disposed;
+        
         public ModernQuant(uint deviceNumber, DeviceType deviceType)
             : base(deviceNumber, deviceType)
         {
+            int rc = Imports.QuantisOpen(deviceType, deviceNumber, out deviceHandle);
+            if (rc != 0)
+            {
+                throw CreateNativeException("QuantisOpen", rc);
+            }
         }
 
         private static class Imports
@@ -238,6 +247,36 @@ public static class QuantisInterop
                 uint deviceNumber,
                 byte[] buffer,
                 nint size);
+            
+            [DllImport(
+                "Quantis",
+                EntryPoint = "QuantisOpen",
+                CallingConvention = CallingConvention.Cdecl)]
+            internal static extern int QuantisOpen(
+                DeviceType deviceType,
+                uint deviceNumber, out IntPtr deviceHandle);
+
+            [DllImport(
+                "Quantis",
+                EntryPoint = "QuantisClose",
+                CallingConvention = CallingConvention.Cdecl)]
+            internal static extern int QuantisClose(IntPtr deviceHandle);
+            
+            [DllImport(
+                "Quantis",
+                EntryPoint = "QuantisReadHandled",
+                CallingConvention = CallingConvention.Cdecl)]
+            internal static extern int QuantisReadHandled(
+                IntPtr deviceHandle,
+                byte[] buffer,
+                nint size);
+            
+            /*
+            DLL_EXPORT int QuantisOpen(QuantisDeviceType deviceType, unsigned int deviceNumber,QuantisDeviceHandle** deviceHandle);
+            DLL_EXPORT void QuantisClose(QuantisDeviceHandle* deviceHandle);
+            DLL_EXPORT int QuantisReadHandled(QuantisDeviceHandle* deviceHandle, void* buffer, size_t size);
+            */
+
 
         }
 
@@ -270,94 +309,120 @@ public static class QuantisInterop
             nint size, bool sourceEntropy) 
 
         {
-            nint position;
-            if (sourceEntropy)
-            {
-                if (size > QUANTIS_MAX_READ_SIZE)
-                {
-                    byte[] entropyBuffer = new byte[QUANTIS_MAX_READ_SIZE];
+            ObjectDisposedException.ThrowIf(disposed, this);
 
-                    position = 0;
-                    
-                    while (position < size)
+            lock (readLock)
+            {
+                nint position;
+                if (sourceEntropy)
+                {
+                    if (size > QUANTIS_MAX_READ_SIZE)
                     {
-                        int readSize = Imports.QuantisRead(deviceType, deviceNumber, entropyBuffer, Math.Min(QUANTIS_MAX_READ_SIZE, size-position));
-                        Array.Copy(entropyBuffer, 0, buffer, position, readSize);
-                        position += readSize;
+                        byte[] entropyBuffer = new byte[QUANTIS_MAX_READ_SIZE];
+
+                        position = 0;
+
+                        while (position < size)
+                        {
+                            int readSize = Imports.QuantisReadHandled(deviceHandle, entropyBuffer,
+                                Math.Min(QUANTIS_MAX_READ_SIZE, size - position));
+                            Array.Copy(entropyBuffer, 0, buffer, position, readSize);
+                            position += readSize;
+                        }
+
+                        return (int)size;
                     }
-                    return (int) size;
+
+                    return Imports.QuantisReadHandled(deviceHandle, buffer, size);
                 }
-                return Imports.QuantisRead(deviceType, deviceNumber, buffer, size);
-            }
-            
-            if (entropyBuffer == null)
-            {
-                entropyBuffer = new byte[32 * 1024];
-                entropyOffset = entropyBuffer.Length;
-                entropyBit = 0;
-            }
 
-            position = 0;
-            int position_bit = 0;
-            
-            Func<int> getRaw = () =>
-            {
-                if (entropyOffset >= entropyLength)
+                if (entropyBuffer == null)
                 {
-                    int r = Imports.QuantisRead(
-                        deviceType,
-                        deviceNumber,
-                        entropyBuffer,
-                        entropyBuffer.Length);
-
-                    if (r < 0)
-                        throw new InvalidOperationException(
-                            $"QuantisRead failed with error code {r}.");
-
-                    if (r == 0)
-                        throw new InvalidOperationException(
-                            "QuantisRead returned no data.");
-
-                    entropyOffset = 0;
-                    entropyLength = r;
+                    entropyBuffer = new byte[32 * 1024];
+                    entropyOffset = entropyBuffer.Length;
                     entropyBit = 0;
                 }
-                
-                int bit = ((entropyBuffer[entropyOffset]) >> entropyBit) & 1;
-                entropyBit++;
-                if (entropyBit == 8)
+
+                position = 0;
+                int position_bit = 0;
+
+                Func<int> getRaw = () =>
                 {
-                    entropyOffset++;
-                    entropyBit = 0;
-                }
-                return bit;
-            };
-            
-            while (position < size)
-            {
-                int bit1 = getRaw();
-                int bit2 = getRaw();
+                    if (entropyOffset >= entropyLength)
+                    {
+                        int r = Imports.QuantisRead(
+                            deviceType,
+                            deviceNumber,
+                            entropyBuffer,
+                            entropyBuffer.Length);
 
-                if (bit1 == bit2)
-                    continue;
+                        if (r < 0)
+                            throw new InvalidOperationException(
+                                $"QuantisRead failed with error code {r}.");
 
-                if (position_bit == 0)
-                    buffer[position] = 0;
+                        if (r == 0)
+                            throw new InvalidOperationException(
+                                "QuantisRead returned no data.");
 
-                // 01 -> 0; 10 -> 1
-                if (bit1 != 0)
-                    buffer[position] |= (byte)(1 << position_bit);
+                        entropyOffset = 0;
+                        entropyLength = r;
+                        entropyBit = 0;
+                    }
 
-                position_bit++;
+                    int bit = ((entropyBuffer[entropyOffset]) >> entropyBit) & 1;
+                    entropyBit++;
+                    if (entropyBit == 8)
+                    {
+                        entropyOffset++;
+                        entropyBit = 0;
+                    }
 
-                if (position_bit == 8)
+                    return bit;
+                };
+
+                while (position < size)
                 {
-                    position++;
-                    position_bit = 0;
+                    int bit1 = getRaw();
+                    int bit2 = getRaw();
+
+                    if (bit1 == bit2)
+                        continue;
+
+                    if (position_bit == 0)
+                        buffer[position] = 0;
+
+                    // 01 -> 0; 10 -> 1
+                    if (bit1 != 0)
+                        buffer[position] |= (byte)(1 << position_bit);
+
+                    position_bit++;
+
+                    if (position_bit == 8)
+                    {
+                        position++;
+                        position_bit = 0;
+                    }
                 }
+
+                return (int)position;
             }
-            
-            return (int) position;
+        }
+
+        public void Dispose()
+        {
+            if (disposed)
+                return;
+
+            lock (readLock)
+            {
+                if (deviceHandle != nint.Zero)
+                {
+                    Imports.QuantisClose(deviceHandle);
+                    deviceHandle = nint.Zero;
+                }
+
+                disposed = true;
+            }
         }
     }
     
