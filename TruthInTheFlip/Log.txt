@@ -1353,3 +1353,81 @@ Worst settlement segment:
   end a       : 50-3.54308e-04%
 
 File compute time: 18:44:50.9836673
+
+____________________________________________________________________
+20260716_130015
+
+Suspecting drift, I ran with a 10 billion flip window because the default 100 billion flip window allows more.
+
+At a 10-billion-flip resolution, the Quantis run is producing recurring positive excursions around an otherwise near-neutral cumulative result. The effect is not yet persistent enough to establish an advantage, but it is more structured than a single isolated peak.
+
+====================================================================
+TruthInTheFlip_sample_report3 -window WindowByTotal 10000000000 -print Detailed $NewAgeData/Documents/Trackers/Quant.tkr -grade all
+Quant.tkr : 20260716_165156.44 | 773600000000 flips → heads: 50+1.6e-04% (Z:+0.3165) | a: 50+1.5e-05% (Z:+0.0290) | aHeads: 50-1.4e-04% | aTails: 50+1.7e-04% | aSame: 50+1.7e-05% | aDiff: 50+1.2e-05% | [RATE] H/T: 50+1.7e-04%/ 50-1.4e-04% S/D: 50+1.7e-05%/ 50+1.2e-05% | wallclock: 19:18:24 | fps: 11130144 | Z(1.96) in 47.10:12:02 | Z(3.00) in 111.02:52:54
+
+segments              : 8
+Edge Excursion Score  : +1.469270   // median(best TrueZ per segment)
+Edge Settlement Score : -0.222820   // mean(end TrueZ per segment)
+Edge Persistence Index: -0.104454   // settlement * fraction positive
+
+avgBestTrueZ          : +1.514512
+medianBestTrueZ       : +1.469270
+avgEndTrueZ           : -0.222820
+medianEndTrueZ        : -0.427100
+avgMeanTrueZ          : -0.941642
+avgPctAbove50         :  46.8783%
+
+bestTrueZ >= 1.96     :  25.0000%
+bestTrueZ >= 3.00     :   0.0000%
+endTrueZ  >= 0.00     :  37.5000%
+endTrueZ  >= 1.96     :   0.0000%
+meanTrueZ >= 0.00     :   0.0000%
+
+idx | span                  | bestTrueZ | aAtBestTrueZ     | endTrueZ  | meanTrueZ | %>50
+----+-----------------------+-----------+------------------+-----------+-----------+---------
+  0 | 200,000,000..99,800,… | +2.040440 |  50+1.20660e-03% | +1.035320 | -0.337383 |  63.126%
+  1 | 100,000,000,000..199… | +1.629080 |  50+1.24422e-03% | -0.932140 | -0.873653 |  50.400%
+  2 | 200,000,000,000..299… | +0.879860 |  50+5.17760e-04% | -1.292880 | -1.409178 |  28.800%
+  3 | 300,000,000,000..399… | +1.336160 |  50+7.28980e-04% | +0.932540 | -0.809301 |  57.600%
+  4 | 400,000,000,000..499… | +2.574800 |  50+1.36073e-03% | -0.941540 | -0.839736 |  44.200%
+  5 | 500,000,000,000..599… | +1.186360 |  50+7.63210e-04% | -0.566740 | -0.839810 |  58.200%
+  6 | 600,000,000,000..699… | +1.602380 |  50+8.13890e-04% | +0.270340 | -1.106073 |  45.600%
+  7 | 700,000,000,000..773… | +0.867020 |  50+4.35250e-04% | -0.287460 | -1.318002 |  27.100%
+
+Retained Anticipation: 50-1.54855e-05%
+Settlement Adjusted Anticipation: 50+1.19075e-04%
+
+Best excursion segment:
+  idx         : 4
+  bestTrueZ   : +2.574800
+  meanTrueZ   : -0.839736
+  endTrueZ    : -0.941540
+  pctAbove50  : 44.2000%
+  best ZHeads : +0.146660
+  aAtTrueZ    : 50+1.36073e-03%
+  end ZHeads  : -0.788860
+  end a       : 50-7.63400e-05%
+
+Best settlement segment:
+  idx         : 0
+  bestTrueZ   : +2.040440
+  meanTrueZ   : -0.337383
+  endTrueZ    : +1.035320
+  pctAbove50  : 63.1263%
+  best ZHeads : -0.372760
+  aAtTrueZ    : 50+1.20660e-03%
+  end ZHeads  : -0.478020
+  end a       : 50+7.56670e-04%
+
+Worst settlement segment:
+  idx         : 2
+  bestTrueZ   : +0.879860
+  meanTrueZ   : -1.409178
+  endTrueZ    : -1.292880
+  pctAbove50  : 28.8000%
+  best ZHeads : +0.155660
+  aAtTrueZ    : 50+5.17760e-04%
+  end ZHeads  : -0.236520
+  end a       : 50-5.28180e-04%
+
+File compute time: 19:18:24.9431196
