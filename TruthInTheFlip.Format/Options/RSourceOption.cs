@@ -57,7 +57,7 @@ public class RSourceOption : Option
     }
     
     [StringHelp("IDQ Quantis QRNG")]
-    public static BitFactory Quantis(string type, int deviceNumber)
+    public static BitFactory Quantis([StringDefault("PCI")] string type, [StringDefault("0")] int deviceNumber)
     {
         QuantisInterop.DeviceType deviceType = Enum.Parse<QuantisInterop.DeviceType>(type);
         
