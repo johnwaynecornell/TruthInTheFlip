@@ -1170,3 +1170,59 @@ print format:  Detailed          //Detailed telemetry including underlying PRNG 
 Values:         None
 ==============================
 
+_______________________________________________________
+
+20260716_074350
+
+The first substantial Quantis-backed TruthInTheFlip run reached 557.2 billion flips in 13:54:12, sustaining approximately 11.13 million flips per second. The physical source remained stable throughout the run, and the heads distribution finished close to neutral at Z = +0.3690. The anticipated result also settled near neutral, ending at approximately Z = +0.18 despite reaching a lifetime maximum above +2.0 earlier in the run.
+
+The excursion did not persist. Across the first six segments, positive peaks generally gave way to negative settlement, producing an Edge Settlement Score of -0.708 and an Edge Persistence Index of -0.366. The lifetime result spent 52.84% of its measured time above 50%, yet ended almost exactly at equilibrium. This makes the run a valuable initial Quantis baseline: the new hardware and interop path are operating reliably, while the statistical behavior remains consistent with transient excursions rather than a demonstrated persistent edge.
+
+
+report2:
+Quant.tkr : 20260716_112741.60 | 557200000000 flips → heads: 50+5.8e-05% (Z:+0.3690) | a: 50+2.8e-05% (Z:+0.1770) | aHeads: 50-3.0e-05% | aTails: 50+8.6e-05% | aSame: 50+3.3e-04% | aDiff: 50-2.7e-04% | [RATE] H/T: 50+8.6e-05%/ 50-3.0e-05% S/D: 50+3.3e-04%/ 50-2.7e-04% | wallclock: 13:54:12 | fps: 11132363 | Z(1.96) in 12.15:31:11 | Z(3.00) in 29.18:25:43
+Entry Record:
+total,heads,tails,anticipated,baseAnticipated,anticipatedHeads,anticipatedTails,cumulativeTicks,batchTotal,wallclockTimeNs,batchWallclockTimeNs,utcBeginTimeMs,utcEndTimeMs,betHeads,betSame,anticipatedSame
+457200000000,228600394532,228599605468,228599963105,228599963105,114299981580,114299981525,7912288999312,200000000,41073586429400,17957728300,1784192264069,1784192282026,228599605523,228599906516,114299981578
+
+Final Record:
+total,heads,tails,anticipated,baseAnticipated,anticipatedHeads,anticipatedTails,cumulativeTicks,batchTotal,wallclockTimeNs,batchWallclockTimeNs,utcBeginTimeMs,utcEndTimeMs,betHeads,betSame,anticipatedSame
+557200000000,278600452872,278599547128,278599991089,278599991089,139299995594,139299995495,9656212854836,200000000,50052265813900,17960343000,1784201243641,1784201261601,278599547227,278599607177,139299995466
+
+last 1hr |  38.8060% time above 50% | minZ= -0.535102 | maxZ= +0.459966 | ZHeadsAtMaxZ= +1.452162 | aAtMaxZ= 50+7.27270e-05% | TrueZ= +0.314039 (ZHeads: +0.3730) | aAtTrueZ= 50+4.96540e-05% | z= -0.059425 | a= 50-9.396e-06%
+last 2hr |  43.8903% time above 50% | minZ= -0.586761 | maxZ= +0.506142 | ZHeadsAtMaxZ= +1.481824 | aAtMaxZ= 50+8.00280e-05% | TrueZ= +0.314039 (ZHeads: +0.3730) | aAtTrueZ= 50+4.96540e-05% | z= -0.046325 | a= 50-7.325e-06%
+last 4hr |  54.7382% time above 50% | minZ= -0.625087 | maxZ= +1.098632 | ZHeadsAtMaxZ= +1.579937 | aAtMaxZ= 50+1.73709e-04% | TrueZ= +0.677499 (ZHeads: +0.3044) | aAtTrueZ= 50+1.07122e-04% | z= +0.092089 | a= 50+1.456e-05%
+last 8hr |  31.7332% time above 50% | minZ= -2.553735 | maxZ= +1.098632 | ZHeadsAtMaxZ= +1.579937 | aAtMaxZ= 50+1.73709e-04% | TrueZ= +0.677499 (ZHeads: +0.3044) | aAtTrueZ= 50+1.07122e-04% | z= -0.558209 | a= 50-8.826e-05%
+lifetime |  52.8356% time above 50% | minZ= -2.553735 | maxZ= +2.094914 | ZHeadsAtMaxZ= +1.078843 | aAtMaxZ= 50+3.31235e-04% | TrueZ= +2.028129 (ZHeads: -0.1741) | aAtTrueZ= 50+1.24823e-03% | z= -0.025006 | a= 50+2.025e-05%
+
+To achieve exactly Z=3.0, we can claim a win rate of: 50-2.02548e-04%
+To achieve from ZMax we can claim a win rate of: 50-1.43107e-04%
+To achieve from TrueZ we can claim a win rate of: 50-5.98145e-04%
+File compute time: 13:54:12.2658139
+
+
+report3:
+Quant.tkr : 20260716_112629.74 | 556400000000 flips → heads: 50+8.0e-05% (Z:+0.5078) | a: 50+2.3e-05% (Z:+0.1448) | aHeads: 50-5.7e-05% | aTails: 50+1.0e-04% | aSame: 50+3.1e-04% | aDiff: 50-2.7e-04% | [RATE] H/T: 50+1.0e-04%/ 50-5.7e-05% S/D: 50+3.1e-04%/ 50-2.7e-04% | wallclock: 13:53:00 | fps: 11132361 | Z(1.96) in 18.22:50:17 | Z(3.00) in 44.12:55:59
+
+segments              : 6
+Edge Excursion Score  : +0.280187   // median(best TrueZ per segment)
+Edge Settlement Score : -0.708360   // mean(end TrueZ per segment)
+Edge Persistence Index: -0.366052   // settlement * fraction positive
+
+avgBestTrueZ          : +0.589198
+medianBestTrueZ       : +0.280187
+avgEndTrueZ           : -0.708360
+medianEndTrueZ        : -0.407105
+avgMeanTrueZ          : -0.837198
+avgPctAbove50         :  51.6760%
+
+bestTrueZ >= 1.96     :   0.0000%
+bestTrueZ >= 3.00     :   0.0000%
+endTrueZ  >= 0.00     :  33.3333%
+endTrueZ  >= 1.96     :   0.0000%
+meanTrueZ >= 0.00     :  33.3333%
+
+File compute time: 13:53:00.4129059
+
+
+
