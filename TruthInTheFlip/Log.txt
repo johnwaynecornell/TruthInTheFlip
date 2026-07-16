@@ -1224,5 +1224,57 @@ meanTrueZ >= 0.00     :  33.3333%
 
 File compute time: 13:53:00.4129059
 
+_______________________________________________________
+20260716_104615
+20260716_104615
 
+TruthInTheFlip runs have often shown a tendency to spend slightly more than half of their measured time above the chance baseline. This is consistent with a possible weak persistence effect, but the present records do not yet distinguish that possibility from ordinary cumulative-path variation.
 
+That makes <code>avgPctAbove50</code> a metric of continuing interest. If the tendency is real, it should recur across independent runs, random sources, controls, and predetermined segment boundaries. If it is ordinary variation, continued accumulation should eventually pull the measure back through 50%.
+
+The Quantis run has now supplied an immediate example of that balancing pressure. Earlier in the record, its lifetime percentage above chance was 52.8356%. At approximately 731.6 billion flips, it had fallen to 44.6750%, while the final anticipated result stood below chance at approximately Z = -1.07. The run still retained a positive Edge Excursion Score of +0.389479, but its Edge Settlement Score had declined to -0.908067 and its Edge Persistence Index to -0.405679.
+
+This distinction is important. Positive excursion remains possible even while settlement and persistence become negative. The record is therefore not merely asking whether the strategy can rise above chance, but whether those rises survive continued accumulation. At the present horizon, the Quantis run is demonstrating excursion without durable positive settlement.
+
+update on new file:
+Quant.tkr : 20260716_154823.27 | 731200000000 flips → heads: 50-1.1e-04% (Z:-0.6843) | a: 50-1.8e-04% (Z:-1.1566) | aHeads: 50-7.5e-05% | aTails: 50-2.9e-04% | aSame: 50-4.2e-05% | aDiff: 50-3.2e-04% | [RATE] H/T: 50-2.9e-04%/ 50-7.5e-05% S/D: 50-4.2e-05%/ 50-3.2e-04% | wallclock: 18:14:52 | fps: 11130632 | Z(1.96) unreachable | Z(3.00) unreachable
+Entry Record:
+total,heads,tails,anticipated,baseAnticipated,anticipatedHeads,anticipatedTails,cumulativeTicks,batchTotal,wallclockTimeNs,batchWallclockTimeNs,utcBeginTimeMs,utcEndTimeMs,betHeads,betSame,anticipatedSame
+631200000000,315600523243,315599476757,315599861865,315599861865,157799930969,157799930896,10934425733577,200000000,56702754114000,17985975200,1784207894689,1784207912675,315599476830,315599581836,157799930835
+
+Final Record:
+total,heads,tails,anticipated,baseAnticipated,anticipatedHeads,anticipatedTails,cumulativeTicks,batchTotal,wallclockTimeNs,batchWallclockTimeNs,utcBeginTimeMs,utcEndTimeMs,betHeads,betSame,anticipatedSame
+731200000000,365600415039,365599584961,365599678992,365599678992,182799839532,182799839460,12664247803398,200000000,65692585188500,17972710000,1784216885300,1784216903272,365599585033,365599441287,182799839417
+
+last 1hr |   0.0000% time above 50% | minZ= -2.236824 | maxZ= -0.803958 | ZHeadsAtMaxZ= -0.471945 | aAtMaxZ= 50-1.27117e-04% | TrueZ= -0.803958 (ZHeads: -0.4719) | aAtTrueZ= 50-1.27117e-04% | z= -1.362072 | a= 50-2.154e-04%
+last 2hr |   0.0000% time above 50% | minZ= -2.236824 | maxZ= -0.707281 | ZHeadsAtMaxZ= -0.995561 | aAtMaxZ= 50-1.11831e-04% | TrueZ= -0.803958 (ZHeads: -0.4719) | aAtTrueZ= 50-1.27117e-04% | z= -1.357281 | a= 50-2.146e-04%
+last 4hr |  30.5868% time above 50% | minZ= -2.236824 | maxZ= +1.019265 | ZHeadsAtMaxZ= +0.683229 | aAtMaxZ= 50+1.61160e-04% | TrueZ= +0.797590 (ZHeads: -0.1323) | aAtTrueZ= 50+1.26110e-04% | z= -0.653968 | a= 50-1.034e-04%
+last 8hr |  43.2314% time above 50% | minZ= -2.236824 | maxZ= +1.098632 | ZHeadsAtMaxZ= +1.579937 | aAtMaxZ= 50+1.73709e-04% | TrueZ= +0.797590 (ZHeads: -0.1323) | aAtTrueZ= 50+1.26110e-04% | z= -0.275536 | a= 50-4.357e-05%
+lifetime |  48.8512% time above 50% | minZ= -2.553735 | maxZ= +2.094914 | ZHeadsAtMaxZ= +1.078843 | aAtMaxZ= 50+3.31235e-04% | TrueZ= +2.028129 (ZHeads: -0.1741) | aAtTrueZ= 50+1.24823e-03% | z= -0.151451 | a= 50-5.502e-06%
+
+To achieve exactly Z=3.0, we can claim a win rate of: 50-2.19319e-04%
+To achieve from ZMax we can claim a win rate of: 50-1.43107e-04%
+To achieve from TrueZ we can claim a win rate of: 50-5.98145e-04%
+File compute time: 18:14:52.5851885
+./TruthInTheFlip_sample_report3 -window def -print Detailed $NewAgeData/Documents/Trackers/Quant.tkr 
+Quant.tkr : 20260716_154859.23 | 731600000000 flips → heads: 50-1.0e-04% (Z:-0.6460) | a: 50-1.7e-04% (Z:-1.0745) | aHeads: 50-6.8e-05% | aTails: 50-2.7e-04% | aSame: 50-3.7e-05% | aDiff: 50-3.0e-04% | [RATE] H/T: 50-2.7e-04%/ 50-6.8e-05% S/D: 50-3.7e-05%/ 50-3.0e-04% | wallclock: 18:15:28 | fps: 11130628 | Z(1.96) unreachable | Z(3.00) unreachable
+
+segments              : 8
+Edge Excursion Score  : +0.389479   // median(best TrueZ per segment)
+Edge Settlement Score : -0.908067   // mean(end TrueZ per segment)
+Edge Persistence Index: -0.405679   // settlement * fraction positive
+
+avgBestTrueZ          : +0.423681
+medianBestTrueZ       : +0.389479
+avgEndTrueZ           : -0.908067
+medianEndTrueZ        : -1.085850
+avgMeanTrueZ          : -1.013218
+avgPctAbove50         :  44.6750%
+
+bestTrueZ >= 1.96     :   0.0000%
+bestTrueZ >= 3.00     :   0.0000%
+endTrueZ  >= 0.00     :  37.5000%
+endTrueZ  >= 1.96     :   0.0000%
+meanTrueZ >= 0.00     :  25.0000%
+
+File compute time: 18:15:28.5464741_______________________________________________________
