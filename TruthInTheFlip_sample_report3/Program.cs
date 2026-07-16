@@ -22,6 +22,7 @@ SOut message = (s, n) => Console.Write(s + (n ? "\n" : ""));
 long? segTotal = 100_000_000_000L; // default: 100B
 TimeSpan? segWall = null;
 Grade grade = Grade.Med;
+bool whole = false; //discard partial segments
 
 int rc = 0;
 int cur = 0;
@@ -80,7 +81,14 @@ while (cur < cl_args.Count)
         }
         continue;
     }
-
+    
+    if (arg == "-whole")
+    {
+        whole = true;
+        cl_args.RemoveAt(cur);
+        continue;
+    }
+    
     if (arg == "-grade")
     {
         cl_args.RemoveAt(cur);
@@ -121,6 +129,7 @@ if (showHelp || rc != 0)
     message(UtilT.PadRight("  -segtotal <n>") + "Segment size in flips (default: 100000000000)");
     message(UtilT.PadRight("  -segwall <ts>") + "Segment size in wallclock time (ex: 04:00:00)");
     message(UtilT.PadRight("  -grade <none|low|med|high|all>") + "Output detail level (default: med)");
+    message(UtilT.PadRight("  -whole") + "discard partial segments");
     message(O.GetHelp(), false);
     message(UtilT.PadRight("  -help, -h") + "Display this help message");
     message();
@@ -177,6 +186,7 @@ if (infoOption.Enabled)
     message(UtilT.PadRight("Segment Mode:") + (segWall != null ? "wallclock" : "total"));
     message(UtilT.PadRight("Segment Size:") + (segWall != null ? segWall.ToString() : $"{segTotal:N0} flips"));
     message(UtilT.PadRight("Grade:") + grade.ToString().ToLowerInvariant());
+    message(UtilT.PadRight("Whole:") + whole);
     message();
     message("[Options]");
     Console.Write(O.Info());
@@ -210,13 +220,18 @@ foreach (ITracker fromStore in store.Enumerate())
     
     if (idx != currentSegmentIndex)
     {
+        if (currentSegment != null)
+        {
+            segments.Add(currentSegment);
+        }
+        
         currentSegment = new SegmentStats
         {
             Index = idx,
             BeginTotal = state.Source.total,
             BeginWallclock = state.Source.WallclockTime
         };
-        segments.Add(currentSegment);
+        
         currentSegmentIndex = idx;
     }
 
@@ -226,6 +241,11 @@ foreach (ITracker fromStore in store.Enumerate())
     currentSegment.EndState = state;
 
     finalState = state;
+}
+
+if (!whole && currentSegment != null)
+{
+    segments.Add(currentSegment);
 }
 
 if (finalState == null || segments.Count == 0)
