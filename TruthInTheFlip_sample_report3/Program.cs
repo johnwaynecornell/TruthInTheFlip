@@ -243,7 +243,12 @@ foreach (ITracker fromStore in store.Enumerate())
     finalState = state;
 }
 
-if (!whole && currentSegment != null)
+if (currentSegment is { Count: > 0 } &&
+    ShouldRetainTrailingSegment(
+        currentSegment,
+        whole,
+        segTotal,
+        segWall))
 {
     segments.Add(currentSegment);
 }
@@ -394,6 +399,42 @@ void HandleError(string s, bool nl = true)
     Environment.Exit(-1);
 }
 
+bool ShouldRetainTrailingSegment(
+    SegmentStats segment,
+    bool whole,
+    long? segmentTotal,
+    TimeSpan? segmentWall)
+{
+    if (!whole)
+        return true;
+
+    if (segmentTotal != null)
+    {
+        long boundary =
+            checked((segment.Index + 1) * segmentTotal.Value);
+
+        return segment.EndTotal +
+            segment.EndState.Source.batchTotal >= boundary;
+    }
+
+    if (segmentWall != null)
+    {
+        long boundaryTicks =
+            checked((segment.Index + 1) * segmentWall.Value.Ticks);
+
+        long nextTicks =
+            segment.EndWallclock.Ticks +
+            segment.EndState.Source.BatchWallclockTime.Ticks;
+
+        return nextTicks >= boundaryTicks;
+    }
+
+    throw new InvalidOperationException(
+        "segWall and segTotal cannot both be null.");
+}
+
+
+
 enum Grade
 {
     None,
@@ -487,3 +528,4 @@ sealed class SegmentAggregate
             : values[mid];
     }
 }
+
