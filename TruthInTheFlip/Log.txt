@@ -1680,3 +1680,11 @@ Worst settlement segment:
   end a       : 50-1.22361e-03%
 
 File compute time: 1.22:30:45.5100856
+
+__________________________________________________________________________
+20260717_170507
+
+Crypto3 establishes a mature reference profile in which positive excursion is common, settlement remains negative, and time above chance stays slightly greater than half across both short and long windows. The developing Quantis record appears to share the excursion-without-settlement pattern, while its persistence estimate remains too young to determine whether it will converge toward the crypto3 profile.
+
+Artifacts/Trackers/crypto3_def.txt
+Artifacts/Trackers/crypto3_10B.txt
