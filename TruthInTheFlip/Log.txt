@@ -2166,3 +2166,275 @@ Worst settlement segment:
 
 File compute time: 3.14:37:09.5527696
 
+___________________________________________________________________________
+╔═══════════════╗
+║20260720_075853║
+╚═══════════════╝
+
+Quant.tkr reached 4.42 trillion direct source-entropy flips and completed forty-four 100-billion-flip segments. This checkpoint introduced the strongest positive default-scale segment observed in the run so far.
+
+Segment 35 reached a best TrueZ of +3.500148, maintained a positive mean TrueZ of +1.922725, remained above 50 percent throughout the entire segment, and settled at +3.269991. Unlike many earlier excursions, this movement was not surrendered before the window closed. Excursion, duration, mean position, and settlement all aligned positively within the same completed segment.
+
+The following segment also produced a strong excursion, reaching +3.366188 and remaining above 50 percent for 98.2 percent of its observations, but it closed near neutral at -0.044797. The record then returned to predominantly negative behavior across the following windows. This sequence provides a particularly clear distinction between durable settlement and temporary ascent: segment 35 held its gain, segment 36 largely released it, and the later segments resumed the broader negative-settlement profile.
+
+Across all forty-four completed default windows, the run remains negative in aggregate geometry. Median best TrueZ is +0.350330, mean settlement is -1.001970, median settlement is -1.009307, and approximately 20.5 percent of segments have ended above chance. The positive segment therefore does not overturn the established profile, but it demonstrates that the source-entropy record is capable of producing a complete and internally coherent favorable regime rather than only brief local excursions.
+
+At the 10-billion rolling scale, the longer-term fingerprint remains comparatively stable. Median best TrueZ is +1.632050, mean settlement is -0.706615, and 31.8 percent of completed segments contain an excursion of at least +1.96. Segment 34 established a new rolling-window excursion high of +3.551020, while segment 35 was the first to sustain a positive rolling-window mean across its full 100-billion-flip span.
+
+This checkpoint strengthens the central observation of the run: local positive structure is common, durable positive settlement is uncommon, but it is not absent. Pure source entropy has now produced both the most severe negative default segment and the strongest positive default segment within the same growing record. The contrast is a useful reminder that randomness need not appear featureless. It may form highly coherent local regimes while refusing to preserve any one regime as a lasting law.
+
+════════════════════════════════════════════════════════════════
+=== Run Configuration Info ===
+File:                 /data/jwc/Documents/Trackers/Quant.tkr
+record:               True
+Supports:             TruthInTheFlip.v0.1.1
+Tracker Version:      1.1.0
+Total Flips:          4,424,400,000,000
+Start Time:           7/15/2026 9:33:24 PM UTC
+End Time:             7/20/2026 11:59:30 AM UTC
+Segment Mode:         total
+Segment Size:         100,000,000,000 flips
+Grade:                all
+Whole:                True
+
+[Options]
+
+window method:  WindowByTotal(default)          //Creates a bounding function that defines a window based on a maximum number of total flips.
+Values:         window=def="100000000000"
+
+print format:  Detailed          //Detailed telemetry including underlying PRNG drift (ZHeads).
+Values:         None
+==============================
+
+Quant.tkr : 20260720_115930.04 | 4424400000000 flips → heads: 50+2.0e-05% (Z:+0.1242) | a: 50-1.2e-04% (Z:-0.7631) | aHeads: 50-1.4e-04% | aTails: 50-1.0e-04% | aSame: 50+5.8e-05% | aDiff: 50-3.0e-04% | [RATE] H/T: 50-1.0e-04%/ 50-1.4e-04% S/D: 50+5.8e-05%/ 50-3.0e-04% | wallclock: 4.14:23:32 | fps: 11133014 | Z(1.96) unreachable | Z(3.00) unreachable
+
+segments              : 44
+Edge Excursion Score  : +0.350330   // median(best TrueZ per segment)
+Edge Settlement Score : -1.001970   // mean(end TrueZ per segment)
+Edge Persistence Index: -0.387307   // settlement * fraction positive
+
+avgBestTrueZ          : +0.317283
+medianBestTrueZ       : +0.350330
+avgEndTrueZ           : -1.001970
+medianEndTrueZ        : -1.009307
+avgMeanTrueZ          : -1.002358
+avgPctAbove50         :  38.6545%
+
+bestTrueZ >= 1.96     :   4.5455%
+bestTrueZ >= 3.00     :   4.5455%
+endTrueZ  >= 0.00     :  20.4545%
+endTrueZ  >= 1.96     :   2.2727%
+meanTrueZ >= 0.00     :  11.3636%
+
+idx | span                  | bestTrueZ | aAtBestTrueZ     | endTrueZ  | meanTrueZ | %>50
+----+-----------------------+-----------+------------------+-----------+-----------+---------
+  0 | 200,000,000..99,800,… | +1.854053 |  50+1.24823e-03% | +1.205572 | +0.447868 | 100.000%
+  1 | 100,000,000,000..199… | +1.635979 |  50+2.62399e-04% | -0.451206 | +0.698521 |  92.800%
+  2 | 200,000,000,000..299… | -0.456266 |  50-2.13900e-05% | -2.778636 | -2.361501 |   0.000%
+  3 | 300,000,000,000..399… | +0.373079 |  50+1.07122e-04% | +0.260951 | -1.259283 |  17.000%
+  4 | 400,000,000,000..499… | +0.187295 |  50+1.17145e-04% | -2.123836 | -1.597097 |  62.800%
+  5 | 500,000,000,000..599… | +0.405878 |  50+8.47460e-05% | +0.184196 | -0.513369 |  64.600%
+  6 | 600,000,000,000..699… | +0.665331 |  50+1.26110e-04% | -1.841084 | -1.397804 |  20.200%
+  7 | 700,000,000,000..799… | -1.205454 |  50-1.83419e-04% | -3.435385 | -2.107550 |   0.000%
+  8 | 800,000,000,000..899… | +1.323350 |  50+3.21211e-04% | +0.907371 | -0.810241 |  67.800%
+  9 | 900,000,000,000..999… | +1.725908 |  50+3.44906e-04% | -1.010955 | -0.037434 |  61.600%
+ 10 | 1,000,000,000,000..1… | +0.425447 |  50+1.49748e-04% | -0.472520 | -0.564383 |  75.800%
+ 11 | 1,100,000,000,000..1… | -0.315855 |  50-4.52400e-05% | -1.007660 | -1.109137 |   0.000%
+ 12 | 1,200,000,000,000..1… | -0.250579 |  50-3.61470e-05% | -1.628004 | -1.564084 |   0.000%
+ 13 | 1,300,000,000,000..1… | -0.376937 |  50+2.73700e-06% | -2.061748 | -1.277830 |  12.600%
+ 14 | 1,400,000,000,000..1… | +0.364478 |  50+7.89370e-05% | -0.499741 | -1.226051 |  17.600%
+ 15 | 1,500,000,000,000..1… | +1.122881 |  50+2.15233e-04% | +0.312623 | -0.039235 |  90.800%
+ 16 | 1,600,000,000,000..1… | +0.531073 |  50+8.54880e-05% | -0.684766 | -0.484401 |  30.200%
+ 17 | 1,700,000,000,000..1… | -0.569539 |  50-1.72560e-05% | -1.165805 | -1.529531 |  11.200%
+ 18 | 1,800,000,000,000..1… | +0.454849 |  50+3.61244e-04% | -0.995049 | -0.905459 |  99.800%
+ 19 | 1,900,000,000,000..1… | +0.679966 |  50+1.07740e-04% | -1.283486 | -0.694219 |  56.800%
+ 20 | 2,000,000,000,000..2… | -1.306033 |  50-1.02586e-04% | -2.094237 | -2.187687 |   0.000%
+ 21 | 2,100,000,000,000..2… | +1.140273 |  50+5.06386e-04% | +0.916947 | -0.444326 |  78.800%
+ 22 | 2,200,000,000,000..2… | +1.255209 |  50+2.69157e-04% | -1.465254 | +0.164250 |  64.400%
+ 23 | 2,300,000,000,000..2… | -0.460453 |  50-4.84440e-05% | -0.941986 | -1.675115 |   0.000%
+ 24 | 2,400,000,000,000..2… | +0.576964 |  50+1.05684e-04% | -0.859109 | -0.838484 |  25.200%
+ 25 | 2,500,000,000,000..2… | -0.101288 |  50+5.90200e-06% | -1.491102 | -1.150937 |   1.400%
+ 26 | 2,600,000,000,000..2… | -1.391782 |  50-1.57031e-04% | -1.960347 | -2.415343 |   0.000%
+ 27 | 2,700,000,000,000..2… | -0.058553 |  50+2.01211e-04% | -0.940923 | -1.250005 |  63.200%
+ 28 | 2,800,000,000,000..2… | +0.066673 |  50+1.76183e-04% | -2.031371 | -1.852311 |  24.200%
+ 29 | 2,900,000,000,000..2… | +1.095103 |  50+2.19950e-04% | -0.706971 | -0.659106 |  69.000%
+ 30 | 3,000,000,000,000..3… | +0.550243 |  50+1.90659e-04% | +0.083743 | -0.655992 | 100.000%
+ 31 | 3,100,000,000,000..3… | +0.805325 |  50+1.51927e-04% | -0.687884 | -0.609170 |  45.600%
+ 32 | 3,200,000,000,000..3… | -0.433156 |  50-6.58780e-05% | -2.068895 | -1.236810 |   0.000%
+ 33 | 3,300,000,000,000..3… | -1.090119 |  50-1.60545e-04% | -4.908690 | -3.026320 |   0.000%
+ 34 | 3,400,000,000,000..3… | +0.811377 |  50+1.67458e-04% | +0.656571 | -2.168979 |  50.800%
+ 35 | 3,500,000,000,000..3… | +3.500148 |  50+5.81612e-04% | +3.269991 | +1.922725 | 100.000%
+ 36 | 3,600,000,000,000..3… | +3.366188 |  50+6.17980e-04% | -0.044797 | +1.589000 |  98.200%
+ 37 | 3,700,000,000,000..3… | +0.336182 |  50+7.31710e-05% | -0.595583 | -0.318810 |  68.000%
+ 38 | 3,800,000,000,000..3… | -0.352183 |  50-3.38040e-05% | -1.703121 | -1.219481 |   8.600%
+ 39 | 3,900,000,000,000..3… | -0.620053 |  50+6.51000e-05% | -1.099486 | -1.598392 |  14.800%
+ 40 | 4,000,000,000,000..4… | -0.248492 |  50-2.40360e-05% | -1.852899 | -1.441353 |   2.000%
+ 41 | 4,100,000,000,000..4… | -0.877127 |  50-3.17200e-05% | -1.862771 | -2.073669 |   0.000%
+ 42 | 4,200,000,000,000..4… | -0.115973 |  50-1.10030e-05% | -1.533123 | -1.018771 |   5.000%
+ 43 | 4,300,000,000,000..4… | -1.062949 |  50-1.61697e-04% | -1.596210 | -1.606457 |   0.000%
+
+Retained Anticipation: 50+1.05335e-04%
+Settlement Adjusted Anticipation: 50+2.20516e-04%
+
+Best excursion segment:
+  idx         : 35
+  bestTrueZ   : +3.500148
+  meanTrueZ   : +1.922725
+  endTrueZ    : +3.269991
+  pctAbove50  : 100.0000%
+  best ZHeads : +0.178289
+  aAtTrueZ    : 50+5.81612e-04%
+  end ZHeads  : +0.326081
+  end a       : 50+5.68589e-04%
+
+Best settlement segment:
+  idx         : 35
+  bestTrueZ   : +3.500148
+  meanTrueZ   : +1.922725
+  endTrueZ    : +3.269991
+  pctAbove50  : 100.0000%
+  best ZHeads : +0.178289
+  aAtTrueZ    : 50+5.81612e-04%
+  end ZHeads  : +0.326081
+  end a       : 50+5.68589e-04%
+
+Worst settlement segment:
+  idx         : 33
+  bestTrueZ   : -1.090119
+  meanTrueZ   : -3.026320
+  endTrueZ    : -4.908690
+  pctAbove50  : 0.0000%
+  best ZHeads : +0.074744
+  aAtTrueZ    : 50-1.60545e-04%
+  end ZHeads  : -2.683016
+  end a       : 50-3.51910e-04%
+
+File compute time: 4.14:23:32.6134490
+
+════════════════════════════════════════════════════════════════
+=== Run Configuration Info ===
+File:                 /data/jwc/Documents/Trackers/Quant.tkr
+record:               True
+Supports:             TruthInTheFlip.v0.1.1
+Tracker Version:      1.1.0
+Total Flips:          4,424,600,000,000
+Start Time:           7/15/2026 9:33:24 PM UTC
+End Time:             7/20/2026 11:59:47 AM UTC
+Segment Mode:         total
+Segment Size:         100,000,000,000 flips
+Grade:                all
+Whole:                True
+
+[Options]
+
+window method:  WindowByTotal(default)          //Creates a bounding function that defines a window based on a maximum number of total flips.
+Values:         window=10000000000
+
+print format:  Detailed          //Detailed telemetry including underlying PRNG drift (ZHeads).
+Values:         None
+==============================
+
+Quant.tkr : 20260720_115947.99 | 4424600000000 flips → heads: 50+6.5e-04% (Z:+1.3084) | a: 50+1.8e-04% (Z:+0.3513) | aHeads: 50-4.8e-04% | aTails: 50+8.3e-04% | aSame: 50+9.7e-04% | aDiff: 50-6.2e-04% | [RATE] H/T: 50+8.3e-04%/ 50-4.8e-04% S/D: 50+9.7e-04%/ 50-6.2e-04% | wallclock: 4.14:23:50 | fps: 11133014 | Z(1.96) in 07:31:02 | Z(3.00) in 17:56:46
+
+segments              : 44
+Edge Excursion Score  : +1.632050   // median(best TrueZ per segment)
+Edge Settlement Score : -0.706615   // mean(end TrueZ per segment)
+Edge Persistence Index: -0.339035   // settlement * fraction positive
+
+avgBestTrueZ          : +1.722717
+medianBestTrueZ       : +1.632050
+avgEndTrueZ           : -0.706615
+medianEndTrueZ        : -0.651880
+avgMeanTrueZ          : -0.861192
+avgPctAbove50         :  47.9801%
+
+bestTrueZ >= 1.96     :  31.8182%
+bestTrueZ >= 3.00     :   2.2727%
+endTrueZ  >= 0.00     :  25.0000%
+endTrueZ  >= 1.96     :   0.0000%
+meanTrueZ >= 0.00     :   2.2727%
+
+idx | span                  | bestTrueZ | aAtBestTrueZ     | endTrueZ  | meanTrueZ | %>50
+----+-----------------------+-----------+------------------+-----------+-----------+---------
+  0 | 200,000,000..99,800,… | +2.040440 |  50+1.20660e-03% | +1.035320 | -0.337383 |  63.126%
+  1 | 100,000,000,000..199… | +1.629080 |  50+1.24422e-03% | -0.932140 | -0.873653 |  50.400%
+  2 | 200,000,000,000..299… | +0.879860 |  50+5.17760e-04% | -1.292880 | -1.409178 |  28.800%
+  3 | 300,000,000,000..399… | +1.336160 |  50+7.28980e-04% | +0.932540 | -0.809301 |  57.600%
+  4 | 400,000,000,000..499… | +2.574800 |  50+1.36073e-03% | -0.941540 | -0.839736 |  44.200%
+  5 | 500,000,000,000..599… | +1.186360 |  50+7.63210e-04% | -0.566740 | -0.839810 |  58.200%
+  6 | 600,000,000,000..699… | +1.602380 |  50+8.13890e-04% | +0.270340 | -1.106073 |  45.600%
+  7 | 700,000,000,000..799… | +0.867020 |  50+4.35250e-04% | -1.689300 | -1.397558 |  29.600%
+  8 | 800,000,000,000..899… | +2.913660 |  50+1.48428e-03% | -0.701200 | -0.185373 |  66.800%
+  9 | 900,000,000,000..999… | +1.196640 |  50+7.46800e-04% | -0.478840 | -0.653743 |  49.000%
+ 10 | 1,000,000,000,000..1… | +1.626320 |  50+8.84070e-04% | -0.602560 | -0.978179 |  51.200%
+ 11 | 1,100,000,000,000..1… | +1.469760 |  50+8.17860e-04% | -3.062060 | -0.832972 |  42.200%
+ 12 | 1,200,000,000,000..1… | +1.733000 |  50+9.38020e-04% | +1.438440 | -1.142814 |  38.200%
+ 13 | 1,300,000,000,000..1… | +1.154240 |  50+6.18170e-04% | -0.707880 | -0.871705 |  37.400%
+ 14 | 1,400,000,000,000..1… | +1.635020 |  50+8.56690e-04% | -3.999740 | -0.608131 |  57.600%
+ 15 | 1,500,000,000,000..1… | +1.973200 |  50+9.90290e-04% | -1.096000 | -0.315001 |  58.200%
+ 16 | 1,600,000,000,000..1… | +1.527820 |  50+8.07910e-04% | -1.771240 | -0.823511 |  46.600%
+ 17 | 1,700,000,000,000..1… | +2.370880 |  50+1.24091e-03% | +0.352640 | -0.773659 |  46.400%
+ 18 | 1,800,000,000,000..1… | +2.389600 |  50+1.25814e-03% | -1.664460 | -0.517993 |  76.200%
+ 19 | 1,900,000,000,000..1… | +2.295580 |  50+1.15536e-03% | -0.407560 | -1.033911 |  35.000%
+ 20 | 2,000,000,000,000..2… | +1.411700 |  50+7.09760e-04% | -1.704680 | -1.573493 |  34.200%
+ 21 | 2,100,000,000,000..2… | +2.198720 |  50+1.10170e-03% | +0.697920 | -0.053214 |  91.600%
+ 22 | 2,200,000,000,000..2… | +1.897660 |  50+9.66280e-04% | -0.862100 | -1.010133 |  44.600%
+ 23 | 2,300,000,000,000..2… | +1.950780 |  50+1.03009e-03% | +0.582400 | -1.104648 |  39.000%
+ 24 | 2,400,000,000,000..2… | +2.188540 |  50+1.21083e-03% | -1.315120 | -1.131044 |  50.400%
+ 25 | 2,500,000,000,000..2… | +1.712260 |  50+9.31570e-04% | -2.293780 | -1.144562 |  33.600%
+ 26 | 2,600,000,000,000..2… | +1.338140 |  50+7.24770e-04% | -3.030140 | -0.835725 |  40.800%
+ 27 | 2,700,000,000,000..2… | +1.398400 |  50+1.10717e-03% | -0.101660 | -0.805492 |  55.200%
+ 28 | 2,800,000,000,000..2… | +2.273360 |  50+1.17327e-03% | +1.611100 | -1.042048 |  39.600%
+ 29 | 2,900,000,000,000..2… | +2.678300 |  50+1.37492e-03% | -0.072060 | -0.515638 |  61.800%
+ 30 | 3,000,000,000,000..3… | +1.447360 |  50+7.71470e-04% | -0.893400 | -0.585888 |  59.200%
+ 31 | 3,100,000,000,000..3… | +2.187920 |  50+1.09441e-03% | -1.863500 | -0.911730 |  42.000%
+ 32 | 3,200,000,000,000..3… | +0.766260 |  50+4.52550e-04% | -1.166720 | -1.357952 |  30.000%
+ 33 | 3,300,000,000,000..3… | +0.744160 |  50+3.72840e-04% | -2.190180 | -1.670969 |  17.600%
+ 34 | 3,400,000,000,000..3… | +3.551020 |  50+1.82782e-03% | -1.062340 | -0.502021 |  54.600%
+ 35 | 3,500,000,000,000..3… | +2.555400 |  50+1.36681e-03% | +0.120580 | +0.551030 |  93.400%
+ 36 | 3,600,000,000,000..3… | +1.792220 |  50+9.04070e-04% | -1.182220 | -0.817076 |  44.200%
+ 37 | 3,700,000,000,000..3… | +1.413760 |  50+7.15260e-04% | -0.380200 | -0.484130 |  55.400%
+ 38 | 3,800,000,000,000..3… | +1.831460 |  50+1.07358e-03% | -0.060080 | -1.367622 |  28.000%
+ 39 | 3,900,000,000,000..3… | +0.981600 |  50+5.36460e-04% | -0.296960 | -0.862611 |  56.400%
+ 40 | 4,000,000,000,000..4… | +0.964740 |  50+5.39730e-04% | +0.180500 | -1.013233 |  45.600%
+ 41 | 4,100,000,000,000..4… | +1.640580 |  50+8.75670e-04% | +0.711520 | -1.089722 |  46.600%
+ 42 | 4,200,000,000,000..4… | +1.249440 |  50+6.74150e-04% | -0.195100 | -1.121895 |  29.200%
+ 43 | 4,300,000,000,000..4… | +1.223940 |  50+6.15910e-04% | -0.440000 | -1.092951 |  35.800%
+
+Retained Anticipation: 50+2.93036e-05%
+Settlement Adjusted Anticipation: 50+2.82936e-05%
+
+Best excursion segment:
+  idx         : 34
+  bestTrueZ   : +3.551020
+  meanTrueZ   : -0.502021
+  endTrueZ    : -1.062340
+  pctAbove50  : 54.6000%
+  best ZHeads : -0.104620
+  aAtTrueZ    : 50+1.82782e-03%
+  end ZHeads  : +0.594200
+  end a       : 50-2.34070e-04%
+
+Best settlement segment:
+  idx         : 28
+  bestTrueZ   : +2.273360
+  meanTrueZ   : -1.042048
+  endTrueZ    : +1.611100
+  pctAbove50  : 39.6000%
+  best ZHeads : -0.073180
+  aAtTrueZ    : 50+1.17327e-03%
+  end ZHeads  : +0.351040
+  end a       : 50+9.81070e-04%
+
+Worst settlement segment:
+  idx         : 14
+  bestTrueZ   : +1.635020
+  meanTrueZ   : -0.608131
+  endTrueZ    : -3.999740
+  pctAbove50  : 57.6000%
+  best ZHeads : +0.078360
+  aAtTrueZ    : 50+8.56690e-04%
+  end ZHeads  : -1.552520
+  end a       : 50-1.22361e-03%
+
+File compute time: 4.14:23:50.5594982
