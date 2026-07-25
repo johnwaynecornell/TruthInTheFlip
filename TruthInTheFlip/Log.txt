@@ -2747,3 +2747,65 @@ Worst settlement segment:
   end a       : 50-1.22361e-03%
 
 File compute time: 6.14:09:20.8484203
+
+___________________________________________________________________________
+╔═══════════════╗
+║20260725_110825║
+╚═══════════════╝
+
+20260725_110825 — Quant.tkr committed to artifacts
+
+Quant.tkr completed its first matched-length physical entropy run at 8,903,400,000,000 flips, representing eighty-nine whole 100-billion-flip segments. The tracker was generated from direct Quantis source entropy without an additional whitening stage and used MetaGuess as its anticipation strategy.
+
+The run is now archived as a mature experimental artifact alongside the established crypto3 baseline. Its length differs from crypto3 by only 14.4 billion flips, approximately 0.16 percent, while both reports contain the same number of complete default-scale segments. This provides a clean basis for comparing their completed-window distributions.
+
+At the 10-billion-flip rolling scale, Quant.tkr established a stable profile of recurring positive excursion without general positive persistence:
+
+<pre><code>segments                  89
+median best TrueZ         +1.626320
+average best TrueZ        +1.681835
+average end TrueZ         -0.665331
+median end TrueZ          -0.664580
+average mean TrueZ        -0.845842
+average time above 50%     49.0576%
+best TrueZ &gt;= 1.96         30.3371%
+positive settlements       28.0899%</code></pre>
+
+The median best excursion remained effectively unchanged through the later stages of the run. Approximately three tenths of the completed segments crossed +1.96, while average and median settlement remained negative. Short-scale favorable intervals therefore appeared regularly, but most were not retained through completion.
+
+At the default 100-billion-flip scale, the distinction became stronger:
+
+<pre><code>segments                  89
+median best TrueZ         +0.401426
+average best TrueZ        +0.383116
+average end TrueZ         -0.920284
+median end TrueZ          -0.995049
+average mean TrueZ        -0.967614
+average time above 50%     41.6180%
+positive settlements       23.5955%
+positive means             13.4831%</code></pre>
+
+The typical default segment reached a modest positive maximum but spent much of its history below baseline and settled near TrueZ = -1. The completed record therefore supports the same scale-dependent description observed throughout its maturation: positive local structure was recurrent, while favorable long-scale occupation and settlement were uncommon.
+
+The lifetime tracker stopped at a positive current endpoint, with anticipation TrueZ of +1.4111 in the active 10-billion window and +0.7017 in the active default window. These current values do not contradict the completed-window profile. They demonstrate again that a single ending position and the distribution of finite paths answer different questions.
+
+The artifact also preserves several important local regimes. It includes strongly negative completed windows, a coherent default-scale positive segment that remained above chance throughout, large excursions that failed to settle, and later favorable intervals that softened but did not overturn the aggregate negative-settlement geometry.
+
+When compared with crypto3 at the same eighty-nine-segment horizon, Quant.tkr shares the broader pattern of positive excursion combined with negative average settlement. The numerical profiles differ, particularly in default-scale excursion, time above baseline, and short-window settlement, but one run from each source is not sufficient to classify those differences as persistent source effects.
+
+Quant.tkr is therefore committed as the first mature direct source-entropy MetaGuess artifact. It establishes a physical-entropy baseline for future comparisons involving conditioned Quantis RNG output and alternate anticipation strategies.
+
+The previously announced next experiment is direct Quantis RNG mode with MetaGuess, preserving the anticipation strategy while changing the hardware output mode. This remains the cleanest immediate controlled comparison. The consistently low default-scale settlement and mean values have also made a future direct source-entropy AntiMetaGuess run especially compelling. That later run will test the complementary anticipation principle on fresh physical entropy; it will not be an exact inversion or replay of Quant.tkr.
+
+Final characterization:
+
+<blockquote>
+<p>
+Across 8.9 trillion direct source-entropy flips, Quant.tkr repeatedly formed favorable local excursions while most completed long-scale windows occupied and settled below baseline. Its final positive endpoint belongs to, rather than overturns, a mature record of excursion without general persistence.
+</p>
+</blockquote>
+
+see ...
+Artifacts/Trackers/Quant.tkr
+Artifacts/Trackers/Quant_def.txt
+Artifacts/Trackers/Quant_10B.txt
