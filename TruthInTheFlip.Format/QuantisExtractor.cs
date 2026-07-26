@@ -7,11 +7,38 @@ public class QuantisExtractor : IDisposable
 {
     public class Imports
     {
+        // Register the custom resolver when the class is first accessed
+        static Imports()
+        {
+            NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), QuantisImportResolver);
+        }
+
+        private static IntPtr QuantisImportResolver(string libraryName, Assembly assembly,
+            DllImportSearchPath? searchPath)
+        {
+            // Intercept our specific target library name
+            if (libraryName == "Quantis_Extensions")
+            {
+                IntPtr handle;
+
+                if (NativeLibrary.TryLoad("Quantis_Extensions", assembly, searchPath, out handle))
+                    return handle;
+
+                // Fallback: Try the current known Windows name
+                if (NativeLibrary.TryLoad("QuantisExtensions", assembly, searchPath, out handle))
+                    return handle;
+            }
+
+            // Return IntPtr.Zero to fall back to the default .NET runtime resolution logic
+            return IntPtr.Zero;
+        }
+
         // 1. Define a delegate that perfectly matches your C function pointer signature
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate int GetRandomDelegate(IntPtr buffer, UIntPtr length);
 
         // 2. Import the native Extractor functions
+        // You can leave the name exactly as is! The resolver above will automatically route it.
         [DllImport("Quantis_Extensions", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         public static extern int QuantisExtractorInitializeMatrix(
             string matrixFilename,
@@ -29,7 +56,7 @@ public class QuantisExtractor : IDisposable
         [DllImport("Quantis_Extensions", CallingConvention = CallingConvention.Cdecl)]
         public static extern void QuantisExtractorUninitializeMatrix(ref IntPtr extractorMatrix);
     }
-    
+
     public IntPtr extractorMatrix = IntPtr.Zero;
     
     public string FileName = "default_idq_matrix.dat";
@@ -53,12 +80,8 @@ public class QuantisExtractor : IDisposable
         string localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, FileName);
         if (File.Exists(localPath)) 
             return localPath;
-
-        // Strategy 2: Check current working directory as a secondary local fallback
-        if (File.Exists(FileName)) 
-            return FileName;
-
-        // Strategy 3: Always extract the embedded, perfectly-matched resource
+        
+        // Strategy 2: Always extract the embedded, perfectly-matched resource
         return ExtractEmbeddedMatrix();
     }
     
