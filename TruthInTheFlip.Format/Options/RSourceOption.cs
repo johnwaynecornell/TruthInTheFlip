@@ -67,6 +67,22 @@ public class RSourceOption : Option
         return result;
     }
     
+    [StringHelp("IDQ Quantis Extractor")]
+    public static BitFactory IDQE(BitFactory Source)
+    {
+        BitFactory result = new BitFactory();
+        result.resetRandom = () =>
+        {
+            QuantisExtractor extractor = new QuantisExtractor();
+            extractor.InitializeDefaultMatrix();
+            extractor.RandomSource = Source.resetRandom();
+
+            return bytes => extractor.FillBuffer(bytes);
+        };
+        result.Reset();
+        return result;
+    }
+    
     [StringHelp("Apply Von Neumann Whitener to a random source")]
     public static BitFactory Whiten(BitFactory Source)
     {
@@ -74,7 +90,9 @@ public class RSourceOption : Option
 
         result.resetRandom = () =>
         {
+            Source.Reset();
             RandomWhitener whitener = new RandomWhitener(Source);
+            
             return (byte[] arr) =>
             {
                 whitener.Fill(arr);
@@ -84,8 +102,6 @@ public class RSourceOption : Option
         result.Reset();
         return result;
     }
-    
-
     
     public virtual BitFactory? BitFactory =>  RegistryParseResult?.Strategy as BitFactory;
 

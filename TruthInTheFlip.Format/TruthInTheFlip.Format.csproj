@@ -6,4 +6,9 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <None Remove="default_idq_matrix.dat" />
+      <EmbeddedResource Include="default_idq_matrix.dat" />
+    </ItemGroup>
+
 </Project>

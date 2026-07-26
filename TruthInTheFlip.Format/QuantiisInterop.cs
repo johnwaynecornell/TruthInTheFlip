@@ -508,9 +508,9 @@ public static class QuantisInterop
             device.AssertReady();
 
             if (enforcePureEntropy) Console.WriteLine(
-                    $"Quantis QRNG initialized.  {deviceType} Dev {deviceNumber} using source entropy");
+                    $"Quantis QRNG instantiated.  {deviceType} Dev {deviceNumber} using source entropy");
             else Console.WriteLine(
-                    $"Quantis QRNG initialized.  {deviceType} Dev {deviceNumber} source entropy + VonNeumannWhitener");
+                    $"Quantis QRNG instantiated.  {deviceType} Dev {deviceNumber} source entropy + VonNeumannWhitener");
 
             return buffer =>
             {
