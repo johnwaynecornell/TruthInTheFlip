@@ -2809,3 +2809,13 @@ see ...
 Artifacts/Trackers/Quant.tkr
 Artifacts/Trackers/Quant_def.txt
 Artifacts/Trackers/Quant_10B.txt
+
+___________________________________________________________________________
+╔═══════════════╗
+║20260726_174250║
+╚═══════════════╝
+
+Implemented Quantis Extractor interop and began Quant_IDQE.tkr control run.
+
+TruthInTheFlip -create -record -print Detailed -rsource IDQE Quantis PCI 0 -window def Quant_IDQE.tkr
+

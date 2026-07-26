@@ -89,8 +89,6 @@ public class QuantisExtractor : IDisposable
     {
         string resourceName = $"TruthInTheFlip.Format.{FileName}";
         var assembly = Assembly.GetExecutingAssembly();
-
-        var streams = assembly.GetManifestResourceNames();
         
         using Stream? stream = assembly.GetManifestResourceStream(resourceName);
         if (stream == null)
