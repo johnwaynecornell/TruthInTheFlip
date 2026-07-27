@@ -340,7 +340,7 @@ public class DelegateMethodRegistry
         catch (Exception ex)
         {
             errorMessage(
-                $"Error compiling {(ElementDescription != "" ? (ElementDescription + " ") : "")}strategy: {ex.Message}");
+                $"Error compiling {(ElementDescription != "" ? (ElementDescription + " ") : "")}strategy: {ex}");
             exitStatus = -1;
         }
     }

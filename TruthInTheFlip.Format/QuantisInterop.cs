@@ -350,9 +350,7 @@ public static class QuantisInterop
                 {
                     if (entropyOffset >= entropyLength)
                     {
-                        int r = Imports.QuantisRead(
-                            deviceType,
-                            deviceNumber,
+                        int r = Imports.QuantisReadHandled(this.deviceHandle,
                             entropyBuffer,
                             entropyBuffer.Length);
 
