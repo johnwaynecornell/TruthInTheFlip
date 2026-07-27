@@ -2826,3 +2826,4 @@ ___________________________________________________________________________
 
 Experiencing technical difficulties. Will update.
 
+The planned Quantis IDQE run was postponed after the PCIe device reported degraded entropy-module availability. A short one-module session may be retained for software diagnostics, but it will not be treated as the canonical conditioned-output experiment. The scientific run will begin only after full module health is restored or the operating condition is clarified by ID Quantique support.
