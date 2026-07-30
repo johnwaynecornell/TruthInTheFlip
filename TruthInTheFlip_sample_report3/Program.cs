@@ -254,7 +254,11 @@ if (currentSegment is { Count: > 0 } &&
 }
 
 if (finalState == null || segments.Count == 0)
-    throw new Exception("File cannot be empty");
+{
+    Console.Error.WriteLine($"There are no{(whole ? " whole" : "")} segments right now");
+    return 1;
+}
+
 
 SegmentAggregate agg = new SegmentAggregate(segments);
 
