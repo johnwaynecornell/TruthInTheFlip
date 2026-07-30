@@ -2840,6 +2840,13 @@ TruthInTheFlip -create -record -print Detailed -rsource IDQE Quantis PCI 0 -wind
 
 Initial ZHeads is sane, continuing the simulation.
 
+___________________________________________________________________________
+╔═══════════════╗
+║20260730_152109║
+╚═══════════════╝
 
-
-
+Extractor configuration interruption: I temporarily changed the Quantis extractor matrix parameters from the established 192 input bits / 64 output bits configuration to 1024 / 768, based on an incorrect interpretation of the default matrix dimensions. The executable was stopped to make and test this change. The resulting output produced an anomalous Heads Z-score and was not accepted as part of the continuing experimental stream. I restored the previously published 192 / 64 configuration, which matches the program’s 3072-byte raw to 1024-byte extracted buffer ratio. The tracker/log had already been updated before the issue was recognized; this entry records the discontinuity explicitly. The next accepted segment begins after restoration and reinitialization of the original extractor configuration.
+Again without the bold claim:
+TruthInTheFlip -create -record -print Detailed -rsource IDQE Quantis PCI 0 -window def Quant_IDQE.tkr
+20260730_160505
+200000000 flips → heads: 50+7.8e-04% (Z:+0.2213) | a: 50+1.2e-03% (Z:+0.3355) | aHeads: 50+4.1e-04% | aTails: 50+2.0e-03% | aSame: 50+5.4e-03% | aDiff: 50-3.1e-03% | [RATE] H/T: 50+2.0e-03%/ 50+4.0e-04% S/D: 50+5.4e-03%/ 50-3.1e-03% | wallclock: 00:00:53 | fps: 3715164 | Z(1.96) in 00:29:43 | Z(3.00) in 01:10:51
