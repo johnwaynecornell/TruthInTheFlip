@@ -2850,3 +2850,47 @@ Again without the bold claim:
 TruthInTheFlip -create -record -print Detailed -rsource IDQE Quantis PCI 0 -window def Quant_IDQE.tkr
 20260730_160505
 200000000 flips → heads: 50+7.8e-04% (Z:+0.2213) | a: 50+1.2e-03% (Z:+0.3355) | aHeads: 50+4.1e-04% | aTails: 50+2.0e-03% | aSame: 50+5.4e-03% | aDiff: 50-3.1e-03% | [RATE] H/T: 50+2.0e-03%/ 50+4.0e-04% S/D: 50+5.4e-03%/ 50-3.1e-03% | wallclock: 00:00:53 | fps: 3715164 | Z(1.96) in 00:29:43 | Z(3.00) in 01:10:51
+
+___________________________________________________________________________
+╔═══════════════╗
+║20260731_085537║
+╚═══════════════╝
+
+
+ — Quant_IDQE.tkr continues conditioned-output run
+
+The second Quantis experiment is now underway using the fluent random-source configuration:
+
+<pre><code>-rsource IDQE Quantis PCI 0</code></pre>
+
+This source chain reads direct output from Quantis PCI device 0 and passes it through the ID Quantique extractor before supplying bytes to Truth in the Flip. MetaGuess remains the anticipation strategy, allowing the new run to preserve the strategy and physical device used by Quant.tkr while changing the output-processing layer.
+
+The run follows a period of technical difficulty involving device initialization and entropy-module availability. The QRNG is currently operational, and driver behavior is suspected as the cause of the earlier initialization failures. Quant_IDQE.tkr was started only after the device returned to a functional state.
+
+At the first checkpoint, the tracker contained 212.4 billion flips and two complete 100-billion-flip segments.
+
+The measured simulation rate is approximately:
+
+<pre><code>3,712,441 flips per second</code></pre>
+
+This is close to one third of the approximately 11.13 million flips per second sustained by the earlier direct source-entropy run. The reduction is expected. QuantisExtractor consumes 3,072 source bytes to produce 1,024 extracted bytes, creating a 3:1 input-to-output ratio. The slower pace therefore reflects the intended extraction process rather than an apparent simulation regression.
+
+At the current sustained rate, an eighty-segment horizon is expected to require approximately twenty-five days from the beginning of the run. Reaching the preferred matched horizon of eighty-nine complete segments should require approximately twenty-eight days, assuming stable device operation and no extended interruptions.
+
+The first two completed default-scale segments are too few to characterize the conditioned source, but they already demonstrate substantial finite-path variation.
+
+The first segment reached a best TrueZ of +1.875639 before spending most of its history below baseline and settling at -3.430367. Its mean TrueZ was -2.496369, and it remained above 50 percent for only 3.206 percent of its observations.
+
+The second segment reached a smaller best TrueZ of +0.921532, retained a negative mean of -1.413588, but recovered to a positive settlement of +0.784846.
+
+Across the two segments, average settlement is currently -1.322761 and average mean TrueZ is -1.954978. These values are recorded as early observations only. Two completed windows cannot establish whether the conditioned-output run will reproduce, soften, reverse, or otherwise differ from the mature geometry of Quant.tkr.
+
+The purpose of Quant_IDQE.tkr is to provide a controlled contrast with the first Quantis artifact:
+
+<pre><code>Quant.tkr
+Quantis source entropy → MetaGuess
+
+Quant_IDQE.tkr
+Quantis source entropy → IDQE extraction → MetaGuess</code></pre>
+
+The experiment will remain active while other NewAge development continues. Intermediate checkpoints will be logged when they clarify the maturation of the run, while public interpretation will wait until the conditioned-output record has accumulated a substantially larger completed-window sample.
