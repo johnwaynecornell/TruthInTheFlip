@@ -2894,3 +2894,83 @@ Quant_IDQE.tkr
 Quantis source entropy → IDQE extraction → MetaGuess</code></pre>
 
 The experiment will remain active while other NewAge development continues. Intermediate checkpoints will be logged when they clarify the maturation of the run, while public interpretation will wait until the conditioned-output record has accumulated a substantially larger completed-window sample.
+
+___________________________________________________________________________
+╔═══════════════╗
+║20260731_154542║
+╚═══════════════╝
+
+20260731 — Report 4 retrospective source-balance baseline
+
+TruthInTheFlip_sample_report4 was introduced as a source-aware successor to sample_report3.
+
+The previous report remains preserved for compatibility and exact reproduction of published output. Report 4 retains the established excursion, settlement, persistence, and TrueZ measurements while adding a separate descriptive layer for the underlying heads path.
+
+For each completed segment, the new report records:
+
+<pre><code>mean ZHeads
+end ZHeads
+minimum ZHeads
+maximum ZHeads
+percentage of observations with ZHeads &gt;= 0</code></pre>
+
+It also aggregates source-balance occupancy, endpoint direction, endpoint magnitude, and descriptive correlations between ZHeads and TrueZ behavior.
+
+A retrospective default-window mega report was generated across four established Tracker v1.1.0 artifacts:
+
+<pre><code>Quant.tkr
+crypto3.tkr
+crypto_RandomSD.tkr
+v1.1.0.TrackerRecord</code></pre>
+
+The active Quant_IDQE.tkr experiment was intentionally excluded from the canonical retrospective report because it remains at an early stage. Its source-balance telemetry will continue to be monitored separately and can be added to a future comparison after it accumulates a meaningful completed-segment population.
+
+The mature source-balance summary was:
+
+<pre><code>
+Tracker                   Segments   Avg mean ZH   Avg end ZH   Avg %ZH&gt;=0
+Quant.tkr                       89      -0.005895    -0.008002      51.3094%
+crypto3.tkr                     89      +0.134074    +0.144419      52.0451%
+crypto_RandomSD.tkr            135      +0.057841    +0.063780      54.4583%
+v1.1.0.TrackerRecord            31      -0.203908    -0.181199      37.5098%</code></pre>
+
+Quant.tkr was especially well centered. Its average segment mean ZHeads was -0.005895, its average endpoint was -0.008002, and its average source-side occupancy was 51.3094 percent. Although its anticipation geometry had the most negative settlement of the matched mature pair, its underlying heads path was almost perfectly balanced in aggregate.
+
+The two large computational-source records also showed only modest aggregate heads displacement. crypto3 leaned mildly positive in average ZHeads, while crypto_RandomSD spent somewhat more time above zero, but neither produced a source path sufficient to explain its anticipation behavior directly.
+
+The endpoint frequency beyond an absolute ZHeads magnitude of 1.96 was also similar among the three largest records:
+
+<pre><code>Quant.tkr                   7.8652%
+crypto3.tkr                 7.8652%
+crypto_RandomSD.tkr         6.6667%</code></pre>
+
+The descriptive correlations between source balance and TrueZ remained weak and inconsistent in direction:
+
+<pre><code>
+Tracker                   meanZH/meanTrueZ   endZH/endTrueZ
+Quant.tkr                        +0.192722        +0.255668
+crypto3.tkr                      -0.205429        -0.283416
+crypto_RandomSD.tkr              +0.098613        +0.094211
+v1.1.0.TrackerRecord             +0.052917        +0.043776</code></pre>
+
+These values do not support a common directional relationship between heads drift and anticipation performance. Quant showed mild positive association, crypto3 mild negative association, and the remaining records were close to zero.
+
+Individual segments further demonstrated why the two paths should remain separate. Strong positive or negative anticipation outcomes could occur while ZHeads moved in the same direction, the opposite direction, or remained comparatively neutral. Because TrueZ already penalizes the absolute magnitude of ZHeads, source drift affects the available adjusted margin, but its sign does not appear to dictate the sign of anticipation performance.
+
+Across all four established records, the larger anticipation pattern remained recognizable:
+
+<pre><code>positive median best excursion
+negative average settlement
+negative average mean TrueZ</code></pre>
+
+This geometry persisted despite materially different source-balance paths. The new telemetry therefore strengthens rather than weakens the earlier interpretation.
+
+Initial Report 4 finding:
+
+<blockquote>
+<p>
+The underlying sources wander and may remain directionally displaced across long finite intervals, but the mature aggregate records remain broadly balanced. Their weak and inconsistent correlations with TrueZ do not explain away the recurring pattern of positive excursion followed by negative average settlement.
+</p>
+</blockquote>
+
+The regenerated mega report is committed as the canonical Report 4 retrospective baseline. Future mature tracker artifacts can be added using the same 100-billion-flip whole-segment configuration, allowing source balance and anticipation geometry to be compared without changing the earlier report definitions.

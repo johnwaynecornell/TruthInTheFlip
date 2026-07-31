@@ -227,6 +227,8 @@ The repository includes supporting sample tools for working with `.tkr` datasets
     A more advanced reporting tool that demonstrates windowed analysis over historical tracker data.
 *   **TruthInTheFlip_sample_report3**  
     Segment-oriented reporting utility for separating local edge excursion from long-arc settlement and persistence.
+*   **TruthInTheFlip_sample_report4**  
+    Enhanced segment-oriented reporting utility that adds underlying heads drift telemetry and descriptive correlations to distinguish anticipation behavior from source balance.
 * * *
 
 Notes
