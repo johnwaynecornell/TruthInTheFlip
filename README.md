@@ -62,7 +62,7 @@ To support this, the reporting utilities now serve different roles:
 - **Edge Persistence Index** = settlement × fraction of segment states at or above chance
 
 These are project metrics intended to tell a truer story about edge behavior. They are not standard published statistics, but practical instruments for distinguishing what the edge can do, what it keeps, and how often it holds.
----
+
 ## Architecture
 
 ### Core Domain: `TruthInTheFlip.Format`
@@ -250,3 +250,20 @@ Links
 
 *   Project site: [https://johncornell.net](https://johncornell.net)
 *   Repository: https://github.com/johnwaynecornell/TruthInTheFlip
+
+* * *
+
+## Experiment
+
+The project maintains a continuous experiment log documenting the long-arc behavior of anticipation strategies against massive datasets (trillions of flips) from various sources, including cryptographic and hardware QRNGs.
+
+This experiment is built on the philosophy that **truth in the flip** requires recording not just the final result, but the relationship between three distinct paths: what the strategy did, what the source did, and what remained after accounting for source drift.
+
+Detailed background and further analysis can be found at [johncornell.net](https://johncornell.net).
+
+The log can be found at `TruthInTheFlip/Log.txt` in this repo.
+
+### GitHub links
+[Read the current experiment log](https://github.com/johnwaynecornell/TruthInTheFlip/blob/main/TruthInTheFlip/Log.txt)
+
+[Browse the log’s commit history](https://github.com/johnwaynecornell/TruthInTheFlip/commits/main/TruthInTheFlip/Log.txt)

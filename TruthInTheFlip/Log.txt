@@ -3414,3 +3414,13 @@ Truth in the Flip does not only ask where a record ended. It records what the st
 </blockquote>
 
 The earlier sample_report3 remains unchanged for compatibility and exact reproduction of prior output. sample_report4 is now the preferred source-aware and anticipation-aware segment report.
+
+___________________________________________________________________________
+╔═══════════════╗
+║20260801_130056║
+╚═══════════════╝
+Updated README.md with these links
+[Read the current experiment log](https://github.com/johnwaynecornell/TruthInTheFlip/blob/main/TruthInTheFlip/Log.txt)
+
+[Browse the log’s commit history](https://github.com/johnwaynecornell/TruthInTheFlip/commits/main/TruthInTheFlip/Log.txt)
+
