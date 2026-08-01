@@ -3313,3 +3313,104 @@ Worst settlement segment:
   pct ZH >= 0 : 38.4000%
 
 File compute time: 1.17:49:50.6299466
+
+
+
+___________________________________________________________________________
+╔═══════════════╗
+║20260801_115651║
+╚═══════════════╝
+ — Report 4 completes the three-path view
+
+TruthInTheFlip_sample_report4 has been refined so anticipation percentage is now treated as a first-class descriptive path.
+
+The original Report 4 enhancement introduced a separate view of underlying source balance through ZHeads. That made it possible to distinguish source wandering from adjusted anticipation behavior.
+
+A second review showed that raw anticipation percentage, conventionally printed as <code>a</code>, still appeared primarily as supporting telemetry. Although the report recorded anticipation at the point of best TrueZ, mean anticipation, endpoint anticipation, and positive occupancy were not presented together as a coherent path.
+
+Report 4 now organizes its output into three explicit layers:
+
+<pre><code>Adjusted Anticipation Geometry
+    TrueZ excursion, settlement, mean and threshold behavior
+
+Anticipation Path
+    raw a mean, endpoint, median endpoint and occupancy around 50%
+
+Underlying Heads
+    ZHeads mean, endpoint, directional occupancy and endpoint magnitude</code></pre>
+
+The intended interpretation is:
+
+<pre><code>a
+    what the strategy is doing
+
+ZHeads
+    what the source is doing
+
+TrueZ
+    what remains after accounting for source displacement</code></pre>
+
+The established Edge scores remain unchanged and continue to summarize adjusted anticipation geometry.
+
+No new competing score was introduced for <code>a</code>. The anticipation section is descriptive telemetry intended to answer a different question:
+
+<blockquote>
+<p>
+Does anticipation merely finish near 50 percent, or does its path also occupy, cross and settle around 50 percent in a balanced way?
+</p>
+</blockquote>
+
+The distinction matters because a very small final displacement from 50 percent does not imply that the path spent equal time on both sides.
+
+For example, the mature Quantis source-entropy record reports:
+
+<pre><code>avgMeanA               : 50-2.10422e-05%
+avgEndA                : 50-2.23320e-05%
+medianEndA             : 50-5.00780e-05%
+avgPctAAtLeast50       :  41.6180%
+endA &gt;= 50.00          :  40.4494%</code></pre>
+
+The magnitude of its average anticipation displacement is extremely small, yet its segment path spent less than half of its observations at or above 50 percent and fewer than half of its segment endpoints finished there.
+
+The raw path can therefore be close to balanced in absolute percentage while still exhibiting asymmetric occupancy and settlement.
+
+The high-detail segment table now places all three layers beside one another:
+
+<pre><code>bestTrueZ
+aBest
+endTrueZ
+meanTrueZ
+endA
+meanA
+endZH
+meanZH
+%a&gt;=50
+%ZH&gt;=0</code></pre>
+
+This layout permits direct inspection of cases where:
+
+* anticipation and heads move together;
+* anticipation and heads move in opposite directions;
+* anticipation remains near 50 percent while ZHeads wanders;
+* TrueZ changes because the source penalty grows even when raw anticipation remains favorable;
+* an endpoint conceals the path by which it was reached.
+
+The highlighted best-excursion, best-settlement and worst-settlement segments have also been reorganized into three labeled blocks:
+
+<pre><code>TrueZ
+Anticipation
+Heads</code></pre>
+
+Each highlighted segment now reports the mean, range, endpoint and directional occupancy of both the anticipation and heads paths.
+
+The retrospective mega report was regenerated to illustrate the completed Report 4 structure across established tracker artifacts. A separate implementation-day report also includes the active Quant_IDQE record as a live demonstration of the same telemetry, but the young run is not treated as a mature comparative sample.
+
+This update completes the current conceptual architecture of Report 4:
+
+<blockquote>
+<p>
+Truth in the Flip does not only ask where a record ended. It records what the strategy did, what the source did, and what remained after the two paths were placed in relation.
+</p>
+</blockquote>
+
+The earlier sample_report3 remains unchanged for compatibility and exact reproduction of prior output. sample_report4 is now the preferred source-aware and anticipation-aware segment report.

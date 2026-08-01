@@ -280,18 +280,26 @@ if (grade >= Grade.Low)
 
 if (grade >= Grade.Med)
 {
+    message("Adjusted Anticipation Geometry:");
     message($"avgBestTrueZ          : {Fmt(agg.AvgBestTrueZ)}");
     message($"medianBestTrueZ       : {Fmt(agg.MedianBestTrueZ)}");
     message($"avgEndTrueZ           : {Fmt(agg.AvgEndTrueZ)}");
     message($"medianEndTrueZ        : {Fmt(agg.MedianEndTrueZ)}");
     message($"avgMeanTrueZ          : {Fmt(agg.AvgMeanTrueZ)}");
-    message($"avgPctAbove50         : {agg.AvgPctAbove50,8:0.0000}%");
     message();
     message($"bestTrueZ >= 1.96     : {agg.PctBestAtLeast(1.96),8:0.0000}%");
     message($"bestTrueZ >= 3.00     : {agg.PctBestAtLeast(3.00),8:0.0000}%");
     message($"endTrueZ  >= 0.00     : {agg.PctEndAtLeast(0.00),8:0.0000}%");
     message($"endTrueZ  >= 1.96     : {agg.PctEndAtLeast(1.96),8:0.0000}%");
     message($"meanTrueZ >= 0.00     : {agg.PctMeanAtLeast(0.00),8:0.0000}%");
+    message();
+
+    message("Anticipation Path:");
+    message($"avgMeanA               : {Tracker.FormatOffset(agg.AvgMeanA, "0.00000e+00")}");
+    message($"avgEndA                : {Tracker.FormatOffset(agg.AvgEndA, "0.00000e+00")}");
+    message($"medianEndA             : {Tracker.FormatOffset(agg.MedianEndA, "0.00000e+00")}");
+    message($"avgPctAAtLeast50       : {agg.AvgPctAAtLeast50,8:0.0000}%");
+    message($"endA >= 50.00          : {agg.PctEndAAtLeast(50.0),8:0.0000}%");
     message();
 
     message("Underlying Heads:");
@@ -306,16 +314,26 @@ if (grade >= Grade.Med)
     {
         double corrMean = PearsonCorrelation(segments.Select(s => s.MeanZHeads), segments.Select(s => s.MeanTrueZ));
         double corrEnd = PearsonCorrelation(segments.Select(s => s.EndZHeads), segments.Select(s => s.EndTrueZ));
+        
+        double corrMeanAMeanZH = PearsonCorrelation(segments.Select(s => s.MeanA), segments.Select(s => s.MeanZHeads));
+        double corrEndAEndZH = PearsonCorrelation(segments.Select(s => s.EndA), segments.Select(s => s.EndZHeads));
+        double corrMeanAMeanTZ = PearsonCorrelation(segments.Select(s => s.MeanA), segments.Select(s => s.MeanTrueZ));
+        double corrEndAEndTZ = PearsonCorrelation(segments.Select(s => s.EndA), segments.Select(s => s.EndTrueZ));
+        
         message($"corrMeanZHeadsMeanTrueZ: {Fmt(corrMean)}");
         message($"corrEndZHeadsEndTrueZ  : {Fmt(corrEnd)}");
+        message($"corrMeanAMeanZHeads    : {Fmt(corrMeanAMeanZH)}");
+        message($"corrEndAEndZHeads      : {Fmt(corrEndAEndZH)}");
+        message($"corrMeanAMeanTrueZ     : {Fmt(corrMeanAMeanTZ)}");
+        message($"corrEndAEndTrueZ       : {Fmt(corrEndAEndTZ)}");
     }
     message();
 }
 
 if (grade >= Grade.High)
 {
-    message("idx | span                  | bestTrueZ | aAtBestTrueZ     | endTrueZ  | meanTrueZ | endZH     | meanZH    | %a>50   | %ZH>=0");
-    message("----+-----------------------+-----------+------------------+-----------+-----------+-----------+-----------+---------+---------");
+    message("idx | span                  | bestTrueZ | aBest            | endTrueZ  | meanTrueZ | endA             | meanA            | endZH     | meanZH    | %a>=50  | %ZH>=0");
+    message("----+-----------------------+-----------+------------------+-----------+-----------+------------------+------------------+-----------+-----------+---------+---------");
 
     foreach (SegmentStats s in segments)
     {
@@ -330,9 +348,11 @@ if (grade >= Grade.High)
             $"{Tracker.FormatOffset(s.BestTrueZHolder?.AnticipatedPercentage ?? 50.0, "0.00000e+00"),16} | " +
             $"{Fmt(s.EndTrueZ),9} | " +
             $"{Fmt(s.MeanTrueZ),9} | " +
+            $"{Tracker.FormatOffset(s.EndA, "0.00000e+00"),16} | " +
+            $"{Tracker.FormatOffset(s.MeanA, "0.00000e+00"),16} | " +
             $"{Fmt(s.EndZHeads),9} | " +
             $"{Fmt(s.MeanZHeads),9} | " +
-            $"{s.PctAbove50,7:0.000}% | " +
+            $"{s.PctAAtLeast50,7:0.000}% | " +
             $"{s.PctZHeadsAbove0,7:0.000}%"
         );
     }
@@ -384,28 +404,41 @@ void DumpSegment(string label, SegmentStats? s)
     if (s == null) return;
     message(label + ":");
     message($"  idx         : {s.Index}");
-    message($"  bestTrueZ   : {Fmt(s.BestTrueZ)}");
-    message($"  meanTrueZ   : {Fmt(s.MeanTrueZ)}");
-    message($"  endTrueZ    : {Fmt(s.EndTrueZ)}");
-    message($"  pctAbove50  : {s.PctAbove50:0.0000}%");
+    message();
 
+    message("  TrueZ:");
+    message($"    bestTrueZ   : {Fmt(s.BestTrueZ)}");
+    message($"    meanTrueZ   : {Fmt(s.MeanTrueZ)}");
+    message($"    endTrueZ    : {Fmt(s.EndTrueZ)}");
+    message();
+
+    message("  Anticipation:");
     if (s.BestTrueZHolder != null)
     {
-        message($"  best ZHeads : {Fmt(s.BestTrueZHolder.ZScoreHeads)}");
-        message($"  aAtTrueZ    : {Tracker.FormatOffset(s.BestTrueZHolder.AnticipatedPercentage, "0.00000e+00")}");
+        message($"    aAtTrueZ    : {Tracker.FormatOffset(s.BestTrueZHolder.AnticipatedPercentage, "0.00000e+00")}");
     }
+    message($"    mean a      : {Tracker.FormatOffset(s.MeanA, "0.00000e+00")}");
+    message($"    min a       : {Tracker.FormatOffset(s.MinA, "0.00000e+00")}");
+    message($"    max a       : {Tracker.FormatOffset(s.MaxA, "0.00000e+00")}");
+    message($"    end a       : {Tracker.FormatOffset(s.EndA, "0.00000e+00")}");
+    message($"    pct a >= 50 : {s.PctAAtLeast50:0.0000}%");
+    message();
 
-    message($"  mean ZHeads : {Fmt(s.MeanZHeads)}");
-    message($"  min ZHeads  : {Fmt(s.MinZHeads)}");
-    message($"  max ZHeads  : {Fmt(s.MaxZHeads)}");
+    message("  Heads:");
+    if (s.BestTrueZHolder != null)
+    {
+        message($"    best ZHeads : {Fmt(s.BestTrueZHolder.ZScoreHeads)}");
+    }
+    message($"    mean ZHeads : {Fmt(s.MeanZHeads)}");
+    message($"    min ZHeads  : {Fmt(s.MinZHeads)}");
+    message($"    max ZHeads  : {Fmt(s.MaxZHeads)}");
 
     if (s.EndState != null)
     {
-        message($"  end ZHeads  : {Fmt(s.EndState.ZScoreHeads)}");
-        message($"  end a       : {Tracker.FormatOffset(s.EndState.AnticipatedPercentage, "0.00000e+00")}");
+        message($"    end ZHeads  : {Fmt(s.EndState.ZScoreHeads)}");
     }
 
-    message($"  pct ZH >= 0 : {s.PctZHeadsAbove0:0.0000}%");
+    message($"    pct ZH >= 0 : {s.PctZHeadsAbove0:0.0000}%");
     message();
 }
 
@@ -515,8 +548,12 @@ sealed class SegmentStats
 
     public long Count;
     public long Good;
+    public long AAtLeast50;
     public double SumTrueZ;
     public double SumA;
+
+    public double MinA = double.PositiveInfinity;
+    public double MaxA = double.NegativeInfinity;
 
     public double SumZHeads;
     public double MinZHeads = double.PositiveInfinity;
@@ -527,8 +564,10 @@ sealed class SegmentStats
 
     public double MeanTrueZ => Count == 0 ? double.NaN : SumTrueZ / Count;
     public double MeanA => Count == 0 ? double.NaN : SumA / Count;
+    public double EndA => EndState == null ? double.NaN : EndState.AnticipatedPercentage;
     public double EndTrueZ => EndState == null ? double.NaN : EndState.ZScore - Math.Abs(EndState.ZScoreHeads);
     public double PctAbove50 => Count == 0 ? double.NaN : (Good / (double)Count) * 100.0;
+    public double PctAAtLeast50 => Count == 0 ? double.NaN : AAtLeast50 / (double)Count * 100.0;
 
     public double MeanZHeads =>
         Count == 0 ? double.NaN : SumZHeads / Count;
@@ -552,7 +591,12 @@ sealed class SegmentStats
         }
 
         SumTrueZ += trueZ;
-        SumA += t.AnticipatedPercentage;
+        
+        double a = t.AnticipatedPercentage;
+        SumA += a;
+        if (a < MinA) MinA = a;
+        if (a > MaxA) MaxA = a;
+        if (a >= 50.0) AAtLeast50++;
 
         double zHeads = t.ZScoreHeads;
         SumZHeads += zHeads;
@@ -576,6 +620,7 @@ sealed class SegmentAggregate
     private readonly List<double> _end;
     private readonly List<double> _mean;
     private readonly List<double> _endZH;
+    private readonly List<double> _endA;
 
     public SegmentAggregate(List<SegmentStats> segments)
     {
@@ -584,6 +629,7 @@ sealed class SegmentAggregate
         _end = segments.Select(s => s.EndTrueZ).OrderBy(v => v).ToList();
         _mean = segments.Select(s => s.MeanTrueZ).OrderBy(v => v).ToList();
         _endZH = segments.Select(s => s.EndZHeads).OrderBy(v => v).ToList();
+        _endA = segments.Select(s => s.EndA).OrderBy(v => v).ToList();
     }
 
     public double AvgBestTrueZ => _segments.Average(s => s.BestTrueZ);
@@ -594,6 +640,11 @@ sealed class SegmentAggregate
 
     public double AvgMeanTrueZ => _segments.Average(s => s.MeanTrueZ);
     public double AvgPctAbove50 => _segments.Average(s => s.PctAbove50);
+
+    public double AvgMeanA => _segments.Average(s => s.MeanA);
+    public double AvgEndA => _segments.Average(s => s.EndA);
+    public double MedianEndA => Median(_endA);
+    public double AvgPctAAtLeast50 => _segments.Average(s => s.PctAAtLeast50);
 
     public double AvgMeanZHeads => _segments.Average(s => s.MeanZHeads);
     public double AvgEndZHeads => _segments.Average(s => s.EndZHeads);
@@ -608,6 +659,9 @@ sealed class SegmentAggregate
 
     public double PctMeanAtLeast(double threshold) =>
         100.0 * _segments.Count(s => s.MeanTrueZ >= threshold) / _segments.Count;
+
+    public double PctEndAAtLeast(double threshold) =>
+        100.0 * _segments.Count(s => s.EndA >= threshold) / _segments.Count;
 
     public double PctEndZHeadsAtLeast(double threshold) =>
         100.0 * _segments.Count(s => s.EndZHeads >= threshold) / _segments.Count;
