@@ -2974,3 +2974,342 @@ The underlying sources wander and may remain directionally displaced across long
 </blockquote>
 
 The regenerated mega report is committed as the canonical Report 4 retrospective baseline. Future mature tracker artifacts can be added using the same 100-billion-flip whole-segment configuration, allowing source balance and anticipation geometry to be compared without changing the earlier report definitions.
+
+___________________________________________________________________________
+╔═══════════════╗
+║20260801_101307║
+╚═══════════════╝
+
+ — Quant_IDQE recovery checkpoint and first Report 4 live demonstration
+
+Quant_IDQE.tkr has reached approximately 541 billion flips after one day and sixteen hours of operation.
+
+The current lifetime state is:
+
+<pre><code>total flips : 541,000,000,000
+ZHeads      : +0.1556
+a Z         : +1.6182
+fps         : 3,712,081</code></pre>
+
+The positive anticipation state was a pleasant morning checkpoint, but the underlying heads path is the more operationally reassuring observation.
+
+During the run’s first several 100-billion-flip segments, ZHeads remained negative for an extended interval. With only a few completed segments, it was not possible to determine whether this represented ordinary finite-path wandering or an unexpected characteristic of the new extraction path.
+
+The latest segment provides the needed counterexample.
+
+At the 100-billion-flip reporting scale, segment 5 currently shows:
+
+<pre><code>best TrueZ        : +2.003385
+mean TrueZ        : +0.306379
+end TrueZ         : +1.462604
+anticipation &gt; 50 : 96.1165%
+
+mean ZHeads       : +0.819139
+minimum ZHeads    : -0.152991
+maximum ZHeads    : +1.798179
+end ZHeads        : +0.155565
+ZHeads &gt;= 0       : 95.1456%</code></pre>
+
+The extractor output has therefore demonstrated substantial occupation on both sides of zero across the developing run.
+
+The early record included several segments with strongly negative heads occupancy. The present segment moved decisively into positive territory, spent more than 95 percent of its recorded observations at or above ZHeads zero, and then returned to a comparatively centered endpoint.
+
+This behavior materially reduces concern that the extraction process is imposing a persistent negative direction.
+
+The aggregate ZHeads values remain somewhat negative because the first six segments still contain the earlier excursion:
+
+<pre><code>avgMeanZHeads          : -0.387526
+avgEndZHeads           : -0.349745
+medianEndZHeads        : -0.776165
+avgPctZHeadsAbove0     :  36.8746%
+endZHeads &gt;= 0         :  33.3333%</code></pre>
+
+Those values should not yet be interpreted as a mature source fingerprint. What has changed is the shape of the evidence: the negative aggregate can now be seen as accumulated path history rather than an uninterrupted directional condition.
+
+The six segment means illustrate the transition:
+
+<pre><code>segment 0 : +0.037846
+segment 1 : -1.281989
+segment 2 : -1.543134
+segment 3 : -0.883568
+segment 4 : +0.526551
+segment 5 : +0.819139</code></pre>
+
+The sequence moved from a mixed opening segment, through a sustained negative interval, and into two positive segment means. The current endpoint is close to neutral despite the strongly positive occupancy of the active segment.
+
+This is also the first live checkpoint to clearly demonstrate the purpose of TruthInTheFlip_sample_report4.
+
+The earlier reporting path could show the positive anticipation result and the adjusted TrueZ geometry, but it could not summarize whether the underlying heads stream had remained directionally displaced throughout the same period.
+
+Report 4 now separates those paths:
+
+<pre><code>anticipation path
+    best, mean and ending TrueZ
+    positive anticipation occupancy
+    excursion and settlement
+
+underlying heads path
+    mean and ending ZHeads
+    minimum and maximum ZHeads
+    directional occupancy
+    endpoint distribution</code></pre>
+
+At this checkpoint, both paths are favorable but distinct.
+
+The lifetime anticipation result is approximately Z +1.62 while lifetime ZHeads is approximately +0.16. The active 100-billion-flip segment has positive mean and ending TrueZ, while its heads path spent most of the segment positive before settling closer to center.
+
+The positive anticipation state is therefore not merely the visible effect of a large current heads displacement.
+
+The 10-billion-window view continues to show the faster local wandering that is smoothed by the 100-billion scale. Its current endpoint differs from the lifetime report because the two views apply different bounding windows. This contrast is expected and reinforces the importance of recording the reporting scale with every interpretation.
+
+The run remains far too young for conclusions about conditioned Quantis behavior, MetaGuess performance, or the final source-balance distribution. Nevertheless, this checkpoint establishes an important operational observation:
+
+<blockquote>
+The early negative ZHeads stretch was not permanent. The conditioned source has now demonstrated positive occupancy, substantial movement across zero, and a return toward a centered live endpoint.
+</blockquote>
+
+That does not constitute a formal validation of the extractor by itself. It does, however, provide healthy behavioral evidence that the IDQE output is wandering rather than remaining fixed in the direction that initially raised concern.
+
+The present MetaGuess run will continue without intervention.
+
+Its eventual destination remains open. A mature result near 50 percent anticipation would provide an especially clean foundation for the planned AntiMetaGuess experiment, which tests the complementary strategy of betting on continuity rather than change.
+
+The historical names will remain:
+
+<pre><code>MetaGuess
+    originally conceived as betting on change
+
+AntiMetaGuess
+    the complementary strategy, betting on continuity</code></pre>
+
+The names preserve the order in which the ideas were discovered, even though their underlying behavior is now understood more precisely.
+
+This checkpoint will likely remain the primary early Report 4 entry until Quant_IDQE.tkr accumulates a substantially larger segment population.
+
+================================================================
+TRACKER: Quant_IDQE.tkr
+WINDOW: 100B
+================================================================
+=== Run Configuration Info ===
+File:                 Trackers/Quant_IDQE.tkr
+record:               True
+Supports:             TruthInTheFlip.v0.1.1
+Tracker Version:      1.1.0
+Total Flips:          558,800,000,000
+Start Time:           7/30/2026 8:05:05 PM UTC
+End Time:             8/1/2026 1:54:07 PM UTC
+Segment Mode:         total
+Segment Size:         100,000,000,000 flips
+Grade:                all
+Whole:                True
+
+[Options]
+
+window method:  WindowByTotal(default)          //Creates a bounding function that defines a window based on a maximum number of total flips.
+Values:         window=def="100000000000"
+
+print format:  Detailed          //Detailed telemetry including underlying PRNG drift (ZHeads).
+Values:         None
+==============================
+
+Quant_IDQE.tkr : 20260801_135407.68 | 558800000000 flips → heads: 50+3.0e-05% (Z:+0.1898) | a: 50+1.4e-04% (Z:+0.8580) | aHeads: 50+1.1e-04% | aTails: 50+1.7e-04% | aSame: 50+1.5e-04% | aDiff: 50+1.2e-04% | [RATE] H/T: 50+1.7e-04%/ 50+1.1e-04% S/D: 50+1.5e-04%/ 50+1.2e-04% | wallclock: 1.17:48:56 | fps: 3712051 | Z(1.96) in 1.07:33:45 | Z(3.00) in 3.11:59:32
+
+segments              : 5
+Edge Excursion Score  : +0.921532   // median(best TrueZ per segment)
+Edge Settlement Score : -1.119009   // mean(end TrueZ per segment)
+Edge Persistence Index: -0.528634   // settlement * fraction positive
+
+avgBestTrueZ          : +1.059025
+medianBestTrueZ       : +0.921532
+avgEndTrueZ           : -1.119009
+medianEndTrueZ        : -1.701634
+avgMeanTrueZ          : -1.266227
+avgPctAbove50         :  47.2413%
+
+bestTrueZ >= 1.96     :   0.0000%
+bestTrueZ >= 3.00     :   0.0000%
+endTrueZ  >= 0.00     :  40.0000%
+endTrueZ  >= 1.96     :   0.0000%
+meanTrueZ >= 0.00     :   0.0000%
+
+Underlying Heads:
+avgMeanZHeads          : -0.628859
+avgEndZHeads           : -0.450806
+medianEndZHeads        : -0.935566
+avgPctZHeadsAbove0     :  25.2204%
+endZHeads >= 0.00      :  20.0000%
+|endZHeads| >= 1.96    :   0.0000%
+corrMeanZHeadsMeanTrueZ: -0.184714
+corrEndZHeadsEndTrueZ  : -0.022895
+
+idx | span                  | bestTrueZ | aAtBestTrueZ     | endTrueZ  | meanTrueZ | endZH     | meanZH    | %a>50   | %ZH>=0
+----+-----------------------+-----------+------------------+-----------+-----------+-----------+-----------+---------+---------
+  0 | 200,000,000..99,800,… | +1.875639 |  50+2.65450e-03% | -3.430367 | -2.496369 | -1.199799 | +0.037846 |   3.206% |  51.102%
+  1 | 100,000,000,000..199… | +0.921532 |  50+2.63387e-04% | +0.784846 | -1.413588 | -0.935566 | -1.281989 |  45.800% |   0.000%
+  2 | 200,000,000,000..299… | +1.279761 |  50+3.06364e-04% | -1.791822 | -1.104179 | -1.291607 | -1.543134 |  71.600% |   0.000%
+  3 | 300,000,000,000..399… | +0.701716 |  50+2.21901e-04% | +0.543931 | -0.536327 | -0.616764 | -0.883568 |  69.000% |   0.000%
+  4 | 400,000,000,000..499… | +0.516476 |  50+1.55803e-04% | -1.701634 | -0.780673 | +1.789704 | +0.526551 |  46.600% |  75.000%
+
+Retained Anticipation: 50+2.61721e-05%
+Settlement Adjusted Anticipation: 50+1.01846e-05%
+
+Best excursion segment:
+  idx         : 0
+  bestTrueZ   : +1.875639
+  meanTrueZ   : -2.496369
+  endTrueZ    : -3.430367
+  pctAbove50  : 3.2064%
+  best ZHeads : -0.110807
+  aAtTrueZ    : 50+2.65450e-03%
+  mean ZHeads : +0.037846
+  min ZHeads  : -1.970084
+  max ZHeads  : +1.782818
+  end ZHeads  : -1.199799
+  end a       : 50-3.53037e-04%
+  pct ZH >= 0 : 51.1022%
+
+Best settlement segment:
+  idx         : 1
+  bestTrueZ   : +0.921532
+  meanTrueZ   : -1.413588
+  endTrueZ    : +0.784846
+  pctAbove50  : 45.8000%
+  best ZHeads : -0.744274
+  aAtTrueZ    : 50+2.63387e-04%
+  mean ZHeads : -1.281989
+  min ZHeads  : -2.252003
+  max ZHeads  : -0.485245
+  end ZHeads  : -0.935566
+  end a       : 50+2.72021e-04%
+  pct ZH >= 0 : 0.0000%
+
+Worst settlement segment:
+  idx         : 0
+  bestTrueZ   : +1.875639
+  meanTrueZ   : -2.496369
+  endTrueZ    : -3.430367
+  pctAbove50  : 3.2064%
+  best ZHeads : -0.110807
+  aAtTrueZ    : 50+2.65450e-03%
+  mean ZHeads : +0.037846
+  min ZHeads  : -1.970084
+  max ZHeads  : +1.782818
+  end ZHeads  : -1.199799
+  end a       : 50-3.53037e-04%
+  pct ZH >= 0 : 51.1022%
+
+File compute time: 1.17:48:56.7202449
+================================================================
+TRACKER: Quant_IDQE.tkr
+WINDOW: 10B
+================================================================
+=== Run Configuration Info ===
+File:                 Trackers/Quant_IDQE.tkr
+record:               True
+Supports:             TruthInTheFlip.v0.1.1
+Tracker Version:      1.1.0
+Total Flips:          559,000,000,000
+Start Time:           7/30/2026 8:05:05 PM UTC
+End Time:             8/1/2026 1:55:01 PM UTC
+Segment Mode:         total
+Segment Size:         100,000,000,000 flips
+Grade:                all
+Whole:                False
+
+[Options]
+
+window method:  WindowByTotal(default)          //Creates a bounding function that defines a window based on a maximum number of total flips.
+Values:         window=10000000000
+
+print format:  Detailed          //Detailed telemetry including underlying PRNG drift (ZHeads).
+Values:         None
+==============================
+
+Quant_IDQE.tkr : 20260801_135501.60 | 559000000000 flips → heads: 50-8.3e-05% (Z:-0.1651) | a: 50+4.0e-04% (Z:+0.8063) | aHeads: 50+4.9e-04% | aTails: 50+3.2e-04% | aSame: 50+5.0e-04% | aDiff: 50+3.1e-04% | [RATE] H/T: 50+3.2e-04%/ 50+4.9e-04% S/D: 50+5.0e-04%/ 50+3.1e-04% | wallclock: 1.17:49:50 | fps: 3712050 | Z(1.96) in 03:40:25 | Z(3.00) in 09:36:41
+
+segments              : 6
+Edge Excursion Score  : +1.782520   // median(best TrueZ per segment)
+Edge Settlement Score : -0.331733   // mean(end TrueZ per segment)
+Edge Persistence Index: -0.166012   // settlement * fraction positive
+
+avgBestTrueZ          : +1.868630
+medianBestTrueZ       : +1.782520
+avgEndTrueZ           : -0.331733
+medianEndTrueZ        : -0.639350
+avgMeanTrueZ          : -0.774290
+avgPctAbove50         :  50.0437%
+
+bestTrueZ >= 1.96     :  16.6667%
+bestTrueZ >= 3.00     :   0.0000%
+endTrueZ  >= 0.00     :  33.3333%
+endTrueZ  >= 1.96     :   0.0000%
+meanTrueZ >= 0.00     :   0.0000%
+
+Underlying Heads:
+avgMeanZHeads          : -0.196206
+avgEndZHeads           : +0.615437
+medianEndZHeads        : +0.451180
+avgPctZHeadsAbove0     :  42.9643%
+endZHeads >= 0.00      :  66.6667%
+|endZHeads| >= 1.96    :  16.6667%
+corrMeanZHeadsMeanTrueZ: +0.220458
+corrEndZHeadsEndTrueZ  : -0.541746
+
+idx | span                  | bestTrueZ | aAtBestTrueZ     | endTrueZ  | meanTrueZ | endZH     | meanZH    | %a>50   | %ZH>=0
+----+-----------------------+-----------+------------------+-----------+-----------+-----------+-----------+---------+---------
+  0 | 200,000,000..99,800,… | +1.875639 |  50+2.65450e-03% | -0.836380 | -1.681944 | -0.010620 | -0.386531 |  20.240% |  34.870%
+  1 | 100,000,000,000..199… | +1.566200 |  50+9.91480e-04% | +0.749720 | -0.405075 | +0.307660 | -0.328972 |  68.600% |  40.400%
+  2 | 200,000,000,000..299… | +1.324260 |  50+8.97360e-04% | -1.066640 | -0.891877 | +0.594700 | -0.422936 |  45.600% |  38.400%
+  3 | 300,000,000,000..399… | +1.689400 |  50+1.22883e-03% | -0.442320 | -0.298958 | +0.912500 | -0.189782 |  65.400% |  45.400%
+  4 | 400,000,000,000..499… | +2.799000 |  50+1.41544e-03% | -1.035920 | -0.699258 | +2.053520 | +0.496895 |  53.800% |  70.000%
+  5 | 500,000,000,000..559… | +1.957280 |  50+9.90320e-04% | +0.641140 | -0.668628 | -0.165140 | -0.345912 |  46.622% |  28.716%
+
+Retained Anticipation: 50+5.82550e-05%
+Settlement Adjusted Anticipation: 50+1.11555e-04%
+
+Best excursion segment:
+  idx         : 4
+  bestTrueZ   : +2.799000
+  meanTrueZ   : -0.699258
+  endTrueZ    : -1.035920
+  pctAbove50  : 53.8000%
+  best ZHeads : +0.031880
+  aAtTrueZ    : 50+1.41544e-03%
+  mean ZHeads : +0.496895
+  min ZHeads  : -1.256940
+  max ZHeads  : +2.607500
+  end ZHeads  : +2.053520
+  end a       : 50+5.08800e-04%
+  pct ZH >= 0 : 70.0000%
+
+Best settlement segment:
+  idx         : 1
+  bestTrueZ   : +1.566200
+  meanTrueZ   : -0.405075
+  endTrueZ    : +0.749720
+  pctAbove50  : 68.6000%
+  best ZHeads : +0.416760
+  aAtTrueZ    : 50+9.91480e-04%
+  mean ZHeads : -0.328972
+  min ZHeads  : -2.981300
+  max ZHeads  : +2.247220
+  end ZHeads  : +0.307660
+  end a       : 50+5.28690e-04%
+  pct ZH >= 0 : 40.4000%
+
+Worst settlement segment:
+  idx         : 2
+  bestTrueZ   : +1.324260
+  meanTrueZ   : -0.891877
+  endTrueZ    : -1.066640
+  pctAbove50  : 45.6000%
+  best ZHeads : +0.470460
+  aAtTrueZ    : 50+8.97360e-04%
+  mean ZHeads : -0.422936
+  min ZHeads  : -2.245240
+  max ZHeads  : +1.300640
+  end ZHeads  : +0.594700
+  end a       : 50-2.35970e-04%
+  pct ZH >= 0 : 38.4000%
+
+File compute time: 1.17:49:50.6299466
