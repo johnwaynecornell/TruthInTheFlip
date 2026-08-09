@@ -230,14 +230,14 @@ public class DelegateMethodRegistry
                         status != 0)
                     {
                         errorMessage(
-                            $"Option '{o.Name}' {result.MethodName} parameter {i + 1} failed to parse: {message}");
+                            $"Option '{o.Name}' {result.MethodName} parameter {i + 1} failed to parse");
                         return false;
                     }
 
                     if (res == null)
                     {
                         errorMessage(
-                            $"Option '{o.Name}' {result.MethodName} parameter {i + 1} failed to parse: {message}");
+                            $"Option '{o.Name}' {result.MethodName} parameter {i + 1} failed to parse");
                         return false;
                     }
 
