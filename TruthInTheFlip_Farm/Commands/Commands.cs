@@ -25,9 +25,9 @@ public class Commands
     {
         var catalogs = FluentEnvironment.Current.Context.Get<MetricCatalogs>();
         
-        return new ShowArgument(_ =>
+        return new ShowArgument(ctx =>
         {
-            Console.WriteLine("Metrics:");
+            ctx.Output.WriteLine("Metrics:");
             List<string>[] columns = new List<string>[3];
             int [] len= new int[3];
             
@@ -58,8 +58,8 @@ public class Commands
             
             foreach (var kvp in catalogs.Catalogs)
             {
-                Console.WriteLine();
-                Console.WriteLine("    " + kvp.Key);
+                ctx.Output.WriteLine();
+                ctx.Output.WriteLine("    " + kvp.Key);
                 for (int i=0; i<3; i++)
                 {
                     columns[i] = (new List<string>());
@@ -72,11 +72,24 @@ public class Commands
                     set(1, $"<{m.Value.ValueType.Name}>");
                     set(2, m.Value.Help);
                     
-                    //Console.WriteLine("        " + FluentEnvironment.PadRight(m.Value.Name) + m.Value.Help);
+                    //ctx.Output.WriteLine("        " + FluentEnvironment.PadRight(m.Value.Name) + m.Value.Help);
                 }
                 
-                for (int i=0; i<columns[0].Count; i++) Console.WriteLine("        " + get(i));
+                for (int i=0; i<columns[0].Count; i++) ctx.Output.WriteLine("        " + get(i));
             }
+        });
+    }
+    
+    [FluentMethod]
+    [KV_FA(FluentAttribute.Help, "Display the current time in Farm-compatible format.")]
+    public static ShowArgument now()
+    {
+        return new ShowArgument(ctx =>
+        {
+            ctx.Output.WriteLine(
+                DateTimeOffset.Now.ToString(
+                    "yyyy-MM-ddTHH:mm:sszzz",
+                    CultureInfo.InvariantCulture));
         });
     }
 
