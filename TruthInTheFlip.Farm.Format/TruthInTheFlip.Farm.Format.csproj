@@ -9,12 +9,7 @@
     <ItemGroup>
       <ProjectReference Include="..\FluentCommandLine\FluentCommandLine.csproj" />
       <ProjectReference Include="..\JWCFarm\JWCFarm.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <Reference Include="TruthInTheFlip.Format">
-            <HintPath>..\..\TruthInTheFlip.Dev\TruthInTheFlip.Format\bin\Debug\net10.0\TruthInTheFlip.Format.dll</HintPath>
-        </Reference>
+      <ProjectReference Include="..\TruthInTheFlip.Format\TruthInTheFlip.Format.csproj" />
     </ItemGroup>
 
 </Project>
