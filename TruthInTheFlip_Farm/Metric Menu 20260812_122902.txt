@@ -1,0 +1,97 @@
+Metrics:
+
+    TruthInTheFlip.Format.Tracker
+        total                      <Int64>    Total number of flips processed.                                                 
+        heads                      <Int64>    Total number of heads observed.                                                  
+        tails                      <Int64>    Total number of tails observed.                                                  
+        anticipated                <Int64>    Total number of correct anticipations (wins).                                    
+        baseAnticipated            <Int64>    Total number of correct anticipations from the base strategy.                    
+        anticipatedHeads           <Int64>    Total number of correct anticipations when the result was heads.                 
+        anticipatedTails           <Int64>    Total number of correct anticipations when the result was tails.                 
+        cumulativeTicks            <Int64>    Cumulative processing time in stopwatch ticks.                                   
+        batchTotal                 <Int64>    Number of flips processed in the current batch.                                  
+        wallclockTimeNs            <Int64>    Total wall-clock time in nanoseconds.                                            
+        batchWallclockTimeNs       <Int64>    Wall-clock time for the current batch in nanoseconds.                            
+        utcBeginTimeMs             <Int64>    UTC start time in milliseconds.                                                  
+        utcEndTimeMs               <Int64>    UTC end time in milliseconds.                                                    
+        betHeads                   <Int64>    Total number of times 'heads' was anticipated.                                   
+        betSame                    <Int64>    Total number of times 'same as prior' was anticipated.                           
+        anticipatedSame            <Int64>    Total number of correct 'same as prior' anticipations.                           
+        ZScore                     <Double>   Z-Score for the overall anticipation accuracy.                                   
+        ZScoreHeads                <Double>   Z-Score for the underlying source balance (heads vs tails).                      
+        ZScoreTails                <Double>   Z-Score for the underlying source balance (tails vs heads).                      
+        ZScoreBaseAnticipated      <Double>   Z-Score for the base strategy anticipation accuracy.                             
+        ZScoreAnticipatedHeads     <Double>   Z-Score for anticipation accuracy specifically when the outcome is heads.        
+        ZScoreAnticipatedTails     <Double>   Z-Score for anticipation accuracy specifically when the outcome is tails.        
+        ZScoreBetHeads             <Double>   Z-Score for the frequency of 'heads' bets relative to chance.                    
+        ZScoreBetTails             <Double>   Z-Score for the frequency of 'tails' bets relative to chance.                    
+        ZScoreBetSame              <Double>   Z-Score for the frequency of 'same' bets relative to chance.                     
+        ZScoreBetDiff              <Double>   Z-Score for the frequency of 'different' bets relative to chance.                
+        ZScoreAnticipatedSame      <Double>   Z-Score for accuracy when betting that the next flip will be the 'same'.         
+        ZScoreAnticipatedDiff      <Double>   Z-Score for accuracy when betting that the next flip will be 'different'.        
+        absTotal                   <Int64>    The absolute Total even on window                                                
+        absWallclockTimeNs         <Int64>    The absolute wallclock time in nano seconds even on window                       
+        absWallclockTime           <TimeSpan> The absolute wallclock time in nano seconds even on window                       
+        same                       <Int64>    Total number of transitions whose result was the same as the prior result.       
+        diff                       <Int64>    Total number of transitions whose result was different from the prior result.    
+        SamePercentage             <Double>   Percentage of transitions whose result was the same as the prior result.         
+        DiffPercentage             <Double>   Percentage of transitions whose result was different from the prior result.      
+        ZScoreSame                 <Double>   Z-Score for an always-guess-same strategy relative to chance.                    
+        ZScoreDiff                 <Double>   Z-Score for an always-guess-different strategy relative to chance.               
+        HeadsPercentage            <Double>   Percentage of flips that resulted in heads.                                      
+        TailsPercentage            <Double>   Percentage of flips that resulted in tails.                                      
+        AnticipatedPercentage      <Double>   Overall win rate percentage.                                                     
+        BaseAnticipatedPercentage  <Double>   Base strategy win rate percentage.                                               
+        AnticipatedHeadsPercentage <Double>   Win rate percentage specifically when heads occurred.                            
+        AnticipatedTailsPercentage <Double>   Win rate percentage specifically when tails occurred.                            
+        BiasDelta                  <Double>   Difference between the current strategy win rate and the base strategy win rate. 
+        InversionGain              <Double>   The edge or gain over the 50% chance baseline.                                   
+        BetHeadsPercentage         <Double>   Percentage of total flips where 'heads' was bet.                                 
+        BetTailsPercentage         <Double>   Percentage of total flips where 'tails' was bet.                                 
+        BetSamePercentage          <Double>   Percentage of total flips where 'same as prior' was bet.                         
+        BetDiffPercentage          <Double>   Percentage of total flips where 'different from prior' was bet.                  
+        BetHeadsWinRate            <Double>   Win rate percentage when 'heads' was bet.                                        
+        BetTailsWinRate            <Double>   Win rate percentage when 'tails' was bet.                                        
+        BetSameWinRate             <Double>   Win rate percentage when 'same as prior' was bet.                                
+        BetDiffWinRate             <Double>   Win rate percentage when 'different from prior' was bet.                         
+        WinDistributionHeads       <Double>   Percentage of all wins that occurred on heads.                                   
+        WinDistributionTails       <Double>   Percentage of all wins that occurred on tails.                                   
+        WinDistributionSame        <Double>   Percentage of all wins that occurred on 'same as prior' bets.                    
+        WinDistributionDiff        <Double>   Percentage of all wins that occurred on 'different from prior' bets.             
+        AnticipatedSamePercentage  <Double>   Win rate specifically for 'same as prior' bets.                                  
+        AnticipatedDiffPercentage  <Double>   Win rate specifically for 'different from prior' bets.                           
+        UtcBeginTime               <DateTime> The UTC start time of the tracking period.                                       
+        UtcEndTime                 <DateTime> The UTC end time of the tracking period.                                         
+        WallclockTime              <TimeSpan> Total wall-clock duration of the tracking period.                                
+        BatchWallclockTime         <TimeSpan> Wall-clock duration of the last batch processed.                                 
+        Source                     <Tracker>  Source of the tracker                                                            
+
+    TruthInTheFlip.Farm.Format.SegmentStats
+        MeanTrueZ                <Double>   Average True Z-Score across the segment.                                                     
+        MeanA                    <Double>   Average anticipation percentage across the segment.                                          
+        EndA                     <Double>   Anticipation percentage at the end of the segment.                                           
+        EndTrueZ                 <Double>   True Z-Score at the end of the segment.                                                      
+        PctAbove50               <Double>   Percentage of records where anticipation was better than chance.                             
+        PctAAtLeast50            <Double>   Percentage of records with anticipation percentage at least 50%.                             
+        MeanZHeads               <Double>   Average Z-Score for heads across the segment.                                                
+        EndZHeads                <Double>   Z-Score for heads at the end of the segment.                                                 
+        PctZHeadsAbove0          <Double>   Percentage of records where Z-Score for heads was at least zero.                             
+        AnticipatedSameSignCount <Int64>    Count of records where anticipated percentage was the same sign as the true percentage.      
+        PctAnticipatedSameSign   <Double>   Percentage of records where anticipated percentage was the same sign as the true percentage. 
+        Index                    <Int64>    Sequential index of the segment.                                                             
+        BeginTotal               <Int64>    Total flips at the start of the segment.                                                     
+        EndTotal                 <Int64>    Total flips at the end of the segment.                                                       
+        BeginWallclock           <TimeSpan> Wallclock time at the start of the segment.                                                  
+        EndWallclock             <TimeSpan> Wallclock time at the end of the segment.                                                    
+        Begin                    <Tracker>  Beginning tracker record of the segment.                                                     
+        End                      <Tracker>  Ending tracker record of the segment.                                                        
+        Z                        <Tracker>  The best TrueZ from the Segment.                                                             
+        Count                    <Int64>    Number of tracker records in the segment.                                                    
+        Good                     <Int64>    Number of records where anticipation was better than chance.                                 
+        AAtLeast50               <Int64>    Number of records with anticipation percentage at least 50%.                                 
+        MinA                     <Double>   Minimum anticipation percentage in the segment.                                              
+        MaxA                     <Double>   Maximum anticipation percentage in the segment.                                              
+        MinZHeads                <Double>   Minimum Z-Score for heads in the segment.                                                    
+        MaxZHeads                <Double>   Maximum Z-Score for heads in the segment.                                                    
+        ZHeadsAboveZero          <Int64>    Count of records where Z-Score for heads was at least zero.                                  
+        BestTrueZ                <Double>   Highest True Z-Score achieved in the segment.                                                

@@ -154,6 +154,8 @@ public class Tracker : ITracker
 
         trackerInner?.Reset();
     }
+    
+    public bool IsComplete { get; set; } = true;
 
     public double CalculateZScore(long measure, long count, double expectedRate)
     {
@@ -217,11 +219,54 @@ public class Tracker : ITracker
 
     [IsMetric("TruthInTheFlip.v1.1.0")]
     [StringHelp("The absolute Total even on window")]
-    public long absoluteTotal => Source.total;
+    public long absTotal => Source.total;
 
     [IsMetric("TruthInTheFlip.v1.1.0")]
-    [StringHelp("The absolute wallclock time even on window")]
-    public long absoluteWallclockTimeNs => Source.wallclockTimeNs;
+    [StringHelp("The absolute wallclock time in nano seconds even on window")]
+    public long absWallclockTimeNs => Source.wallclockTimeNs;
+    
+    [IsMetric("TruthInTheFlip.v1.1.0")]
+    [StringHelp("The absolute wallclock time in nano seconds even on window")]
+    public TimeSpan absWallclockTime => Source.WallclockTime;
+    
+    #region LogicalExtensions 
+    
+    [IsMetric("TruthInTheFlip.v1.1.0")]
+    [StringHelp("Total number of transitions whose result was the same as the prior result.")]
+    public long same =>
+        anticipatedSame +
+        ((total - betSame) - (anticipated - anticipatedSame));
+
+    [IsMetric("TruthInTheFlip.v1.1.0")]
+    [StringHelp("Total number of transitions whose result was different from the prior result.")]
+    public long diff =>
+        total - same;
+
+    [IsMetric("TruthInTheFlip.v1.1.0")]
+    [StringHelp("Percentage of transitions whose result was the same as the prior result.")]
+    public double SamePercentage =>
+        total == 0
+            ? 0
+            : (double)same / total * 100.0;
+
+    [IsMetric("TruthInTheFlip.v1.1.0")]
+    [StringHelp("Percentage of transitions whose result was different from the prior result.")]
+    public double DiffPercentage =>
+        total == 0
+            ? 0
+            : (double)diff / total * 100.0;
+
+    [IsMetric("TruthInTheFlip.v1.1.0")]
+    [StringHelp("Z-Score for an always-guess-same strategy relative to chance.")]
+    public double ZScoreSame =>
+        CalculateZScore(same, total, ExpectedWinRate);
+
+    [IsMetric("TruthInTheFlip.v1.1.0")]
+    [StringHelp("Z-Score for an always-guess-different strategy relative to chance.")]
+    public double ZScoreDiff =>
+        CalculateZScore(diff, total, ExpectedWinRate);
+    
+    #endregion LogicalExtensions
     
     public long EstimateTotalFlipsForZScore(double targetZScore)
     {

@@ -109,14 +109,16 @@ public class TrackerWindow
         }
         return rc;
     }
-
+    
     public Tracker Add(Tracker In)
     {
         Tracker clone = store.Clone(In);
         States.Add(clone); 
         
-        MaintainWindow();
-        return Relative(clone);
+        bool full = MaintainWindow();
+        var t = Relative(clone);
+        t.IsComplete = full;
+        return t;
     }
 
     public bool ReverseAdd(Tracker In)

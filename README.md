@@ -229,7 +229,10 @@ The repository includes supporting sample tools for working with `.tkr` datasets
     Segment-oriented reporting utility for separating local edge excursion from long-arc settlement and persistence.
 *   **TruthInTheFlip_sample_report4**  
     Enhanced segment-oriented reporting utility that adds underlying heads drift telemetry and descriptive correlations to distinguish anticipation behavior from source balance.
-* * *
+*   **TruthInTheFlip_Farm**  
+    The Farm utility provides a comprehensive set of tools for analyzing and visualizing tracker data, including advanced reporting, drift analysis, and source balance assessment.  
+    see [Farm.README.md](Farm.README.md)
+* * * *
 
 Notes
 -----

@@ -1,0 +1,150 @@
+Usage: TruthInTheFlip_Farm [arguments]
+
+TruthInTheFlip Farm is under active development.
+
+The command language and available reports may grow between releases.
+For this build, the generated help and metric listings are the authoritative reference.
+
+  list                List available commands to FarmCommand or request information or request help
+  <string> [params...] Configure specific command
+  <string> def        Use supported default arguments
+
+Available Commands
+
+    show argument
+        Show information about the selected topic.
+
+        argument              <ShowArgument>        Information topic to show.
+
+    csv process fields
+        Format a process as CSV using the selected metric fields.
+
+        process               <FarmProcess>         Process whose items will be written as CSV.
+        fields                <String[]>            Metric paths to include as CSV columns.
+
+    -info outputPath
+        Request configuration information for command line
+
+        outputPath            <String>              Path to write information output to.    default: "#"
+
+    -help
+        Request this help
+
+Argument Types
+
+<ShowArgument> — Selectable information topic
+
+        metrics
+            Display the available metric fields.
+
+<FarmProcess> — A process that produces items for Farm operations.
+
+        segment tracker segmentation
+            Process tracker records as segments.
+    
+            tracker               <TrackerSelector>     Tracker source to process.
+            segmentation          <SegSelector>         Method used to divide tracker records into segments.
+    
+        tracker tracker
+            Process tracker records individually.
+    
+            tracker               <TrackerSelector>     Tracker source to process.
+
+<TrackerSelector> — Selector for a tracker source
+
+        file trackerPath
+            Read tracker records from a tracker file.
+    
+            trackerPath           <String>              Path to the tracker file.
+    
+        window bounds source
+            Apply a rolling window to a tracker source.
+    
+            bounds                <TrackerWindow>       Window definition to apply.
+            source                <TrackerSelector>     Tracker source to window.
+    
+        from boundary source
+            Select records from the specified tracker position.
+    
+            boundary              <TrackerBoundary>     Boundary defining the starting position.
+            source                <TrackerSelector>     Tracker source to filter.
+    
+        to boundary source
+            Select records through the specified tracker position.
+    
+            boundary              <TrackerBoundary>     Boundary defining the ending position.
+            source                <TrackerSelector>     Tracker source to filter.
+
+<TrackerWindow> — Definition of a rolling tracker window
+
+        by_total length
+            Creates a bounding function that defines a window based on a maximum number of total flips.
+    
+            length                <Count>               The maximum allowed difference in total flips between the head and tail of the window.    default: "100B"
+    
+        by_heads length
+            Creates a bounding function that defines a window based on a maximum number of 'heads' flips.
+    
+            length                <Count>               The maximum allowed difference in heads between the head and tail of the window.    default: "100B"
+    
+        by_tails length
+            Creates a bounding function that defines a window based on a maximum number of 'tails' flips.
+    
+            length                <Count>               The maximum allowed difference in tails between the head and tail of the window.    default: "100B"
+    
+        by_anticipated length
+            Creates a bounding function that defines a window based on a maximum number of anticipated matches.
+    
+            length                <Count>               The maximum allowed difference in anticipated flips between the head and tail of the window.    default: "100B"
+    
+        by_wallclock_ns length
+            Creates a bounding function that defines a window based on a precise amount of nanoseconds of wallclock compute time.
+    
+            length                <Int64>               The maximum allowed difference in nanoseconds between the head and tail of the window.    default: "3600000000000"
+    
+        by_elapsed length
+            Creates a bounding function that defines a window based on a specific duration of wallclock compute time.
+    
+            length                <TimeSpan>            The TimeSpan representing the maximum allowed duration between the head and tail of the window.    default: "01:00:00"
+
+<TrackerBoundary> — Boundary for selecting a position in a tracker stream
+
+        absTotal value
+            Define a boundary by absolute flip count.
+    
+            value                 <Count>               Absolute flip count used as the boundary.
+    
+        absWallclock value
+            Define a boundary by absolute wall-clock duration.
+    
+            value                 <TimeSpan>            Absolute wall-clock duration used as the boundary.
+    
+        absWallclockNs value
+            Define a boundary by absolute wall-clock nanoseconds.
+    
+            value                 <Int64>               Absolute wall-clock nanoseconds used as the boundary.
+    
+        utcEndTime value
+            Define a boundary by record UTC end time.
+    
+            value                 <DateTimeOffset>      UTC timestamp or offset timestamp used as the boundary.
+    
+        utcBeginTime value
+            Define a boundary by record UTC begin time.
+    
+            value                 <DateTimeOffset>      UTC timestamp or offset timestamp used as the boundary.
+
+<SegSelector> — Definition for dividing tracker records into segments
+
+        by_total length
+            Segment size in total flips
+    
+            length                <Count>               Maximum number of total flips in each segment.    default: "100B"
+    
+        by_elapsed length
+            Segment size in time elapsed
+    
+            length                <TimeSpan>            Maximum wall-clock duration of each segment.    default: "01:00:00"
+
+
+
