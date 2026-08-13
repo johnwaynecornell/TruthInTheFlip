@@ -14,20 +14,32 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 def load_report(executable: str, arguments: list[str]) -> pd.DataFrame:
-    result = subprocess.run(
-        [executable, *arguments],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        check=False,
-    )
+    try:
+        result = subprocess.run(
+            [executable, *arguments],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False,
+        )
+    except FileNotFoundError:
+        print(
+            f"Could not find TruthInTheFlip Farm executable: {executable}",
+            file=sys.stderr,
+        )
+        print(
+            "Install TruthInTheFlip_Farm on PATH or provide it with --farm.",
+            file=sys.stderr,
+        )
+        raise SystemExit(127)
 
     if result.returncode != 0:
-        print(result.stderr, file=sys.stderr)
+        if result.stderr:
+            print(result.stderr, file=sys.stderr, end="")
         raise SystemExit(result.returncode)
 
     return pd.read_csv(io.StringIO(result.stdout))
-
+    
 def load_tracker_frame(executable, path, horizon, fields):
 
     frame = load_report(
@@ -69,7 +81,7 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description="Compare True Z trajectories across multiple TruthInTheFlip trackers."
     )
-
+    
     parser.add_argument(
         "--farm",
         default="TruthInTheFlip_Farm",
@@ -102,6 +114,17 @@ def main() -> None:
 
     executable = args.farm
     tracker_path = args.tracker_dir
+
+    if not tracker_path.is_dir():
+        print(
+            f"Tracker directory not found: {tracker_path}",
+            file=sys.stderr,
+        )
+        print(
+            "specify with --tracker-dir",
+            file=sys.stderr,
+        )
+        raise SystemExit(2)
 
     horizon = [
         "to",
