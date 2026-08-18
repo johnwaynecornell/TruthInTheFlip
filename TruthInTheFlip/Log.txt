@@ -3424,3 +3424,11 @@ Updated README.md with these links
 
 [Browse the log’s commit history](https://github.com/johnwaynecornell/TruthInTheFlip/commits/main/TruthInTheFlip/Log.txt)
 
+
+___________________________________________________________________________
+╔═══════════════╗
+║20260818_115417║
+╚═══════════════╝
+
+8.9T comparison horizon established.
+Current tracker comparisons are being normalized to a common 8.9 trillion-flip horizon using 100B-flip segments. The new TruthInTheFlip Farm reporting layer and Python scripts make it possible to compare True Z trajectories, Same/Anticipated behavior, and joint scatter distributions across independent tracker sources. Quant_IDQE is continuing toward the full horizon and will be added to the comparison set when mature.
