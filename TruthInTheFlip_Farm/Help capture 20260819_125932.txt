@@ -36,6 +36,10 @@ Argument Types
 
         metrics
             Display the available metric fields.
+    
+    
+        now
+            Display the current time in Farm-compatible format.
 
 <FarmProcess> — A process that produces items for Farm operations.
 
@@ -56,6 +60,11 @@ Argument Types
             Read tracker records from a tracker file.
     
             trackerPath           <String>              Path to the tracker file.
+    
+        full source
+            Use only full trackers.
+    
+            source                <TrackerSelector>     The source tracker.
     
         window bounds source
             Apply a rolling window to a tracker source.
@@ -145,6 +154,11 @@ Argument Types
             Segment size in time elapsed
     
             length                <TimeSpan>            Maximum wall-clock duration of each segment.    default: "01:00:00"
+    
+        full source
+            Use only complete segments.
+    
+            source                <SegSelector>         The source selector.
 
 
 

@@ -28,7 +28,8 @@ public class SegmentStatsProcess : TrackerProcessBase
                 {
                     currentSegment.IsComplete = true;
                     currentSegment.CompletionReason = SegmentCompletionReason.BoundaryReached;
-                    yield return currentSegment;
+                    if (Segmentselector.Use(currentSegment))
+                        yield return currentSegment;
                 }
                     
                 currentSegment = new SegmentStats();
@@ -48,7 +49,8 @@ public class SegmentStatsProcess : TrackerProcessBase
         {
             currentSegment.IsComplete = false;
             currentSegment.CompletionReason = SegmentCompletionReason.SourceExhausted;
-            yield return currentSegment;
+            if (Segmentselector.Use(currentSegment))
+                yield return currentSegment;
         }
     }
 

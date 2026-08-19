@@ -159,6 +159,30 @@ public class TruthInTheFlip_Fluent
             () => OpenTrackerStream(trackerPath));
     }
 
+    [FluentMethod("full")]
+    [KV_FA(FluentAttribute.Help, "Use only complete segments.")]
+    public static SegSelector fullSegSelector(
+        [KV_FA(FluentAttribute.Help, "The source selector.")]
+        SegSelector source)
+    {
+        return new SegSelector(source, (stats) => stats.IsComplete);
+    }
+
+    [FluentMethod("full")]
+    [KV_FA(FluentAttribute.Help, "Use only full trackers.")]
+    public static TrackerSelector fullTracker(
+        [KV_FA(FluentAttribute.Help, "The source tracker.")]
+        TrackerSelector source)
+    {
+        //return new TrackerSelector(
+        //    () => OpenTrackerStream(trackerPath));
+        return new TrackerSelector(() =>
+        {
+            var s = source.Source();
+            return new TrackerStream(s.Store, s.Records.Where(t => ((Tracker)t).IsComplete));
+        });
+    }
+    
     public static TrackerStream OpenTrackerStream(string trackerPath)
     {
         if (!File.Exists(trackerPath))
