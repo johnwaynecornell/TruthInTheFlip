@@ -21,6 +21,6 @@ public class SegSelector
     public SegSelector(SegSelector source, Func<SegmentStats, bool> use)
     {
         this.Selector = source.Selector;
-        this.Use = use;
+        this.Use = (q) => source.Use(q) && use(q);
     }
 }
