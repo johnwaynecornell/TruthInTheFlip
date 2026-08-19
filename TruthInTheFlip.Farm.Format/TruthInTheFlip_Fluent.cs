@@ -174,13 +174,7 @@ public class TruthInTheFlip_Fluent
         [KV_FA(FluentAttribute.Help, "The source tracker.")]
         TrackerSelector source)
     {
-        //return new TrackerSelector(
-        //    () => OpenTrackerStream(trackerPath));
-        return new TrackerSelector(() =>
-        {
-            var s = source.Source();
-            return new TrackerStream(s.Store, s.Records.Where(t => ((Tracker)t).IsComplete));
-        });
+        return new TrackerSelector(source, t => ((Tracker)t).IsComplete);
     }
     
     public static TrackerStream OpenTrackerStream(string trackerPath)

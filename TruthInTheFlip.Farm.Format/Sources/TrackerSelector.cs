@@ -1,5 +1,6 @@
 using JWCEssentials.Metadata;
 using FluentCommandLine;
+using TruthInTheFlip.Format;
 
 namespace TruthInTheFlip.Farm.Format;
 
@@ -11,5 +12,13 @@ public class TrackerSelector
     public TrackerSelector(Func<TrackerStream> source)
     {
         this.Source = source;
+    }
+    
+    public TrackerSelector(TrackerSelector source, Func<ITracker, bool> predicate)
+    {
+        Source = () =>
+        {
+            return new TrackerStream(source.Source(), predicate);
+        };
     }
 }

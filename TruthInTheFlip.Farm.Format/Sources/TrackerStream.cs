@@ -14,6 +14,13 @@ public sealed class TrackerStream : IDisposable
         Store = store;
         Records = records;
     }
+    
+    public TrackerStream(TrackerStream source, Func<ITracker, bool> filter)
+    {
+        this.Store = source.Store;
+        // The deferred execution remains perfectly intact!
+        this.Records = source.Records.Where(filter);
+    }
 
     public void Dispose()
     {
