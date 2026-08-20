@@ -344,7 +344,10 @@ public class FluentMethodRegistry
                 }
             }
 
-            result.Result = result.strategyDef.Method.DynamicInvoke(parsedArgs);
+            using (o.EnterParseResult(result))
+            {
+                result.Result = result.strategyDef.Method.DynamicInvoke(parsedArgs);
+            }
         }
         catch (Exception ex)
         {

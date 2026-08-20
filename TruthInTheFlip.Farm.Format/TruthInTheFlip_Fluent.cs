@@ -15,6 +15,7 @@ public class TruthInTheFlip_Fluent
         env.AddModule<TrackerWindows>();
         env.AddModule<TrackerWindows.TrackerWindow>();
         env.AddModule<TrackerBoundarys>();
+        env.AddModule<SegmentStatsReport>();
         
         if (!env.Context.TryGet<MetricCatalogs>(out var catalogs))
         {
@@ -250,7 +251,7 @@ public class TruthInTheFlip_Fluent
     
     [FluentMethod("segment")]
     [KV_FA(FluentAttribute.Help, "Process tracker records as segments.")]
-    public static FarmProcess SegReport(
+    public static FarmProcess Segment(
         [KV_FA(FluentAttribute.Help, "Tracker source to process.")]
         TrackerSelector tracker,
         [KV_FA(FluentAttribute.Help, "Method used to divide tracker records into segments.")]

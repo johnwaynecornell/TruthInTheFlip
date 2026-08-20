@@ -22,6 +22,13 @@ Available Commands
         process               <FarmProcess>         Process whose items will be written as CSV.
         fields                <String[]>            Metric paths to include as CSV columns.
 
+    segment_report grade tracker segmentation
+        Report on tracker records as segments.
+
+        grade                 <GradeArgument>       The grade of the report.
+        tracker               <TrackerSelector>     Tracker source to process.
+        segmentation          <SegSelector>         Method used to divide tracker records into segments.
+
     -info outputPath
         Request configuration information for command line
 
@@ -53,6 +60,27 @@ Argument Types
             Process tracker records individually.
     
             tracker               <TrackerSelector>     Tracker source to process.
+
+<GradeArgument> — Report detail level
+
+        None
+            Show only report metadata.
+    
+    
+        Low
+            Show edge statistics.
+    
+    
+        Med
+            Show Low plus anticipation and heads geometry.
+    
+    
+        High
+            Show Med plus segment details.
+    
+    
+        All
+            Show High plus Pearson correlations, additional segment statistics, and standout segments.
 
 <TrackerSelector> — Selector for a tracker source
 

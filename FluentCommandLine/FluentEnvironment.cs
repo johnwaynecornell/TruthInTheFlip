@@ -75,6 +75,37 @@ public class FluentEnvironment
         return attr2.Description;
     }
     
+    private readonly Stack<FluentMethodRegistry.RegistryParseResult>
+        _parseResults = new();
+
+    public FluentMethodRegistry.RegistryParseResult? CurrentParseResult =>
+        _parseResults.Count == 0
+            ? null
+            : _parseResults.Peek();
+
+    public class ParseResultHandle : IDisposable
+    {
+        public FluentEnvironment Env { get; init; }
+        public FluentMethodRegistry.RegistryParseResult ParseResult { get; init; }
+        
+        public ParseResultHandle(FluentEnvironment env, FluentMethodRegistry.RegistryParseResult parseResult)
+        {
+            Env = env;
+            ParseResult = parseResult;
+            Env._parseResults.Push(parseResult);
+        }
+        
+        public void Dispose()
+        {
+            Env._parseResults.Pop();
+        }
+    }
+    
+    public ParseResultHandle EnterParseResult(FluentMethodRegistry.RegistryParseResult parseResult)
+    {
+        return new ParseResultHandle(this, parseResult);
+    }
+    
     public bool WantExit { get; set; } = false;
     protected int status = 0;
     public int Status { get => status; set => status = value; }
