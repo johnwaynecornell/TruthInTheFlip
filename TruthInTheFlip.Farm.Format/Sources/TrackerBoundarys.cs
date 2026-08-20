@@ -9,7 +9,7 @@ public class TrackerBoundarys
     public readonly record struct TrackerBoundary(
         Func<Tracker, bool> From,
         Func<Tracker, bool> To);
-    
+    /*
     public static IEnumerable<ITracker> ApplyFilter(IEnumerable<ITracker> source, Func<Tracker, bool> filter)
     {
         return source.Where((record) => filter((Tracker) record));
@@ -23,7 +23,7 @@ public class TrackerBoundarys
             
             return new TrackerStream(input.Store,  ApplyFilter(input.Records, filter));
         });
-    }
+    }*/
     
     [FluentMethod]
     [KV_FA(FluentAttribute.Help,
@@ -34,7 +34,9 @@ public class TrackerBoundarys
         [KV_FA(FluentAttribute.Help, "Tracker source to filter.")]
         TrackerSelector source)
     {
-        return TrackerFilter(source, boundary.From);
+        return new TrackerSelector(
+            source,
+            tracker => boundary.From((Tracker)tracker));
     }
     
     [FluentMethod]
@@ -46,7 +48,9 @@ public class TrackerBoundarys
         [KV_FA(FluentAttribute.Help, "Tracker source to filter.")]
         TrackerSelector source)
     {
-        return TrackerFilter(source, boundary.To);
+        return new TrackerSelector(
+            source,
+            tracker => boundary.To((Tracker)tracker));
     }
     
     [FluentMethod]
