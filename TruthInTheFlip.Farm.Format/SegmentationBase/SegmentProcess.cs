@@ -55,7 +55,7 @@ public abstract class SegmentProcess<TStats, TProduct> : TrackerProcessBase wher
         }
     }
 
-    public override Type StatType { get => typeof(TStats); }
+    public override Type StatType { get => typeof(TProduct); }
     
     public abstract long BeginTotal(TStats stats);
     public abstract long EndTotal(TStats stats);
