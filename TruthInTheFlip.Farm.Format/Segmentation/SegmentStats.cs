@@ -3,36 +3,8 @@ using TruthInTheFlip.Format;
 
 namespace TruthInTheFlip.Farm.Format;
 
-public sealed class SegmentStats
+public sealed class SegmentStats : StatsBase<Tracker>
 {
-    [IsMetric("TruthInTheFlip.v1.1.0")]
-    [StringHelp("Sequential index of the segment.")]
-    public long Index;
-
-    [IsMetric("TruthInTheFlip.v1.1.0")]
-    [StringHelp("Total flips at the start of the segment.")]
-    public long BeginTotal;
-
-    [IsMetric("TruthInTheFlip.v1.1.0")]
-    [StringHelp("Total flips at the end of the segment.")]
-    public long EndTotal;
-
-    [IsMetric("TruthInTheFlip.v1.1.0")]
-    [StringHelp("Wallclock time at the start of the segment.")]
-    public TimeSpan BeginWallclock;
-
-    [IsMetric("TruthInTheFlip.v1.1.0")]
-    [StringHelp("Wallclock time at the end of the segment.")]
-    public TimeSpan EndWallclock;
-
-    [IsMetric("TruthInTheFlip.v1.1.0")]
-    [StringHelp("Beginning tracker record of the segment.")]
-    public Tracker? Begin;
-    
-    [IsMetric("TruthInTheFlip.v1.1.0")]
-    [StringHelp("Ending tracker record of the segment.")]
-    public Tracker? End;
-    
     [IsMetric("TruthInTheFlip.v1.1.0")]
     [StringHelp("The best TrueZ from the Segment.")]
     public Tracker? Z;
@@ -51,10 +23,7 @@ public sealed class SegmentStats
 
     public double SumTrueZ;
     public double SumA;
-
-    public SegmentCompletionReason CompletionReason { get; set; } = SegmentCompletionReason.Pending;
-    public bool IsComplete { get; set; } = false;
-
+    
     [IsMetric("TruthInTheFlip.v1.1.0")]
     [StringHelp("Minimum anticipation percentage in the segment.")]
     public double MinA = double.PositiveInfinity;
@@ -133,7 +102,7 @@ public sealed class SegmentStats
             ? double.NaN
             : AnticipatedSameSignCount / (double)Count * 100.0;
     
-    public void Inspect(Tracker t)
+    public override void Inspect(Tracker t)
     {
         double trueZ = t.ZScore - Math.Abs(t.ZScoreHeads);
 

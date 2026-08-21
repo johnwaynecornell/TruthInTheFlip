@@ -54,7 +54,8 @@ public class SegmentStatsReport
     
     public void Report(Grade grade, List<SegmentStats> segments, string info)
     {
-        SegmentAggregate agg = new SegmentAggregate(segments);
+        SegmentAggregate agg = new SegmentAggregate();
+        foreach (var segment in segments) agg.Inspect(segment);
 
         message("=== Command Configuration ===");
         message(info);
@@ -137,7 +138,7 @@ public class SegmentStatsReport
         if (grade >= Grade.High)
         {
             message(
-                "idx | span                  | bestTrueZ | aAtBestZ            | endTrueZ  | meanTrueZ | endA             | meanA            | endZH     | meanZH    | %a>=50  | %ZH>=0");
+                "idx | span                  | bestTrueZ | aAtBestZ         | endTrueZ  | meanTrueZ | endA             | meanA            | endZH     | meanZH    | %a>=50  | %ZH>=0");
             message(
                 "----+-----------------------+-----------+------------------+-----------+-----------+------------------+------------------+-----------+-----------+---------+---------");
 
@@ -340,71 +341,5 @@ public class SegmentStatsReport
     public static GradeArgument All()
     {
         return new(Grade.All);
-    }
-    
-    sealed class SegmentAggregate
-    {
-        private readonly List<SegmentStats> _segments;
-        private readonly List<double> _best;
-        private readonly List<double> _end;
-        private readonly List<double> _mean;
-        private readonly List<double> _endZH;
-        private readonly List<double> _endA;
-
-        public SegmentAggregate(List<SegmentStats> segments)
-        {
-            _segments = segments;
-            _best = segments.Select(s => s.BestTrueZ).OrderBy(v => v).ToList();
-            _end = segments.Select(s => s.EndTrueZ).OrderBy(v => v).ToList();
-            _mean = segments.Select(s => s.MeanTrueZ).OrderBy(v => v).ToList();
-            _endZH = segments.Select(s => s.EndZHeads).OrderBy(v => v).ToList();
-            _endA = segments.Select(s => s.EndA).OrderBy(v => v).ToList();
-        }
-
-        public double AvgBestTrueZ => _segments.Average(s => s.BestTrueZ);
-        public double MedianBestTrueZ => Median(_best);
-
-        public double AvgEndTrueZ => _segments.Average(s => s.EndTrueZ);
-        public double MedianEndTrueZ => Median(_end);
-
-        public double AvgMeanTrueZ => _segments.Average(s => s.MeanTrueZ);
-        public double AvgPctAbove50 => _segments.Average(s => s.PctAbove50);
-
-        public double AvgMeanA => _segments.Average(s => s.MeanA);
-        public double AvgEndA => _segments.Average(s => s.EndA);
-        public double MedianEndA => Median(_endA);
-        public double AvgPctAAtLeast50 => _segments.Average(s => s.PctAAtLeast50);
-
-        public double AvgMeanZHeads => _segments.Average(s => s.MeanZHeads);
-        public double AvgEndZHeads => _segments.Average(s => s.EndZHeads);
-        public double MedianEndZHeads => Median(_endZH);
-        public double AvgPctZHeadsAbove0 => _segments.Average(s => s.PctZHeadsAbove0);
-
-        public double PctBestAtLeast(double threshold) =>
-            100.0 * _segments.Count(s => s.BestTrueZ >= threshold) / _segments.Count;
-
-        public double PctEndAtLeast(double threshold) =>
-            100.0 * _segments.Count(s => s.EndTrueZ >= threshold) / _segments.Count;
-
-        public double PctMeanAtLeast(double threshold) =>
-            100.0 * _segments.Count(s => s.MeanTrueZ >= threshold) / _segments.Count;
-
-        public double PctEndAAtLeast(double threshold) =>
-            100.0 * _segments.Count(s => s.EndA >= threshold) / _segments.Count;
-
-        public double PctEndZHeadsAtLeast(double threshold) =>
-            100.0 * _segments.Count(s => s.EndZHeads >= threshold) / _segments.Count;
-
-        public double PctAbsEndZHeadsAtLeast(double threshold) =>
-            100.0 * _segments.Count(s => Math.Abs(s.EndZHeads) >= threshold) / _segments.Count;
-
-        private static double Median(List<double> values)
-        {
-            if (values.Count == 0) return double.NaN;
-            int mid = values.Count / 2;
-            return values.Count % 2 == 0
-                ? (values[mid - 1] + values[mid]) / 2.0
-                : values[mid];
-        }
     }
 }

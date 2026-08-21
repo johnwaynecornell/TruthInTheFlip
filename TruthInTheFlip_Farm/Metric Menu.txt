@@ -78,13 +78,6 @@ Metrics:
         PctZHeadsAbove0          <Double>   Percentage of records where Z-Score for heads was at least zero.                             
         AnticipatedSameSignCount <Int64>    Count of records where anticipated percentage was the same sign as the true percentage.      
         PctAnticipatedSameSign   <Double>   Percentage of records where anticipated percentage was the same sign as the true percentage. 
-        Index                    <Int64>    Sequential index of the segment.                                                             
-        BeginTotal               <Int64>    Total flips at the start of the segment.                                                     
-        EndTotal                 <Int64>    Total flips at the end of the segment.                                                       
-        BeginWallclock           <TimeSpan> Wallclock time at the start of the segment.                                                  
-        EndWallclock             <TimeSpan> Wallclock time at the end of the segment.                                                    
-        Begin                    <Tracker>  Beginning tracker record of the segment.                                                     
-        End                      <Tracker>  Ending tracker record of the segment.                                                        
         Z                        <Tracker>  The best TrueZ from the Segment.                                                             
         Count                    <Int64>    Number of tracker records in the segment.                                                    
         Good                     <Int64>    Number of records where anticipation was better than chance.                                 
@@ -95,3 +88,45 @@ Metrics:
         MaxZHeads                <Double>   Maximum Z-Score for heads in the segment.                                                    
         ZHeadsAboveZero          <Int64>    Count of records where Z-Score for heads was at least zero.                                  
         BestTrueZ                <Double>   Highest True Z-Score achieved in the segment.                                                
+        Index                    <Int64>    Sequential index of the segment.                                                             
+        BeginTotal               <Int64>    Total flips at the start of the segment.                                                     
+        EndTotal                 <Int64>    Total flips at the end of the segment.                                                       
+        BeginWallclock           <TimeSpan> Wallclock time at the start of the segment.                                                  
+        EndWallclock             <TimeSpan> Wallclock time at the end of the segment.                                                    
+        Begin                    <Tracker>  Beginning record of the segment.                                                             
+        End                      <Tracker>  Ending record of the segment.                                                                
+
+    TruthInTheFlip.Farm.Format.SegmentAggregate
+        Z                           <SegmentStats> The best TrueZ from the SegmentStats.                                        
+        AvgBestTrueZ                <Double>       The average best TrueZ from the SegmentStats.                                
+        MedianBestTrueZ             <Double>       The median best TrueZ from the SegmentStats.                                 
+        AvgEndTrueZ                 <Double>       The average end TrueZ from the SegmentStats.                                 
+        MedianEndTrueZ              <Double>       The median end TrueZ from the SegmentStats.                                  
+        AvgMeanTrueZ                <Double>       The average mean TrueZ from the SegmentStats.                                
+        AvgPctAbove50               <Double>       the average Percentage of records where anticipation was better than chance. 
+        AvgMeanA                    <Double>       The average mean anticipation from the SegementStats.                        
+        AvgEndA                     <Double>       The average end anticipation from the SegementStats.                         
+        MedianEndA                  <Double>       The median end anticipation from the SegementStats.                          
+        AvgPctAAtLeast50            <Double>       The average percentage of anticipation above 50% from the SegementStats.     
+        AvgMeanZHeads               <Double>       The average mean ZHeads from the SegementStats.                              
+        AvgEndZHeads                <Double>       The average end ZHeads from the SegementStats.                               
+        MedianEndZHeads             <Double>       The average median end ZHeads from the SegementStats.                        
+        AvgPctZHeadsAbove0          <Double>       The average percentage of ZHeads above zero from the SegementStats.          
+        PctEndAAtLeast_50           <Double>       The percent of end anticipastion >= 50% from the SegementStats.              
+        PctBestAtLeast_1_96         <Double>       The percent of best TrueZ >= 1.96 from the SegementStats.                    
+        PctEndAtLeast_1_96          <Double>       The percent of end TrueZ >= 1.96 from the SegementStats.                     
+        PctMeanAtLeast_1_96         <Double>       The percent of mean TrueZ >= 1.96 from the SegementStats.                    
+        PctEndZHeadsAtLeast_1_96    <Double>       The percent of end ZHeads >= 1.96 from the SegementStats.                    
+        PctAbsEndZHeadsAtLeast_1_96 <Double>       The percent of absolute end ZHeads >= 1.96 from the SegementStats.           
+        PctBestAtLeast_3_00         <Double>       The percent of best TrueZ >= 3.00 from the SegementStats.                    
+        PctEndAtLeast_3_00          <Double>       The percent of end TrueZ >= 3.00 from the SegementStats.                     
+        PctMeanAtLeast_3_00         <Double>       The percent of mean TrueZ >= 3.00 from the SegementStats.                    
+        PctEndZHeadsAtLeast_3_00    <Double>       The percent of end ZHeads >= 3.00 from the SegementStats.                    
+        PctAbsEndZHeadsAtLeast_3_00 <Double>       The percent of absolute end ZHeads >= 3.00 from the SegementStats.           
+        Index                       <Int64>        Sequential index of the segment.                                             
+        BeginTotal                  <Int64>        Total flips at the start of the segment.                                     
+        EndTotal                    <Int64>        Total flips at the end of the segment.                                       
+        BeginWallclock              <TimeSpan>     Wallclock time at the start of the segment.                                  
+        EndWallclock                <TimeSpan>     Wallclock time at the end of the segment.                                    
+        Begin                       <SegmentStats> Beginning record of the segment.                                             
+        End                         <SegmentStats> Ending record of the segment.                                                

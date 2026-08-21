@@ -6,14 +6,22 @@ namespace TruthInTheFlip.Farm.Format;
 public abstract class TrackerProcessBase
     : FarmProcess
 {
-    protected TrackerSelector Tracker { get; }
+    protected TrackerProcessBase()
+    {
 
-    protected TrackerProcessBase(TrackerSelector tracker)
+    }
+}
+
+public class TrackerProcess : TrackerProcessBase
+{
+    protected TrackerSelector Tracker { get; }
+    
+    public TrackerProcess(TrackerSelector tracker) : base()
     {
         Tracker = tracker;
     }
 
-    protected sealed override IEnumerable<object> EnumerateItems(
+    protected override IEnumerable<object> EnumerateItems(
         FarmContext context)
     {
         using TrackerStream source = Tracker.Source();
@@ -23,19 +31,7 @@ public abstract class TrackerProcessBase
         }
     }
 
-    protected abstract IEnumerable<object> EnumerateItems(
-        FarmContext context,
-        TrackerStream source);
-}
-
-public class TrackerProcess : TrackerProcessBase
-{
-    
-    public TrackerProcess(TrackerSelector tracker) : base(tracker)
-    {
-    }
-
-    protected override IEnumerable<Tracker> EnumerateItems(FarmContext context, TrackerStream source)
+    protected virtual IEnumerable<Tracker> EnumerateItems(FarmContext context, TrackerStream source)
     {
         foreach (ITracker tracker in source.Records)
         {
@@ -44,4 +40,5 @@ public class TrackerProcess : TrackerProcessBase
     }
 
     public override Type StatType { get => typeof(Tracker); }
+    
 }

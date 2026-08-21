@@ -56,10 +56,34 @@ Argument Types
             tracker               <TrackerSelector>     Tracker source to process.
             segmentation          <SegSelector>         Method used to divide tracker records into segments.
     
+        segment_agg tracker segmentation aggregation
+            Process segment stats as segments.
+    
+            tracker               <TrackerSelector>     Tracker source to process.
+            segmentation          <SegSelector>         Method used to divide tracker records into segments.
+            aggregation           <AggSelector>         Method used to aggregate segments.
+    
         tracker tracker
             Process tracker records individually.
     
             tracker               <TrackerSelector>     Tracker source to process.
+
+<AggSelector> — Definition for aggregating SegmentStats into larger segments
+
+        by_total length
+            Segment size in total flips
+    
+            length                <Count>               Maximum number of total flips in each segment.    default: "100B"
+    
+        by_elapsed length
+            Segment size in time elapsed
+    
+            length                <TimeSpan>            Maximum wall-clock duration of each segment.    default: "01:00:00"
+    
+        full source
+            Use only complete segments.
+    
+            source                <AggSelector>         The source selector.
 
 <GradeArgument> — Report detail level
 

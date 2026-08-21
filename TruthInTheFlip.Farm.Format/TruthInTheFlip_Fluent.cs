@@ -150,6 +150,28 @@ public class TruthInTheFlip_Fluent
             tracker.Source.WallclockTime - stats.Begin.Source.WallclockTime < length);
     }
     
+    [FluentMethod("by_total", def: true)]
+    [KV_FA(FluentAttribute.Help, "Segment size in total flips")]
+    public static AggSelector Agg_by_total(
+        [KV_FA(FluentAttribute.Def, "100B")]
+        [KV_FA(FluentAttribute.Help, "Maximum number of total flips in each segment.")]
+        Count length)
+    {
+        return new AggSelector((stats, tracker) =>
+            tracker.EndTotal - stats.Begin.Begin.absTotal < length);
+    }
+
+    [FluentMethod("by_elapsed")]
+    [KV_FA(FluentAttribute.Help, "Segment size in time elapsed")]
+    public static AggSelector Agg_by_elapsed(
+        [KV_FA(FluentAttribute.Def, "01:00:00")]
+        [KV_FA(FluentAttribute.Help, "Maximum wall-clock duration of each segment.")]
+        TimeSpan length)
+    {
+        return new AggSelector((stats, tracker) =>
+            tracker.EndWallclock - stats.Begin.Begin.absWallclockTime < length);
+    }
+    
     [FluentMethod("file")]
     [KV_FA(FluentAttribute.Help, "Read tracker records from a tracker file.")]
     public static TrackerSelector Tracker(
@@ -159,7 +181,16 @@ public class TruthInTheFlip_Fluent
         return new TrackerSelector(
             () => OpenTrackerStream(trackerPath));
     }
-
+    
+    [FluentMethod("full")]
+    [KV_FA(FluentAttribute.Help, "Use only full trackers.")]
+    public static TrackerSelector fullTracker(
+        [KV_FA(FluentAttribute.Help, "The source tracker.")]
+        TrackerSelector source)
+    {
+        return new TrackerSelector(source, t => ((Tracker)t).IsComplete);
+    }
+    
     [FluentMethod("full")]
     [KV_FA(FluentAttribute.Help, "Use only complete segments.")]
     public static SegSelector fullSegSelector(
@@ -170,12 +201,12 @@ public class TruthInTheFlip_Fluent
     }
 
     [FluentMethod("full")]
-    [KV_FA(FluentAttribute.Help, "Use only full trackers.")]
-    public static TrackerSelector fullTracker(
-        [KV_FA(FluentAttribute.Help, "The source tracker.")]
-        TrackerSelector source)
+    [KV_FA(FluentAttribute.Help, "Use only complete segments.")]
+    public static AggSelector fullAggSelector(
+        [KV_FA(FluentAttribute.Help, "The source selector.")]
+        AggSelector source)
     {
-        return new TrackerSelector(source, t => ((Tracker)t).IsComplete);
+        return new AggSelector(source, (stats) => stats.IsComplete);
     }
     
     public static TrackerStream OpenTrackerStream(string trackerPath)
@@ -261,6 +292,25 @@ public class TruthInTheFlip_Fluent
         var process = new SegmentStatsProcess(
             tracker,
             segmentation);
+        
+        return process;
+    }
+    
+    [FluentMethod("segment_agg")]
+    [KV_FA(FluentAttribute.Help, "Process segment stats as segments.")]
+    public static FarmProcess SegmentAgg(
+        [KV_FA(FluentAttribute.Help, "Tracker source to process.")]
+        TrackerSelector tracker,
+        [KV_FA(FluentAttribute.Help, "Method used to divide tracker records into segments.")]
+        SegSelector segmentation,
+        [KV_FA(FluentAttribute.Help, "Method used to aggregate segments.")]
+        AggSelector aggregation)
+    {
+        
+        var process = new SegmentAggregateProcess(
+            tracker,
+            segmentation,
+            aggregation);
         
         return process;
     }
