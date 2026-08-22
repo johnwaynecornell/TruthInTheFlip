@@ -32,17 +32,45 @@ public class MetricBinder
             if (func.Type == MetricDescriptor.EType.Aggregate) _currentType = inputType;
             else _currentType = currentType;
                 
-            var inputProcess = process?.InputProcess;
+            MetricPath argumentPath = new();
 
-            MetricPath argumentPath = new MetricPath();
-            
-            if (inputProcess != null)
+            if (func.Type == MetricDescriptor.EType.Aggregate)
             {
-                rc = ParseExpression(inputProcess, catalogs, argumentPath, inputProcess.StatType, inputProcess.InputType, _field);
-                process.InputProcess.Projection.Fields.Add(argumentPath);
-                
-            } else 
-                rc = ParseExpression(null, catalogs, argumentPath, _currentType, inputType, _field);
+                var inputProcess = process?.InputProcess;
+
+                if (inputProcess != null)
+                {
+                    rc = ParseExpression(
+                        inputProcess,
+                        catalogs,
+                        argumentPath,
+                        inputProcess.StatType,
+                        inputProcess.InputType,
+                        _field);
+
+                    inputProcess.Projection.Fields.Add(argumentPath);
+                }
+                else
+                {
+                    rc = ParseExpression(
+                        null,
+                        catalogs,
+                        argumentPath,
+                        _currentType,
+                        inputType,
+                        _field);
+                }
+            }
+            else
+            {
+                rc = ParseExpression(
+                    process,
+                    catalogs,
+                    argumentPath,
+                    currentType,
+                    inputType,
+                    _field);
+            }
             
             if (rc == false)
             {
