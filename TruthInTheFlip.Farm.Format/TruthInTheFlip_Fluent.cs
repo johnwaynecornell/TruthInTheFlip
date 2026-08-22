@@ -388,7 +388,7 @@ public class TruthInTheFlip_Fluent
             double d => d.ToString(CultureInfo.InvariantCulture),
             float f => f.ToString(CultureInfo.InvariantCulture),
             decimal dec => dec.ToString(CultureInfo.InvariantCulture),
-            DateTime dt => dt.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture),
+            DateTime dt => dt.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture),
             TimeSpan ts => ts.ToString("c", CultureInfo.InvariantCulture),
             _ => obj.ToString()
         };
