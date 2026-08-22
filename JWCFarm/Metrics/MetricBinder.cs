@@ -2,45 +2,100 @@ namespace JWCFarm.Metrics;
 
 public class MetricBinder
 {
-    public static bool Bind<T>(MetricCatalogs catalogs, out MetricProjection target, params string[] fields)
+    protected static bool ParseExpression(FarmProcess?  process, MetricCatalogs catalogs, MetricPath path, Type currentType, Type inputType, string field)
     {
-        return Bind(catalogs, typeof(T), out target, fields);
+        bool rc = true;
+        
+        Type _currentType = currentType;
+        
+        MetricCatalog catalog;
+        
+        int i = field.IndexOf('#');
+                
+        if (i != -1)
+        {
+            if (!catalogs.TryGet(_currentType, out catalog))
+            {
+                Console.Error.WriteLine($"Metric catalog not found for type {_currentType}");
+                return false;
+            }
+
+            string funcName = field.Substring(0, i);
+            string _field = field.Substring(i + 1);
+                    
+            if (!catalog.Metrics.TryGetValue(funcName, out var func))
+            {
+                Console.Error.WriteLine($"Metric function not found for type {_currentType} and field {field}");
+                return false;
+            }
+            
+            if (func.Type == MetricDescriptor.EType.Aggregate) _currentType = inputType;
+            else _currentType = currentType;
+                
+            var inputProcess = process?.InputProcess;
+
+            MetricPath argumentPath = new MetricPath();
+            
+            if (inputProcess != null)
+            {
+                rc = ParseExpression(inputProcess, catalogs, argumentPath, inputProcess.StatType, inputProcess.InputType, _field);
+                process.InputProcess.Projection.Fields.Add(argumentPath);
+                
+            } else 
+                rc = ParseExpression(null, catalogs, argumentPath, _currentType, inputType, _field);
+            
+            if (rc == false)
+            {
+                Console.Error.WriteLine($"Metric expression outer failed for type {_currentType} and field {_field}");
+                return false;
+            }
+            
+            path.Add(func.CreateInstance(argumentPath));
+              
+            return true;
+        }
+        
+        foreach (string _part in field.Split('.'))
+        {
+            string part = _part;
+    
+            if (!catalogs.TryGet(_currentType, out catalog))
+            {
+                Console.Error.WriteLine($"Metric catalog not found for type {_currentType}");
+                return false;
+            }
+
+            if (!catalog.Metrics.TryGetValue(part, out var metric))
+            {
+                Console.Error.WriteLine($"Metric not found for type {_currentType} and field {field}");
+                rc = false;
+                break;
+            }
+                
+            path.Add(metric.CreateInstance(null));
+            _currentType = metric.ValueType;
+        }
+
+        return rc;
+
     }
     
-    public static bool Bind(MetricCatalogs catalogs, Type type, out MetricProjection target, params string[] fields)
+    public static bool Bind(FarmProcess process, MetricCatalogs catalogs, Type type, Type inputType, out MetricProjection target, params string[] fields)
     {
         MetricProjection projection = new MetricProjection();
         
         bool rc = true;
         
+        List<MetricPath> childBind = new List<MetricPath>();
+        
         foreach (string field in fields)
         {
             MetricPath path = new MetricPath();
-            
             Type currentType = type;
-            
-            foreach (string part in field.Split('.'))
-            {
-                if (!catalogs.TryGet(currentType, out var catalog))
-                {
-                    Console.Error.WriteLine($"Metric catalog not found for type {currentType}");
-                    rc = false;
-                    break;
-                }
-
-                if (!catalog.Metrics.TryGetValue(part, out var metric))
-                {
-                    Console.Error.WriteLine($"Metric not found for type {currentType} and field {field}");
-                    rc = false;
-                    break;
-                }
-                
-                path.Add(metric);
-                currentType = metric.ValueType;
-            }
-            
+            rc = ParseExpression(process, catalogs, path, currentType, inputType, field);
             if (rc) projection.Fields.Add(path);
         }
+        
         
         if (rc)
             target = projection;

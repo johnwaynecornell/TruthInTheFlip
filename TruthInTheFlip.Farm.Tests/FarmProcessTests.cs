@@ -14,6 +14,7 @@ public class FarmProcessTests
         }
 
         public override Type StatType => typeof(int);
+        public override Type InputType => null;
 
         protected override IEnumerable<object> EnumerateItems(FarmContext context)
             => items;

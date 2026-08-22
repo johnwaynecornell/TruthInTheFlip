@@ -6,7 +6,7 @@ namespace JWCFarm;
 [Description("A process that produces items for Farm operations.")]
 public abstract class FarmProcess : FarmCommand
 {
-    public MetricProjection? Projection { get;set;} = null;
+    public MetricProjection? Projection { get; set; } = null;
     public MetricProjection projection_get() {
             return Projection ?? throw new InvalidOperationException(
                 "Projection not set");
@@ -14,7 +14,7 @@ public abstract class FarmProcess : FarmCommand
 
     public virtual bool BindFields(MetricCatalogs catalogs, string[] fields)
     {
-        if (!MetricBinder.Bind(catalogs, StatType, out MetricProjection projection, 
+        if (!MetricBinder.Bind(this, catalogs, StatType, InputType, out MetricProjection projection, 
                 fields)) throw new ArgumentException("Invalid fields");
         
         Projection = projection;
@@ -22,6 +22,9 @@ public abstract class FarmProcess : FarmCommand
     }
     
     public abstract Type StatType { get; }
+    public abstract Type InputType { get; }
+    
+    public virtual FarmProcess? InputProcess => null;
     
     public ProcessActions Actions { get; set; } = new ();
     

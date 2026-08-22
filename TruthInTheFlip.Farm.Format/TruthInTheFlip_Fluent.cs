@@ -87,6 +87,7 @@ public class TruthInTheFlip_Fluent
         
         catalog.Metrics["Source"] = new MetricDescriptor()
         {
+            Type = MetricDescriptor.EType.Property,
             Name = "Source",
             Help = "Source of the tracker",
             ValueType = typeof(Tracker),
@@ -97,7 +98,7 @@ public class TruthInTheFlip_Fluent
     private static MetricCatalog? DefaultReflect(Type arg)
     {
         List<MetricDescriptor> l = new List<MetricDescriptor>();
-        
+
         foreach (var member in arg.GetMembers())
         {
             if ((member.GetCustomAttributes(typeof(IsMetricAttribute), true).FirstOrDefault() is not null)
@@ -106,21 +107,56 @@ public class TruthInTheFlip_Fluent
                 if (member is FieldInfo fieldInfo)
                     l.Add(new MetricDescriptor
                     {
+                        Type = MetricDescriptor.EType.Property,
                         Name = member.Name,
                         ValueType = fieldInfo.FieldType,
-                        Help = (string)(member.GetCustomAttributes(typeof(StringHelpAttribute), true).FirstOrDefault() as StringHelpAttribute).Description,
+                        Help =
+                            (string)(member.GetCustomAttributes(typeof(StringHelpAttribute), true).FirstOrDefault() as
+                                StringHelpAttribute).Description,
                         Getter = obj => ((FieldInfo)member).GetValue(obj)
                     });
                 else if (member is PropertyInfo propertyInfo)
                     l.Add(new MetricDescriptor
                     {
+                        Type = MetricDescriptor.EType.Property,
                         Name = member.Name,
                         ValueType = propertyInfo.PropertyType,
-                        Help = (string)(member.GetCustomAttributes(typeof(StringHelpAttribute), true).FirstOrDefault() as StringHelpAttribute).Description,
+                        Help =
+                            (string)(member.GetCustomAttributes(typeof(StringHelpAttribute), true).FirstOrDefault() as
+                                StringHelpAttribute).Description,
                         Getter = obj => ((PropertyInfo)member).GetValue(obj)
                     });
+                else if (member is MethodInfo methodInfo)
+                {
+                    ParameterInfo[] parameters = methodInfo.GetParameters();
+
+                    if (parameters.Length == 1)
+                    {
+                        if (parameters[0].ParameterType == typeof(List<double>))
+                            l.Add(new MetricDescriptor
+                            {
+                                Type = MetricDescriptor.EType.Aggregate,
+                                Name = member.Name,
+                                ValueType = methodInfo.ReturnType,
+                                Help = (member.GetCustomAttributes(typeof(StringHelpAttribute), true)
+                                    .FirstOrDefault() as StringHelpAttribute).Description,
+                                Method = (MethodInfo)member
+                            });
+                        else
+                            l.Add(new MetricDescriptor
+                            {
+                                Type = MetricDescriptor.EType.Scalar,
+                                Name = member.Name,
+                                ValueType = methodInfo.ReturnType,
+                                Help = (member.GetCustomAttributes(typeof(StringHelpAttribute), true)
+                                    .FirstOrDefault() as StringHelpAttribute).Description,
+                                Method = (MethodInfo)member
+                            });
+                    }
+                }
             }
         }
+
         if (l.Count == 0) return null;
         MetricCatalog R = new MetricCatalog();
         R.Metrics = l.ToDictionary(x => x.Name, x => x);
@@ -322,8 +358,8 @@ public class TruthInTheFlip_Fluent
         {
             if (!f) writer.Write(",");
             else f = false;
-            
-            writer.Write(string.Join(".", from p in field select p.Name));
+
+            CSVOut(writer, field.ToString());
         }
         writer.WriteLine();
     }
@@ -336,14 +372,7 @@ public class TruthInTheFlip_Fluent
             if (!f) writer.Write(",");
             else f = false;
         
-            object? o = stats;
-
-            foreach (var p in field)
-            { 
-                if (o == null) throw new NullReferenceException($"Field {string.Join(".", from p2 in field select p2.Name)} contains null");
-                o = p.Getter(o);
-            }
-            
+            object? o = field.Get(projection, stats);
             CSVOut(writer, o);
         }
         writer.WriteLine();

@@ -2,7 +2,7 @@ using TruthInTheFlip.Format;
 
 namespace TruthInTheFlip.Farm.Format;
 
-public abstract class StatsBase<TStats> where TStats : class
+public abstract class StatsBase<TStats> : MetricFunctionsAggregate where TStats : class
 {
     [IsMetric("TruthInTheFlip.v1.1.0")]
     [StringHelp("Sequential index of the segment.")]

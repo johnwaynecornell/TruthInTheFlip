@@ -25,7 +25,7 @@ public interface ITracker
     void BatchMemberEnd();
 }
 
-public class Tracker : ITracker
+public class Tracker : MetricFunctions , ITracker
 {
     //fields begin
     [IsRecord("TruthInTheFlip.v1.0")] [StringHelp("Total number of flips processed.")] public long total { get; set; } = 0;

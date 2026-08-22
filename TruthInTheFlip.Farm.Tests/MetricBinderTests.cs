@@ -25,6 +25,7 @@ public class MetricBinderTests
             {
                 ["Value"] = new MetricDescriptor
                 {
+                    Type = MetricDescriptor.EType.Property,
                     Name = "Value",
                     ValueType = typeof(int),
                     Help = "Parent value",
@@ -32,6 +33,7 @@ public class MetricBinderTests
                 },
                 ["Nested"] = new MetricDescriptor
                 {
+                    Type = MetricDescriptor.EType.Property,
                     Name = "Nested",
                     ValueType = typeof(Child),
                     Help = "Nested child",
@@ -46,6 +48,7 @@ public class MetricBinderTests
             {
                 ["Name"] = new MetricDescriptor
                 {
+                    Type = MetricDescriptor.EType.Property,
                     Name = "Name",
                     ValueType = typeof(string),
                     Help = "Child name",
@@ -62,28 +65,27 @@ public class MetricBinderTests
     {
         var catalogs = CreateCatalogs();
 
-        bool ok = MetricBinder.Bind<Parent>(
-            catalogs,
+        bool ok = MetricBinder.Bind(null, catalogs, typeof(Parent), null,
             out var projection,
             "Nested.Name",
             "Value");
 
         Assert.True(ok);
         Assert.Equal(2, projection.Fields.Count);
-        Assert.Equal(new[] { "Nested", "Name" }, projection.Fields[0].Select(x => x.Name));
-        Assert.Equal(new[] { "Value" }, projection.Fields[1].Select(x => x.Name));
+        Assert.Equal(new[] { "Nested", "Name" }, projection.Fields[0].Select(x => x.InstanceDescriptor.Name));
+        Assert.Equal(new[] { "Value" }, projection.Fields[1].Select(x => x.InstanceDescriptor.Name));
     }
 
     [Fact]
     public void Bind_NestedPathCanBeEvaluated()
     {
         var catalogs = CreateCatalogs();
-        MetricBinder.Bind<Parent>(catalogs, out var projection, "Nested.Name");
+        MetricBinder.Bind(null, catalogs, typeof(Parent), null, out var projection, "Nested.Name");
         var source = new Parent { Nested = new Child { Name = "hello" } };
 
         object? value = source;
         foreach (var descriptor in projection.Fields.Single())
-            value = descriptor.Getter(value!);
+            value = descriptor.InstanceDescriptor.Getter(value!);
 
         Assert.Equal("hello", value);
     }
@@ -93,8 +95,7 @@ public class MetricBinderTests
     {
         var catalogs = CreateCatalogs();
 
-        bool ok = MetricBinder.Bind<Parent>(
-            catalogs,
+        bool ok = MetricBinder.Bind(null, catalogs, typeof(Parent), null,
             out var projection,
             "Nested.Missing");
 

@@ -39,7 +39,9 @@ public abstract class SegmentProcess<TStats, TProduct> : TrackerProcessBase wher
                 currentSegment.BeginWallclock = BeginWallclock(state);
                 currentSegment.Begin = state;
             }
-                
+            
+            
+            Projection?.Inspect(this, currentSegment, state);
             currentSegment!.Inspect(state);
             currentSegment.EndTotal = EndTotal(state);
             currentSegment.EndWallclock = EndWallclock(state);
@@ -56,7 +58,8 @@ public abstract class SegmentProcess<TStats, TProduct> : TrackerProcessBase wher
     }
 
     public override Type StatType { get => typeof(TProduct); }
-    
+    public override Type InputType { get => typeof(TStats); }
+
     public abstract long BeginTotal(TStats stats);
     public abstract long EndTotal(TStats stats);
 

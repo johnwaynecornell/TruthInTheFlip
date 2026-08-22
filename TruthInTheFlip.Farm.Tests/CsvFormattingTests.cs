@@ -25,28 +25,31 @@ public class CsvFormattingTests
         {
             new MetricDescriptor
             {
+                Type = MetricDescriptor.EType.Property,
                 Name = "Number",
                 ValueType = typeof(double),
                 Help = "Number",
                 Getter = value => ((Row)value).Number
-            }
+            }.CreateInstance(null)
         });
         projection.Fields.Add(new MetricPath
         {
             new MetricDescriptor
             {
+                Type = MetricDescriptor.EType.Property,
                 Name = "Nested",
                 ValueType = typeof(NestedRow),
                 Help = "Nested",
                 Getter = value => ((Row)value).Nested
-            },
+            }.CreateInstance(null),
             new MetricDescriptor
             {
+                Type = MetricDescriptor.EType.Property,
                 Name = "Value",
                 ValueType = typeof(string),
                 Help = "Value",
                 Getter = value => ((NestedRow)value).Value
-            }
+            }.CreateInstance(null)
         });
         return projection;
     }

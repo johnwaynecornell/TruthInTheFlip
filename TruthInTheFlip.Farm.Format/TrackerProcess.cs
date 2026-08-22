@@ -40,5 +40,6 @@ public class TrackerProcess : TrackerProcessBase
     }
 
     public override Type StatType { get => typeof(Tracker); }
+    public override Type InputType { get => typeof(Tracker); }
     
 }

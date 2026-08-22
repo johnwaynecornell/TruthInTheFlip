@@ -66,7 +66,7 @@ public class Commands
                     len[i] = 0;
                 }
 
-                foreach (var m in kvp.Value.Metrics)
+                foreach (var m in kvp.Value.Metrics.Where(m => m.Value.Type == MetricDescriptor.EType.Property))
                 {
                     set(0, m.Value.Name);
                     set(1, $"<{m.Value.ValueType.Name}>");
@@ -76,6 +76,55 @@ public class Commands
                 }
                 
                 for (int i=0; i<columns[0].Count; i++) ctx.Output.WriteLine("        " + get(i));
+                
+                for (int i=0; i<3; i++)
+                {
+                    columns[i] = (new List<string>());
+                    len[i] = 0;
+                }
+
+                bool f; 
+                f = false;
+
+                foreach (var m in kvp.Value.Metrics.Where(m => m.Value.Type == MetricDescriptor.EType.Scalar))
+                {
+                    if (!f) { ctx.Output.WriteLine("    " + "functions scalar where expr : one sample from the current process");
+                        f = true;
+                    }
+                    
+                    set(0, $"{m.Value.Name}#expr");
+                    set(1, $"<{m.Value.ValueType.Name}>");
+                    set(2, m.Value.Help);
+                    
+                    //ctx.Output.WriteLine("        " + FluentEnvironment.PadRight(m.Value.Name) + m.Value.Help);
+                }
+                
+                for (int i=0; i<columns[0].Count; i++) ctx.Output.WriteLine("        " + get(i));
+                
+                for (int i=0; i<3; i++)
+                {
+                    columns[i] = (new List<string>());
+                    len[i] = 0;
+                }
+
+                f = false;
+
+                foreach (var m in kvp.Value.Metrics.Where(m => m.Value.Type == MetricDescriptor.EType.Aggregate))
+                {
+                    if (!f) { ctx.Output.WriteLine("    " + "functions aggregate where expr : samples from the current child process");
+                        f = true;
+                    }
+                    
+                    set(0, $"{m.Value.Name}#expr");
+                    set(1, $"<{m.Value.ValueType.Name}>");
+                    set(2, m.Value.Help);
+                    
+                    //ctx.Output.WriteLine("        " + FluentEnvironment.PadRight(m.Value.Name) + m.Value.Help);
+                }
+                
+                for (int i=0; i<columns[0].Count; i++) ctx.Output.WriteLine("        " + get(i));
+                
+                
             }
         });
     }
