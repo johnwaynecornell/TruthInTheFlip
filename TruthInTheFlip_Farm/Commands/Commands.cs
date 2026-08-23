@@ -82,17 +82,26 @@ public class Commands
                     columns[i] = (new List<string>());
                     len[i] = 0;
                 }
-
+                
                 bool f; 
                 f = false;
 
-                foreach (var m in kvp.Value.Metrics.Where(m => m.Value.Type == MetricDescriptor.EType.Scalar))
+                foreach (var m in kvp.Value.Metrics.Where(m => m.Value.Type == MetricDescriptor.EType.Method))
                 {
-                    if (!f) { ctx.Output.WriteLine("    " + "functions scalar where expr : one sample from the current process");
+                    if (!f) { ctx.Output.WriteLine("    " + "functions scalar and aggregate where expr is one sample from the current process and child_expr samples from child process");
                         f = true;
                     }
+
+                    StringBuilder stringBuilder = new ();
+                    stringBuilder.Append(m.Value.Name);
+                    stringBuilder.Append("#");
+
+                    stringBuilder.Append(string.Join(",",
+                        from p in m.Value.Parameters
+                        select (p.Type == MetricParameterType.Aggregate ? "child_expr" : "expr")));
                     
-                    set(0, $"{m.Value.Name}#expr");
+                    
+                    set(0, stringBuilder.ToString());
                     set(1, $"<{m.Value.ValueType.Name}>");
                     set(2, m.Value.Help);
                     
@@ -100,30 +109,6 @@ public class Commands
                 }
                 
                 for (int i=0; i<columns[0].Count; i++) ctx.Output.WriteLine("        " + get(i));
-                
-                for (int i=0; i<3; i++)
-                {
-                    columns[i] = (new List<string>());
-                    len[i] = 0;
-                }
-
-                f = false;
-
-                foreach (var m in kvp.Value.Metrics.Where(m => m.Value.Type == MetricDescriptor.EType.Aggregate))
-                {
-                    if (!f) { ctx.Output.WriteLine("    " + "functions aggregate where expr : samples from the current child process");
-                        f = true;
-                    }
-                    
-                    set(0, $"{m.Value.Name}#expr");
-                    set(1, $"<{m.Value.ValueType.Name}>");
-                    set(2, m.Value.Help);
-                    
-                    //ctx.Output.WriteLine("        " + FluentEnvironment.PadRight(m.Value.Name) + m.Value.Help);
-                }
-                
-                for (int i=0; i<columns[0].Count; i++) ctx.Output.WriteLine("        " + get(i));
-                
                 
             }
         });

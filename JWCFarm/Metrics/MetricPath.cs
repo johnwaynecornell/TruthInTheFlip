@@ -19,23 +19,37 @@ public class MetricPath : List<MetricDescriptor.Instance>
                 o = stats;
                 hasO = true;
             }
-            
+
             if (o == null)
                 throw new NullReferenceException(
                     $"Field {string.Join(".", from p2 in this select p2.InstanceDescriptor.Name)} contains null");
-            if (p.InstanceDescriptor.Type == MetricDescriptor.EType.Property) 
+            if (p.InstanceDescriptor.Type == MetricDescriptor.EType.Property)
                 o = p.InstanceDescriptor.Getter(o);
-            else if (p.InstanceDescriptor.Type == MetricDescriptor.EType.Scalar)
+            else if (p.InstanceDescriptor.Type == MetricDescriptor.EType.Method)
             {
-                //var o2 = Get(projection, root, root, ref index);
-                int ii = 0;
-                var o2 = p.ArgumentPath.Get(projection, root, root, ref ii);
-                o = p.InstanceDescriptor.Method.Invoke(o, new object?[] { o2 });
-            } else if (p.InstanceDescriptor.Type == MetricDescriptor.EType.Aggregate)
-            {
-                var o2 = projection.StatValues[(stats, this)];
-                o = p.InstanceDescriptor.Method.Invoke(o, new object?[] { o2 });
-                index = Count;
+                object[] parameters = new object[p.ArgumentPaths.Count];
+
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    var arg = p.ArgumentPaths[i];
+                    var desc = p.InstanceDescriptor.Parameters[i];
+
+                    if (desc.Type == MetricParameterType.Scalar)
+                    {
+                        //var o2 = Get(projection, root, root, ref index);
+                        int ii = 0;
+                        parameters[i] = arg.Get(projection, root, root, ref ii);
+
+                    }
+                    else if (desc.Type == MetricParameterType.Aggregate)
+                    {
+                        parameters[i] = projection.StatValues[(stats, this)];
+
+                        index = Count;
+                    }
+                }
+
+                o = p.InstanceDescriptor.Method.Invoke(o, parameters );
             }
         }
 
@@ -64,7 +78,8 @@ public class MetricPath : List<MetricDescriptor.Instance>
         {
             writer.Append(mark);
             writer.Append(p.InstanceDescriptor.Name);
-            if (p.ArgumentPath != null) writer.Append($"#{p.ArgumentPath}");
+            
+            if (p.ArgumentPaths != null) writer.Append($"#{string.Join("," , p.ArgumentPaths)}");
             
             mark = ".";
         }

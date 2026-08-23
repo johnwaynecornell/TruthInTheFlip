@@ -8,45 +8,47 @@ public class MetricProjection
 
     public void ProcessPath(FarmProcess process, MetricPath path, object segment, object state)
     {
-
         var input = process?.InputProcess;
         object o;
         
         int i;
         for (i = 0; i < path.Count; i++)
         {
-            var agg = (path[i].InstanceDescriptor.Type == MetricDescriptor.EType.Aggregate);
-            
-            if (path[i].ArgumentPath != null)
+            if (path[i].ArgumentPaths != null)
             {
-                if (!agg) ProcessPath(process, path[i].ArgumentPath, segment, state);
+                for (int arg_i =0; arg_i < path[i].ArgumentPaths.Count; arg_i++)
+                {
+                    var arg = path[i].ArgumentPaths[arg_i];
+                    var desc = path[i].InstanceDescriptor.Parameters[arg_i];
+                    
+                    int ii = 0;
+
+                    
+                    if (desc.Type == MetricParameterType.Aggregate)
+                    {
+                        if (process?.InputProcess != null)
+                        {
+                            //ProcessPath(process.InputProcess, arg, state, state);
+                            
+                            // argument belongs to upstream product/process
+                            o = arg.Get(process.InputProcess.Projection, state, null, ref ii);
+                        }
+                        else
+                        {
+                            ProcessPath(process, arg, state, state);
+
+                            // argument remains in the current expression context
+                            o = arg.Get(this, state, state, ref ii);
+                        }
+
+
+                        double value = Convert.ToDouble(o);
+                        if (!StatValues.ContainsKey((segment, path))) StatValues[(segment, path)] = new();
+                        StatValues[(segment, path)].Add(value);
+                    } else ProcessPath(process, arg, segment, state);
+                }
             }
-            
-            if (agg) break;
         }
-
-        if (i >= path.Count) return;
-
-        var argPath = path[i].ArgumentPath;
-        
-        int ii = 0;
-        
-        if (process?.InputProcess != null)
-        {
-            // argument belongs to upstream product/process
-            o = argPath.Get(process.InputProcess.Projection, state, null, ref ii);
-        }
-        else
-        {
-            // argument remains in the current expression context
-            o = argPath.Get(this,state, state, ref ii);
-        }
-        
-            
-        double value = Convert.ToDouble(o);
-        if (!StatValues.ContainsKey((segment, path))) StatValues[(segment, path)] = new();
-        StatValues[(segment, path)].Add(value);
-        
     }
     
     

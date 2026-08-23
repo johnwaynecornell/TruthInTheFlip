@@ -28,57 +28,67 @@ public class MetricBinder
                 Console.Error.WriteLine($"Metric function not found for type {_currentType} and field {field}");
                 return false;
             }
-            
-            if (func.Type == MetricDescriptor.EType.Aggregate) _currentType = inputType;
-            else _currentType = currentType;
-                
-            MetricPath argumentPath = new();
 
-            if (func.Type == MetricDescriptor.EType.Aggregate)
+            List<MetricPath> arguments = new List<MetricPath>();
+
+            for (int pi = 0; pi < func.Parameters.Count; pi++)
             {
-                var inputProcess = process?.InputProcess;
+                var p = func.Parameters[pi];
+                
+                if (p.Type == MetricParameterType.Aggregate) _currentType = inputType;
+                else _currentType = currentType;
 
-                if (inputProcess != null)
+                MetricPath argumentPath = new();
+
+                if (p.Type == MetricParameterType.Aggregate)
                 {
-                    rc = ParseExpression(
-                        inputProcess,
-                        catalogs,
-                        argumentPath,
-                        inputProcess.StatType,
-                        inputProcess.InputType,
-                        _field);
+                    var inputProcess = process?.InputProcess;
 
-                    inputProcess.Projection.Fields.Add(argumentPath);
+                    if (inputProcess != null)
+                    {
+                        rc = ParseExpression(
+                            inputProcess,
+                            catalogs,
+                            argumentPath,
+                            inputProcess.StatType,
+                            inputProcess.InputType,
+                            _field);
+
+                        inputProcess.Projection.Fields.Add(argumentPath);
+                    }
+                    else
+                    {
+                        rc = ParseExpression(
+                            null,
+                            catalogs,
+                            argumentPath,
+                            _currentType,
+                            inputType,
+                            _field);
+                    }
                 }
                 else
                 {
                     rc = ParseExpression(
-                        null,
+                        process,
                         catalogs,
                         argumentPath,
-                        _currentType,
+                        currentType,
                         inputType,
                         _field);
                 }
+
+                if (rc == false)
+                {
+                    Console.Error.WriteLine(
+                        $"Metric expression outer failed for type {_currentType} and field {_field}");
+                    return false;
+                }
+                
+                arguments.Add(argumentPath);
             }
-            else
-            {
-                rc = ParseExpression(
-                    process,
-                    catalogs,
-                    argumentPath,
-                    currentType,
-                    inputType,
-                    _field);
-            }
-            
-            if (rc == false)
-            {
-                Console.Error.WriteLine($"Metric expression outer failed for type {_currentType} and field {_field}");
-                return false;
-            }
-            
-            path.Add(func.CreateInstance(argumentPath));
+
+            path.Add(func.CreateInstance(arguments));
               
             return true;
         }

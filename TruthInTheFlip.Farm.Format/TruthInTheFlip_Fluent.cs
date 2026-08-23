@@ -16,13 +16,13 @@ public class TruthInTheFlip_Fluent
         env.AddModule<TrackerWindows.TrackerWindow>();
         env.AddModule<TrackerBoundarys>();
         env.AddModule<SegmentStatsReport>();
-        
+
         if (!env.Context.TryGet<MetricCatalogs>(out var catalogs))
         {
             catalogs = new MetricCatalogs();
             env.Context.Set(catalogs);
         }
-        
+
         env.TypeParseHandlers[typeof(TimeSpan)] =
             (type, commandArgs, ref cursor, ref status, message, errorMessage, out result) =>
             {
@@ -30,15 +30,15 @@ public class TruthInTheFlip_Fluent
                 {
                     status = -1;
                     result = null;
-                    errorMessage( $"Could not parse {commandArgs[cursor]} as a TimeSpan");
+                    errorMessage($"Could not parse {commandArgs[cursor]} as a TimeSpan");
                     return false;
                 }
-        
+
                 cursor++;
                 result = parsed;
                 return true;
             };
-        
+
         env.TypeParseHandlers[typeof(DateTime)] =
             (type, commandArgs, ref cursor, ref status, message, errorMessage, out result) =>
             {
@@ -46,15 +46,15 @@ public class TruthInTheFlip_Fluent
                 {
                     status = -1;
                     result = null;
-                    errorMessage( $"Could not parse {commandArgs[cursor]} as a DateTime");
+                    errorMessage($"Could not parse {commandArgs[cursor]} as a DateTime");
                     return false;
                 }
-        
+
                 cursor++;
                 result = parsed;
                 return true;
             };
-        
+
         env.TypeParseHandlers[typeof(DateTimeOffset)] =
             (type, commandArgs, ref cursor, ref status,
                 message, errorMessage, out result) =>
@@ -77,14 +77,14 @@ public class TruthInTheFlip_Fluent
                 return true;
             };
 
-        env.Context.Get<MetricCatalogs>().Reflect = DefaultReflect; 
-        
+        env.Context.Get<MetricCatalogs>().Reflect = DefaultReflect;
+
         if (!env.Context.Get<MetricCatalogs>().TryGet(typeof(Tracker), out var catalog))
         {
             Console.Error.WriteLine($"Metric catalog not found for type Tracker");
             throw new Exception("Metric catalog not found for type Tracker");
         }
-        
+
         catalog.Metrics["Source"] = new MetricDescriptor()
         {
             Type = MetricDescriptor.EType.Property,
@@ -94,7 +94,7 @@ public class TruthInTheFlip_Fluent
             Getter = (tracker) => ((Tracker)tracker).Source
         };
     }
-    
+
     private static MetricCatalog? DefaultReflect(Type arg)
     {
         List<MetricDescriptor> l = new List<MetricDescriptor>();
@@ -129,32 +129,40 @@ public class TruthInTheFlip_Fluent
                 else if (member is MethodInfo methodInfo)
                 {
                     ParameterInfo[] parameters = methodInfo.GetParameters();
-
-                    if (parameters.Length == 1)
+                    
+                    List<MetricParameterDescriptor> _p = new List<MetricParameterDescriptor>();
+                    
+                    for (int i = 0; i < parameters.Length; i++)
                     {
-                        if (parameters[0].ParameterType == typeof(List<double>))
-                            l.Add(new MetricDescriptor
+                        
+                        if (parameters[i].ParameterType == typeof(List<double>))
+                            _p.Add(new MetricParameterDescriptor()
                             {
-                                Type = MetricDescriptor.EType.Aggregate,
-                                Name = member.Name,
-                                ValueType = methodInfo.ReturnType,
-                                Help = (member.GetCustomAttributes(typeof(StringHelpAttribute), true)
-                                    .FirstOrDefault() as StringHelpAttribute).Description,
-                                Method = (MethodInfo)member
+                                Parameter = parameters[i],
+                                Type = MetricParameterType.Aggregate
                             });
                         else
-                            l.Add(new MetricDescriptor
+                            _p.Add(new MetricParameterDescriptor()
                             {
-                                Type = MetricDescriptor.EType.Scalar,
-                                Name = member.Name,
-                                ValueType = methodInfo.ReturnType,
-                                Help = (member.GetCustomAttributes(typeof(StringHelpAttribute), true)
-                                    .FirstOrDefault() as StringHelpAttribute).Description,
-                                Method = (MethodInfo)member
+                                Parameter = parameters[i],
+                                Type = MetricParameterType.Scalar
                             });
                     }
+                    
+                    l.Add(new MetricDescriptor
+                    {
+                        Type = MetricDescriptor.EType.Method,
+                        Name = member.Name,
+                        ValueType = methodInfo.ReturnType,
+                        Help = (member.GetCustomAttributes(typeof(StringHelpAttribute), true)
+                            .FirstOrDefault() as StringHelpAttribute).Description,
+                        Method = (MethodInfo)member,
+                        Parameters = _p
+                    });
+
                 }
             }
+            
         }
 
         if (l.Count == 0) return null;
@@ -163,7 +171,7 @@ public class TruthInTheFlip_Fluent
         return R;
     }
 
-    
+
     [FluentMethod(def: true)]
     [KV_FA(FluentAttribute.Help, "Segment size in total flips")]
     public static SegSelector by_total(
@@ -185,7 +193,7 @@ public class TruthInTheFlip_Fluent
         return new SegSelector((stats, tracker) =>
             tracker.Source.WallclockTime - stats.Begin.Source.WallclockTime < length);
     }
-    
+
     [FluentMethod("by_total", def: true)]
     [KV_FA(FluentAttribute.Help, "Segment size in total flips")]
     public static AggSelector Agg_by_total(
@@ -207,17 +215,16 @@ public class TruthInTheFlip_Fluent
         return new AggSelector((stats, tracker) =>
             tracker.EndWallclock - stats.Begin.Begin.absWallclockTime < length);
     }
-    
+
     [FluentMethod("file")]
     [KV_FA(FluentAttribute.Help, "Read tracker records from a tracker file.")]
     public static TrackerSelector Tracker(
         [KV_FA(FluentAttribute.Help, "Path to the tracker file.")]
         string trackerPath)
     {
-        return new TrackerSelector(
-            () => OpenTrackerStream(trackerPath));
+        return new TrackerSelector(() => OpenTrackerStream(trackerPath));
     }
-    
+
     [FluentMethod("full")]
     [KV_FA(FluentAttribute.Help, "Use only full trackers.")]
     public static TrackerSelector fullTracker(
@@ -226,7 +233,7 @@ public class TruthInTheFlip_Fluent
     {
         return new TrackerSelector(source, t => ((Tracker)t).IsComplete);
     }
-    
+
     [FluentMethod("full")]
     [KV_FA(FluentAttribute.Help, "Use only complete segments.")]
     public static SegSelector fullSegSelector(
@@ -244,7 +251,7 @@ public class TruthInTheFlip_Fluent
     {
         return new AggSelector(source, (stats) => stats.IsComplete);
     }
-    
+
     public static TrackerStream OpenTrackerStream(string trackerPath)
     {
         if (!File.Exists(trackerPath))
@@ -278,14 +285,14 @@ public class TruthInTheFlip_Fluent
             throw new FarmInputException(
                 $"{store.Path} version {store.Version} is below the required v1.1.0.");
         }
-        
+
         List<ITracker> records =
             store.Enumerate().ToList();
-        
+
         return new TrackerStream(store, records);
     }
-    
-    
+
+
     [FluentMethod]
     [KV_FA(FluentAttribute.Help, "Format a process as CSV using the selected metric fields.")]
     public static FarmCommand csv(
@@ -295,9 +302,9 @@ public class TruthInTheFlip_Fluent
         params string[] fields)
     {
         var catalogs = FluentEnvironment.Current.Context.Get<MetricCatalogs>();
-        
+
         if (!process.BindFields(catalogs, fields)) throw new ArgumentException("Invalid fields");
-        
+
         process.Actions = new ProcessActions(
             begin: context =>
                 WriteHeader(process.projection_get(), context.Output),
@@ -309,13 +316,10 @@ public class TruthInTheFlip_Fluent
                 context.Output.Flush(),
 
             abort: HandleAbort);
-        
-        return new FarmDelegateCommand((ctx) =>
-        {
-            process.Execute(ctx);
-        });
+
+        return new FarmDelegateCommand((ctx) => { process.Execute(ctx); });
     }
-    
+
     [FluentMethod("segment")]
     [KV_FA(FluentAttribute.Help, "Process tracker records as segments.")]
     public static FarmProcess Segment(
@@ -324,14 +328,14 @@ public class TruthInTheFlip_Fluent
         [KV_FA(FluentAttribute.Help, "Method used to divide tracker records into segments.")]
         SegSelector segmentation)
     {
-        
+
         var process = new SegmentStatsProcess(
             tracker,
             segmentation);
-        
+
         return process;
     }
-    
+
     [FluentMethod("segment_agg")]
     [KV_FA(FluentAttribute.Help, "Process segment stats as segments.")]
     public static FarmProcess SegmentAgg(
@@ -342,15 +346,15 @@ public class TruthInTheFlip_Fluent
         [KV_FA(FluentAttribute.Help, "Method used to aggregate segments.")]
         AggSelector aggregation)
     {
-        
+
         var process = new SegmentAggregateProcess(
             tracker,
             segmentation,
             aggregation);
-        
+
         return process;
     }
-    
+
     public static void WriteHeader(MetricProjection projection, TextWriter writer)
     {
         bool f = true;
@@ -361,9 +365,10 @@ public class TruthInTheFlip_Fluent
 
             CSVOut(writer, field.ToString());
         }
+
         writer.WriteLine();
     }
-    
+
     public static void WriteRow(MetricProjection projection, TextWriter writer, object stats)
     {
         bool f = true;
@@ -371,12 +376,13 @@ public class TruthInTheFlip_Fluent
         {
             if (!f) writer.Write(",");
             else f = false;
-        
+
             object? o = field.Get(projection, stats);
             CSVOut(writer, o);
         }
+
         writer.WriteLine();
-        
+
     }
 
     public static void CSVOut(TextWriter writer, object? obj)
@@ -406,7 +412,7 @@ public class TruthInTheFlip_Fluent
             writer.Write(s);
         }
     }
-    
+
     [FluentMethod("tracker")]
     [KV_FA(FluentAttribute.Help, "Process tracker records individually.")]
     public static FarmProcess TrackerReport(
@@ -416,7 +422,7 @@ public class TruthInTheFlip_Fluent
         var process = new TrackerProcess(tracker);
         return process;
     }
-    
+
     public static void HandleAbort(FarmContext ctx, Exception exception)
     {
         if (exception is FarmInputException e)
