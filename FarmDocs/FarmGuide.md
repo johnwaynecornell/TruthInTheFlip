@@ -33,19 +33,33 @@ The public language can be understood as a small typed graph:
 output
     csv <FarmProcess> <metric fields...>
 
+report (curated, human-readable)
+    segment_report <GradeArgument> <TrackerSelector> <SegSelector>
+
 process
     tracker <TrackerSelector>
     segment <TrackerSelector> <SegSelector>
+    segment_agg <TrackerSelector> <SegSelector> <AggSelector>
 
 tracker source / transformation
     file <path>
     window <TrackerWindow> <TrackerSelector>
     from <TrackerBoundary> <TrackerSelector>
     to <TrackerBoundary> <TrackerSelector>
+    full <TrackerSelector>
 
-segment selector
+segment selector (SegSelector)
     by_total <Count>
     by_elapsed <TimeSpan>
+    full <SegSelector>
+
+aggregate selector (AggSelector)
+    by_total <Count>
+    by_elapsed <TimeSpan>
+    full <AggSelector>
+
+report grade (GradeArgument)
+    None | Low | Med | High | All
 
 tracker window
     by_total <Count>
@@ -401,13 +415,108 @@ by_elapsed <TimeSpan>
 
 A segment exposes its own aggregate metrics as well as selected tracker records such as `Begin`, `End`, and the tracker associated with its best True Z excursion.
 
+The process hierarchy used by metric expressions descends as follows:
+
+```text
+Tracker records
+    → segment <SegSelector>
+        → SegmentStats
+            → segment_agg <AggSelector>
+                → SegmentAggregate
+```
+
+Each level is the child process of the one above it. This hierarchy determines how aggregate metric parameters collect their populations (see section 10).
+
+### `segment_agg`
+
+```text
+segment_agg <TrackerSelector> <SegSelector> <AggSelector>
+```
+
+Processes `SegmentStats` items as a further layer of segmentation, producing `SegmentAggregate` records. The first selector divides tracker records into segments; the second groups those segments into aggregates.
+
+Example:
+
+```text
+csv segment_agg file "crypto3.tkr" by_total 10B by_total 100B \
+    Index AvgBestTrueZ AvgEndTrueZ MedianBestTrueZ
+```
+
+Current aggregate selectors are the same `by_total` and `by_elapsed` forms available for `segment`, using the `AggSelector` type.
+
+`SegmentAggregate` exposes its own metric catalog, including averages, medians, and threshold percentages computed across its contained segments.
+
 ---
 
-## 9. Metric projection and paths
+## 9. `segment_report`
+
+```text
+segment_report <GradeArgument> <TrackerSelector> <SegSelector>
+```
+
+`segment_report` produces a curated human-readable report rather than CSV. It collects `SegmentStats` items and writes a formatted summary whose depth is controlled by the `GradeArgument`.
+
+```text
+segment_report Med file "crypto3.tkr" by_total 100B
+```
+
+### Report grades
+
+Grades are progressive: each includes everything from the level below it.
+
+```text
+None    Command configuration only.
+
+Low     Edge statistics:
+            segment count
+            Edge Excursion Score  = median(best TrueZ per segment)
+            Edge Settlement Score = mean(end TrueZ per segment)
+            Edge Persistence Index = settlement × fraction positive
+
+Med     Low plus anticipation and heads geometry:
+            avgBestTrueZ, medianBestTrueZ, avgEndTrueZ, medianEndTrueZ, avgMeanTrueZ
+            threshold percentages for best, end, and mean True Z
+            Anticipation Path summary (avgMeanA, avgEndA, medianEndA, pctAAtLeast50)
+            Underlying Heads summary (avgMeanZHeads, avgEndZHeads, medianEndZHeads, ...)
+
+High    Med plus a per-segment detail table with:
+            span, bestTrueZ, aAtBestZ, endTrueZ, meanTrueZ,
+            endA, meanA, endZH, meanZH, %a>=50, %ZH>=0
+
+All     High plus:
+            Pearson correlations (ZHeads vs TrueZ, A vs ZHeads, A vs TrueZ)
+            Retained Anticipation
+            Settlement Adjusted Anticipation
+            Standout segments (best excursion, best/worst settlement)
+```
+
+The report always ends with file compute time.
+
+### Empty segment behavior
+
+If no segments match the configuration, `segment_report` writes an error to standard error:
+
+```text
+There are no segments matching this report configuration.
+```
+
+No statistics are attempted when the segment list is empty.
+
+### When to use `segment_report` versus `csv segment`
+
+`segment_report` is a curated summary intended for human reading. `csv segment` and `csv segment_agg` are projection interfaces intended for programmatic downstream analysis, scripting, and plotting.
+
+---
+
+## 10. Metric expressions
 
 JWCFarm treats metrics as a type-indexed graph.
 
-A `MetricCatalog` describes the metrics available on one CLR type. A `MetricCatalogs` collection resolves catalogs by type. `MetricBinder` walks a requested dotted path and constructs a reusable `MetricProjection`.
+A `MetricCatalog` describes the metrics available on one CLR type. A `MetricCatalogs` collection resolves catalogs by type. `MetricBinder` walks a requested expression and constructs a reusable `MetricProjection`.
+
+### Metric paths
+
+The dot operator traverses from one metric-bearing object into another.
 
 For a segment, a flat metric is simple:
 
@@ -437,7 +546,111 @@ End.SamePercentage
 Z.AnticipatedPercentage
 ```
 
-This path mechanism is what allows one CSV command to project both segment-level and tracker-level information without adding report-specific columns to the command implementation.
+### Metric functions
+
+The `#` operator applies a named function. The function name appears before `#`; its arguments appear after:
+
+```text
+abs#EndTrueZ
+mean#anticipatedTails
+pearson#ZScoreHeads,ZScoreTails
+```
+
+The `,` operator separates multiple arguments within a single function call:
+
+```text
+clamp#EndTrueZ,-1,1
+lerp#MinZHeads,MaxZHeads,.5
+pearson#ZScoreHeads,ZScoreTails
+```
+
+The number of arguments each function consumes is determined by its reflected CLR method signature. This is what allows commas to serve as unambiguous separators without parentheses.
+
+### Numeric literals
+
+Numeric literals are valid scalar arguments:
+
+```text
+.5
+-1
+0
+49.9
+```
+
+They are recognized by attempting `double.TryParse` before looking up a metric name.
+
+### Scalar and aggregate parameters
+
+Parameter type in the CLR signature determines evaluation semantics.
+
+```text
+double parameter  →  scalar
+    Evaluates a single expression in the current process item context.
+
+List<double> parameter  →  aggregate
+    Collects one value per item from the child process population.
+```
+
+In practice, the parameter name convention in `show metrics` output makes this visible:
+
+```text
+abs#value           value is scalar (double)
+mean#values         values is aggregate (List<double>)
+pearson#x_values,y_values    both are aggregate (List<double>)
+clamp#value,min,max all three are scalar (double)
+lerp#a,b,amount     all three are scalar (double)
+```
+
+For `csv segment`:
+- The child process is the stream of Tracker records within each segment.
+- An aggregate parameter collects one value per Tracker record.
+
+For `csv segment_agg`:
+- The child process is the stream of `SegmentStats` items within each aggregate.
+- An aggregate parameter collects one value per `SegmentStats`.
+
+Nested aggregate calls descend one additional process level per aggregate parameter:
+
+```text
+clamp#mean#abs#stddev_sample#AnticipatedPercentage,-1,0
+```
+
+At `csv segment_agg`:
+- `clamp` — scalar, evaluates at SegmentAggregate level
+- `mean` — aggregate, descends to SegmentStats (the child)
+- `abs` — scalar, evaluates at SegmentStats level
+- `stddev_sample` — aggregate, descends to Tracker records (the child of SegmentStats)
+- `AnticipatedPercentage` — Tracker property
+
+Result: for each aggregate, clamp(mean across segments of abs(stddev of AnticipatedPercentage within each segment), -1, 0).
+
+### Multi-parameter aggregate functions
+
+When a function has multiple aggregate parameters, each collects its own population from the same child process. The populations are aligned by position across the child items.
+
+```text
+pearson#ZScoreHeads,ZScoreTails
+```
+
+Both `x_values` and `y_values` are `List<double>`. For each Tracker record in the segment, `ZScoreHeads` is added to the first list and `ZScoreTails` to the second. The Pearson function receives the two aligned lists.
+
+An inner scalar function transforms values before collection:
+
+```text
+pearson#ZScoreHeads,abs#ZScoreTails
+```
+
+Here `abs#ZScoreTails` is evaluated for each Tracker record; the absolute value is what enters the `y_values` list.
+
+### Canonical expression text
+
+The metric expression string is preserved as the canonical form in the projection. `show metrics` shows the runtime function vocabulary. When an expression becomes a CSV column name, the expression text is passed through the CSV quoting layer along with the data values. Expressions containing commas (such as `pearson#x_values,y_values`) are therefore quoted in the header:
+
+```text
+mean#anticipatedTails,"pearson#ZScoreHeads,ZScoreTails"
+```
+
+Downstream tools such as Pandas parse this as two correctly named columns and can address them by their full expression string.
 
 Use:
 
@@ -445,11 +658,11 @@ Use:
 show metrics
 ```
 
-for the actual metric names available in the running build.
+for the actual metric names, function signatures, and return types available in the running build.
 
 ---
 
-## 10. Counts, times, and typed arguments
+## 11. Counts, times, and typed arguments
 
 ### `Count`
 
@@ -484,7 +697,7 @@ UTC boundary commands accept `DateTimeOffset` values, allowing either `Z` timest
 
 ---
 
-## 11. CSV behavior
+## 12. CSV behavior
 
 `csv` binds the requested field list against the process item type, then installs CSV-specific lifecycle actions on the process:
 
@@ -505,7 +718,7 @@ For automated consumers, treat standard output as data and standard error as the
 
 ---
 
-## 12. Python workflow
+## 13. Python workflow
 
 The Farm has been exercised successfully by launching it as a subprocess and parsing stdout directly with Pandas.
 
@@ -538,7 +751,7 @@ A separate plotting guide will cover practical visualizations, including segment
 
 ---
 
-## 13. Architecture
+## 14. Architecture
 
 The Farm is intentionally split into small layers while remaining inside the TruthInTheFlip solution.
 
@@ -599,7 +812,7 @@ The exact physical placement may continue to evolve, but the responsibility boun
 
 ---
 
-## 14. Fluent modules and contextual state
+## 15. Fluent modules and contextual state
 
 FluentCommandLine supports module initialization through a public static initializer convention:
 
@@ -617,7 +830,7 @@ Because the active environment is entered through a scoped current-environment m
 
 ---
 
-## 15. Extending the Farm
+## 16. Extending the Farm
 
 There are several natural extension directions.
 
@@ -660,7 +873,7 @@ The goal is composition rather than a growing matrix of commands such as `csv_tr
 
 ---
 
-## 16. Design principles
+## 17. Design principles
 
 Several principles explain the current shape of the Farm.
 
@@ -694,7 +907,7 @@ as the authoritative reference for the installed build.
 
 ---
 
-## 17. Practical examples
+## 18. Practical examples
 
 ### Whole tracker, selected metrics
 
@@ -757,11 +970,11 @@ Then copy the desired metric names directly into the CSV field list.
 
 ---
 
-## 18. Next documentation
+## 19. Next documentation
 
-This guide focuses on the language and architecture. Two companion documents are natural next steps:
+This guide focuses on the language and architecture. Two companion documents develop related topics:
 
-- **Metrics guide** — a browsable reference to Tracker and SegmentStats metrics, nested metric paths, types, and interpretation.
-- **Plotting with Python** — subprocess integration, Pandas loading, Matplotlib examples, axis choices, centering percentages around 50%, and exploratory workflows used during development.
+- **Metrics guide** (`FarmDocs/Metrics.md`) — a browsable reference to Tracker, SegmentStats, and SegmentAggregate metrics, nested metric paths, the expression grammar, and scalar/aggregate function references.
+- **Plotting with Python** (`FarmDocs/PlottingWithPython.md`) — subprocess integration, Pandas loading, Matplotlib examples, axis choices, centering percentages around 50%, metric expressions as column names, and exploratory workflows.
 
-Those guides should complement rather than duplicate the generated help.
+Those guides complement rather than duplicate the generated help.

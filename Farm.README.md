@@ -96,6 +96,31 @@ TruthInTheFlip_Farm \
 
 Here the source is windowed before it is segmented.
 
+### Export segment aggregates
+
+`segment_agg` groups segments into larger aggregates and produces a `SegmentAggregate` record for each group.
+
+```bash
+TruthInTheFlip_Farm \
+    csv segment_agg \
+    file "/path/to/crypto3.tkr" \
+    by_total 100B \
+    by_total 100B \
+    Index AvgBestTrueZ AvgEndTrueZ MedianBestTrueZ
+```
+
+The first `by_total` is the `SegSelector` that divides tracker records into segments. The second `by_total` is the `AggSelector` that groups those segments into aggregates.
+
+### Run a segment report
+
+`segment_report` produces a curated human-readable report rather than CSV. It accepts a grade that controls the level of detail:
+
+```bash
+TruthInTheFlip_Farm segment_report Med file "/path/to/crypto3.tkr" by_total 100B
+```
+
+Available grades in ascending detail: `None`, `Low`, `Med`, `High`, `All`. See the generated help for grade descriptions.
+
 ### Select an absolute range
 
 ```bash
@@ -109,13 +134,22 @@ TruthInTheFlip_Farm \
 
 `from` and `to` are inclusive selectors built from typed tracker boundaries. Current boundary forms include absolute total, absolute wall-clock duration, absolute wall-clock nanoseconds, and UTC begin/end timestamps. Use `-help` for the exact forms supported by the current build.
 
-## Metric paths
+## Metric expressions
 
-Farm metrics can be nested. A segment exposes tracker records such as `Begin`, `End`, and `Z`, so a CSV field can walk through the metric graph:
+CSV field lists support a compact expression language with three operators:
+
+```text
+.   metric path traversal  (walk through a nested metric-bearing object)
+#   metric function        (apply a named function to one or more arguments)
+,   argument separator     (separate multiple arguments within a function call)
+```
+
+### Metric paths
+
+A dot walks from one metric-bearing object into another. A segment exposes tracker records such as `Begin`, `End`, and `Z`:
 
 ```text
 End.AnticipatedPercentage
-End.SamePercentage
 Begin.Total
 Z.AnticipatedPercentage
 ```
@@ -130,13 +164,67 @@ TruthInTheFlip_Farm \
     Index End.AnticipatedPercentage End.SamePercentage
 ```
 
+### Metric functions
+
+A `#` applies a named function to its arguments:
+
+```text
+abs#EndTrueZ
+mean#anticipatedTails
+pearson#ZScoreHeads,ZScoreTails
+lerp#MinZHeads,MaxZHeads,.5
+```
+
+The number of arguments a function consumes is determined by its reflected CLR signature. The `,` separator divides arguments without parentheses.
+
+Numeric literals are valid scalar arguments:
+
+```text
+clamp#EndTrueZ,-1,1
+lerp#MinZHeads,MaxZHeads,.5
+```
+
+Functions fall into two categories based on their parameter types:
+
+```text
+Scalar parameters (double)
+    evaluate a single expression in the current process item context
+
+Aggregate parameters (List<double>)
+    collect one value per item from the child process population
+```
+
+In `csv segment`, the child process is the stream of Tracker records within each segment. In `csv segment_agg`, the child process is the stream of `SegmentStats` items within each aggregate.
+
+Nested function calls descend through process levels accordingly:
+
+```text
+mean#anticipatedTails
+    → mean of anticipatedTails across all Tracker records in each segment
+
+pearson#ZScoreHeads,ZScoreTails
+    → Pearson correlation of ZScoreHeads and ZScoreTails across Tracker records
+
+mean#abs#stddev_sample#AnticipatedPercentage
+    → mean across segments of the abs of the sample stddev of
+      AnticipatedPercentage within each segment (at segment_agg level)
+```
+
+CSV column names preserve the canonical expression text and are properly quoted when the expression contains a comma. For example, a field list of `mean#anticipatedTails pearson#ZScoreHeads,ZScoreTails` produces a header where the Pearson column is quoted:
+
+```text
+mean#anticipatedTails,"pearson#ZScoreHeads,ZScoreTails"
+```
+
+Use `show metrics` to see available functions, their parameter names, and their return types. The parameter name convention in the output distinguishes aggregate parameters (plural, e.g. `values`, `x_values`, `y_values`) from scalar ones (singular, e.g. `value`, `min`, `max`).
+
 Run:
 
 ```bash
 TruthInTheFlip_Farm show metrics
 ```
 
-to see the metric catalogs, value types, and descriptions available in the current build.
+to see the full metric catalogs, value types, and available functions in the current build.
 
 ## Command composition
 
@@ -181,7 +269,7 @@ result = subprocess.run(
 frame = pandas.read_csv(io.StringIO(result.stdout))
 ```
 
-A separate plotting guide is planned for practical Pandas and Matplotlib examples.
+A plotting guide with practical Pandas and Matplotlib examples is available in `FarmDocs/PlottingWithPython.md`.
 
 ## Inspection commands
 

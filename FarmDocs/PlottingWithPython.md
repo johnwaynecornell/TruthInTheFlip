@@ -110,6 +110,17 @@ if missing:
 
 This turns a renamed or unavailable metric into a clear error instead of a confusing plotting failure.
 
+When using metric expressions as field names, include the full expression string in the required set:
+
+```python
+required = {
+    "Index",
+    "EndTrueZ",
+    "pearson#ZScoreHeads,ZScoreTails",
+    "mean#anticipatedTails",
+}
+```
+
 The current metric surface can always be inspected with:
 
 ```text
@@ -419,6 +430,58 @@ csv segment file "crypto3.tkr" by_total 100B \
 ```
 
 asks for the state of several Tracker metrics at the record where the segment reached its best True Z.
+
+---
+
+## 11.5 Metric expressions as column names
+
+Metric fields can include function expressions:
+
+```text
+abs#EndTrueZ
+mean#anticipatedTails
+pearson#ZScoreHeads,ZScoreTails
+```
+
+The canonical expression text is preserved as the CSV column header. Once the data is loaded into Pandas, address the column by its exact expression string:
+
+```python
+frame["abs#EndTrueZ"]
+frame["mean#anticipatedTails"]
+```
+
+For expressions that contain commas, the column name itself contains a comma. Pandas handles this correctly when addressing by exact key, but CSV header parsing may need attention. The safest approach is to verify columns after loading:
+
+```python
+print(frame.columns.tolist())
+```
+
+For a Pearson correlation expression:
+
+```python
+frame = load_report(
+    executable,
+    [
+        "csv", "segment",
+        "file", "/path/to/crypto3.tkr",
+        "by_total", "100B",
+        "Index",
+        "pearson#ZScoreHeads,ZScoreTails",
+        "mean#anticipatedTails",
+    ],
+)
+
+# Address the column by its exact expression string
+corr_col = "pearson#ZScoreHeads,ZScoreTails"
+mean_col = "mean#anticipatedTails"
+
+if corr_col in frame.columns:
+    frame.plot(x="Index", y=[corr_col, mean_col], kind="line")
+```
+
+The expression text also serves naturally as a plot label, since it describes exactly what is being computed.
+
+Expressions containing commas are properly quoted in the CSV header by the Farm's CSV output layer, so `pearson#ZScoreHeads,ZScoreTails` appears as `"pearson#ZScoreHeads,ZScoreTails"` in the file. Standard CSV parsers including Pandas handle this correctly. Address the column by its exact expression string as shown above.
 
 ---
 

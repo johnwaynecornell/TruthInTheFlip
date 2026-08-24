@@ -487,7 +487,86 @@ As with all metrics, `show metrics` remains authoritative for the build being ru
 
 ---
 
-## 6. Windowed metrics
+## 6. SegmentAggregate metric families
+
+`segment_agg` turns `SegmentStats` items into `SegmentAggregate` records. Its metric catalog is populated by reflecting the same `[IsMetric]` attributes used for Tracker and SegmentStats.
+
+Example:
+
+```text
+csv segment_agg file "crypto3.tkr" by_total 100B by_total 100B \
+    Index AvgBestTrueZ AvgEndTrueZ MedianBestTrueZ
+```
+
+### 6.1 Aggregate identity and extent
+
+Inherited from `StatsBase<SegmentStats>`:
+
+```text
+Index          Sequential index of the aggregate.
+BeginTotal     Total flips at the start of the aggregate.
+EndTotal       Total flips at the end of the aggregate.
+BeginWallclock Wallclock time at the start of the aggregate.
+EndWallclock   Wallclock time at the end of the aggregate.
+Begin          Beginning SegmentStats record of the aggregate.
+End            Ending SegmentStats record of the aggregate.
+```
+
+Because `Begin` and `End` are `SegmentStats` objects, all SegmentStats metrics are reachable through dotted paths:
+
+```text
+Begin.EndTrueZ
+End.MeanA
+```
+
+### 6.2 True-Z aggregates
+
+```text
+Z                  SegmentStats record with the highest BestTrueZ inside the aggregate.
+AvgBestTrueZ       Average of BestTrueZ across segments.
+MedianBestTrueZ    Median of BestTrueZ across segments.
+AvgEndTrueZ        Average of EndTrueZ across segments.
+MedianEndTrueZ     Median of EndTrueZ across segments.
+AvgMeanTrueZ       Average of MeanTrueZ across segments.
+```
+
+### 6.3 Anticipation and heads aggregates
+
+```text
+AvgPctAbove50      Average of PctAbove50 across segments.
+AvgMeanA           Average of MeanA across segments.
+AvgEndA            Average of EndA across segments.
+MedianEndA         Median of EndA across segments.
+AvgPctAAtLeast50   Average of PctAAtLeast50 across segments.
+AvgMeanZHeads      Average of MeanZHeads across segments.
+AvgEndZHeads       Average of EndZHeads across segments.
+MedianEndZHeads    Median of EndZHeads across segments.
+AvgPctZHeadsAbove0 Average of PctZHeadsAbove0 across segments.
+```
+
+### 6.4 Threshold percentages
+
+Precomputed threshold metrics answer questions such as "what fraction of segments reached a best True Z at or above 1.96?"
+
+```text
+PctBestAtLeast_1_96
+PctEndAtLeast_1_96
+PctMeanAtLeast_1_96
+PctEndZHeadsAtLeast_1_96
+PctAbsEndZHeadsAtLeast_1_96
+PctBestAtLeast_3_00
+PctEndAtLeast_3_00
+PctMeanAtLeast_3_00
+PctEndZHeadsAtLeast_3_00
+PctAbsEndZHeadsAtLeast_3_00
+PctEndAAtLeast_50
+```
+
+Run `show metrics` to confirm exact names and descriptions in the current build.
+
+---
+
+## 7. Windowed metrics
 
 A window changes the Tracker view before the process consumes it.
 
@@ -513,7 +592,7 @@ When comparing windowed and non-windowed output, be explicit about which values 
 
 ---
 
-## 7. Useful metric sets
+## 8. Useful metric sets
 
 These are starting points rather than prescribed reports.
 
@@ -585,7 +664,7 @@ Index BeginWallclock EndWallclock Begin.absTotal End.absTotal
 
 ---
 
-## 8. Choosing direct SegmentStats metrics versus paths
+## 9. Choosing direct SegmentStats metrics versus paths
 
 Sometimes the same conceptual value can be reached through a direct segment summary or through a Tracker anchor.
 
@@ -623,7 +702,7 @@ The path system is intentionally broader than the set of hand-written segment co
 
 ---
 
-## 9. Types and downstream CSV consumers
+## 10. Types and downstream CSV consumers
 
 `show metrics` displays the CLR type associated with each field. Common types include:
 
@@ -643,7 +722,7 @@ The separate plotting guide develops this workflow in more detail.
 
 ---
 
-## 10. Metrics and extensibility
+## 11. Metrics and extensibility
 
 The metric system is intentionally not a single hard-coded switch inside the executable.
 
@@ -673,7 +752,7 @@ For a user, the important consequence is simple:
 
 ---
 
-## 11. Metric naming and stability
+## 12. Metric naming and stability
 
 Metric names are part of the practical CSV interface. Scripts and plots may depend on them, so changing an established metric name should be treated as an interface change rather than a cosmetic edit.
 
@@ -706,24 +785,275 @@ if missing:
 
 ---
 
-## 12. Where to go next
+## 13. Metric expression grammar
 
-Use the Farm guide for command composition and source/process semantics:
+Metric fields can do more than name a property. The expression language uses three operators.
 
 ```text
-FarmDocs/FarmGuide.md
+.   metric path traversal
+#   metric function application
+,   function argument separator
 ```
 
-Use this guide to choose and understand fields.
+Descriptive grammar (for reference; the parser is cursor-based and driven by reflected arity):
 
-The plotting guide continues from the CSV interface into Python, Pandas, and Matplotlib with examples such as:
+```text
+path        := identifier ("." identifier)*
+literal     := double-precision numeric value
+expression  := literal | path | identifier "#" arguments
+arguments   := expression ("," expression)*
+```
 
-- True-Z trajectory,
-- anticipation around the 50% baseline,
-- edge-from-chance plots,
-- Same/Diff comparisons,
-- scatter and correlation views,
-- histograms and segment distributions,
-- windowed and bounded analyses.
+The number of arguments a function consumes is exactly the number of parameters in its reflected CLR signature. The parser advances a cursor through the expression string and stops consuming arguments for a given function when its parameter count is satisfied.
 
-TruthInTheFlip Farm deliberately stops at a clean data boundary. CSV is the interchange layer; plotting and statistical exploration can then evolve independently downstream.
+### Examples
+
+```text
+EndTrueZ                        (path, one step)
+End.AnticipatedPercentage       (path, two steps through nested catalog)
+abs#EndTrueZ                    (function, one argument)
+clamp#EndTrueZ,-1,1             (function, three arguments)
+pearson#ZScoreHeads,ZScoreTails (function, two arguments, both aggregate)
+lerp#MinZHeads,MaxZHeads,.5     (function, three arguments, .5 is a literal)
+```
+
+### Numeric literals
+
+A literal is recognized before metric name lookup. Any value that parses as `double` (invariant culture) is a literal:
+
+```text
+.5     →  0.5
+-1     →  -1.0
+0      →  0.0
+49.9   →  49.9
+```
+
+Negative literals work because the minus sign is consumed as part of the literal, not as a separate token.
+
+### CSV column names
+
+The canonical expression string is preserved as the CSV column header, and headers pass through the same CSV quoting layer as data values. An expression such as `pearson#x_values,y_values` produces a quoted column name in the output:
+
+```text
+mean#anticipatedTails,"pearson#ZScoreHeads,ZScoreTails"
+```
+
+Downstream tools parse this as two correctly named columns and address them by their exact expression strings.
+
+---
+
+## 14. Evaluation semantics
+
+### Scalar parameters
+
+A `double` parameter evaluates a single sub-expression in the context of the current process item.
+
+In `csv segment`, the current item is a `SegmentStats` record. A scalar expression such as `abs#EndTrueZ` evaluates `EndTrueZ` (a SegmentStats property) and applies `abs` to produce one double value per segment.
+
+### Aggregate parameters
+
+A `List<double>` parameter collects one value per item from the child process population.
+
+In `csv segment`, the child process provides Tracker records. An aggregate expression such as `mean#anticipatedTails` evaluates `anticipatedTails` for each Tracker record inside the segment and passes the resulting list to `mean`.
+
+In `csv segment_agg`, the child process provides SegmentStats records. An aggregate expression such as `mean#EndTrueZ` evaluates `EndTrueZ` for each SegmentStats inside the aggregate.
+
+### Process hierarchy
+
+```text
+csv tracker
+    current: Tracker  (no child)
+
+csv segment
+    current: SegmentStats
+    child:   Tracker records within the segment
+
+csv segment_agg
+    current: SegmentAggregate
+    child:   SegmentStats items within the aggregate
+    child's child: Tracker records within each segment
+```
+
+### Nested aggregate descent
+
+Each aggregate parameter descends one child level. Nested calls descend further:
+
+```text
+clamp#mean#abs#stddev_sample#AnticipatedPercentage,-1,0
+```
+
+At `segment_agg`:
+
+```text
+clamp(value, -1, 0)
+    where value = mean over SegmentStats of:
+        abs(stddev_sample over Tracker records of:
+            AnticipatedPercentage)
+```
+
+- `clamp` — scalar, operates at SegmentAggregate level
+- `mean` — aggregate, descends to SegmentStats (child)
+- `abs` — scalar, operates at SegmentStats level
+- `stddev_sample` — aggregate, descends to Tracker records (child of SegmentStats)
+- `AnticipatedPercentage` — Tracker property
+
+---
+
+## 15. Scalar metric functions
+
+Scalar functions take `double` parameters; all arguments evaluate at the current process level.
+
+Run `show metrics` to see function signatures and descriptions. The reference below uses source-attributed names and descriptions.
+
+| Function | Signature | Description |
+|---|---|---|
+| `abs` | `abs#value` | Absolute value |
+| `negate` | `negate#value` | Negate an input value |
+| `square` | `square#value` | Square an input value |
+| `sqrt` | `sqrt#value` | Square root |
+| `ln` | `ln#value` | Natural logarithm |
+| `pow` | `pow#value,exponent` | Raise a value to a power |
+| `offset` | `offset#value,amount` | Add an offset to an input value |
+| `offset50` | `offset50#value` | Measure an input relative to the 50 percent baseline |
+| `scale` | `scale#value,factor` | Multiply an input by a scale factor |
+| `ratio` | `ratio#numerator,denominator` | Divide one input by another |
+| `clamp` | `clamp#value,min,max` | Limit an input to the inclusive minimum and maximum |
+| `lerp` | `lerp#a,b,amount` | Linearly interpolate between two values |
+
+The `offset50` function is equivalent to `offset#value,-50` and is convenient when plotting percentages relative to the chance baseline.
+
+---
+
+## 16. Aggregate metric functions
+
+Aggregate functions take `List<double>` parameters; those arguments collect one value per item from the child process population.
+
+The `pearson` and `covariance_*` functions accept two separate populations. Each is collected independently from the same child process items, keeping them aligned by position.
+
+| Function | Signature | Description |
+|---|---|---|
+| `count` | `count#values` | Number of values in the population |
+| `sum` | `sum#values` | Sum of the population |
+| `mean` | `mean#values` | Arithmetic mean |
+| `min` | `min#values` | Minimum value |
+| `max` | `max#values` | Maximum value |
+| `median` | `median#values` | Median value |
+| `variance_population` | `variance_population#values` | Population variance |
+| `variance_sample` | `variance_sample#values` | Sample variance (n−1 denominator) |
+| `stddev_population` | `stddev_population#values` | Population standard deviation |
+| `stddev_sample` | `stddev_sample#values` | Sample standard deviation (n−1 denominator) |
+| `rms` | `rms#values` | Root mean square |
+| `mean_abs` | `mean_abs#values` | Mean absolute value |
+| `covariance_population` | `covariance_population#x_values,y_values` | Population covariance between two populations |
+| `covariance_sample` | `covariance_sample#x_values,y_values` | Sample covariance between two populations |
+| `pearson` | `pearson#x_values,y_values` | Pearson correlation coefficient |
+
+Notes on `pearson`:
+
+- Both populations must be non-empty and equal in length; returns `NaN` otherwise.
+- Result is clamped to `[-1, 1]` to correct for floating-point rounding at exact limits.
+- `NaN` is returned when either population has zero variance.
+- The function makes no claim about causation or statistical significance; it reports correlation coefficient mechanics only.
+
+Notes on `variance_sample` and `stddev_sample`:
+
+- Return `NaN` when the population has fewer than two values, since the n−1 denominator would produce a division by zero.
+
+---
+
+## 17. Worked expressions
+
+The following expressions have been verified against the current build. Process context is noted where the expression requires a specific level.
+
+### Simple path and property
+
+```text
+EndTrueZ
+```
+
+Direct `SegmentStats` field. Equivalent to `End.ZScore - abs(End.ZScoreHeads)` as computed by `SegmentStats.EndTrueZ`.
+
+### Nested path through record anchor
+
+```text
+End.AnticipatedPercentage
+```
+
+Walks `SegmentStats.End` (a `Tracker`) and returns `Tracker.AnticipatedPercentage`.
+
+### Scalar function on a direct field
+
+```text
+abs#EndTrueZ
+```
+
+At `csv segment`: evaluates `EndTrueZ` for the current segment and returns its absolute value. Result is a single double per segment.
+
+### Lerp to find midpoint (segment level)
+
+```text
+lerp#MinZHeads,MaxZHeads,.5
+```
+
+At `csv segment`: all three arguments are scalar. `MinZHeads` and `MaxZHeads` are `SegmentStats` fields. `.5` is a literal. The expression computes the midpoint of the ZHeads range within the segment.
+
+### Aggregate mean (segment level)
+
+```text
+mean#anticipatedTails
+```
+
+At `csv segment`: `mean` collects `anticipatedTails` from each Tracker record in the segment and returns the arithmetic mean.
+
+### Pearson correlation of two Tracker fields (segment level)
+
+```text
+pearson#ZScoreHeads,ZScoreTails
+```
+
+At `csv segment`: for each Tracker record in the segment, `ZScoreHeads` enters the first population and `ZScoreTails` enters the second. The Pearson correlation coefficient is computed over the aligned lists.
+
+### Pearson with transformed second population (segment level)
+
+```text
+pearson#ZScoreHeads,abs#ZScoreTails
+```
+
+At `csv segment`: the first population is `ZScoreHeads`; the second population is `abs(ZScoreTails)` evaluated per Tracker record.
+
+### Nested aggregate descent (segment_agg level)
+
+```text
+clamp#mean#abs#stddev_sample#AnticipatedPercentage,-1,0
+```
+
+At `csv segment_agg`:
+
+- `clamp(value, -1, 0)` — value is scalar at SegmentAggregate level
+- `mean#(...)` — aggregate; collects from SegmentStats items
+- `abs#(...)` — scalar; evaluated at SegmentStats level
+- `stddev_sample#AnticipatedPercentage` — aggregate; collects `AnticipatedPercentage` from Tracker records within each segment
+
+Result: for each aggregate, clamp(mean over segments of abs(sample stddev of AnticipatedPercentage within segment), -1, 0).
+
+### Double-clamped version
+
+```text
+clamp#clamp#mean#abs#stddev_sample#AnticipatedPercentage,-1,0,-1,-.5
+```
+
+The outer `clamp` restricts the already-clamped result to `[-1, -0.5]`. All arguments at the outer clamp level are scalar.
+
+---
+
+## 18. Where to go next
+
+Use `FarmDocs/FarmGuide.md` for command composition, source/process semantics, and the full expression grammar in the context of the language architecture.
+
+Use this guide to choose and understand metric fields, functions, and expressions.
+
+Use `FarmDocs/PlottingWithPython.md` for the CSV-to-Pandas workflow, axis choices, reference lines, edge-from-chance calculations, scatter and correlation views, and metric expression columns.
+
+TruthInTheFlip Farm deliberately stops at a clean data boundary. CSV is the interchange layer; plotting and statistical exploration evolve independently downstream.
+
+Run `show metrics` for the authoritative metric list in the installed build.
