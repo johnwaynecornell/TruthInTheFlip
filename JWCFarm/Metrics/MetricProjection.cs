@@ -1,10 +1,56 @@
+using System.Runtime.CompilerServices;
+
 namespace JWCFarm.Metrics;
 
 public class MetricProjection
 {
     public List<MetricPath> Fields { get; } = new();
     
-    public Dictionary<(object, MetricPath, int), List<double>> StatValues { get; } = new();
+    private readonly ConditionalWeakTable<object, ProductMetricState>
+        _statValues = new();
+
+    private sealed class ProductMetricState
+    {
+        public Dictionary<(MetricPath Path, int ParameterIndex), List<double>>
+            Values { get; } = new();
+    }
+
+    public void AddStatValue(
+        object stats,
+        MetricPath path,
+        int parameterIndex,
+        double value)
+    {
+        ProductMetricState state =
+            _statValues.GetOrCreateValue(stats);
+
+        var key = (path, parameterIndex);
+
+        if (!state.Values.TryGetValue(key, out var values))
+        {
+            values = new List<double>();
+            state.Values[key] = values;
+        }
+
+        values.Add(value);
+    }
+
+    public List<double> GetStatValues(
+        object stats,
+        MetricPath path,
+        int parameterIndex)
+    {
+        if (!_statValues.TryGetValue(stats, out var state) ||
+            !state.Values.TryGetValue(
+                (path, parameterIndex),
+                out var values))
+        {
+            throw new KeyNotFoundException(
+                $"Aggregate metric state was not found for parameter {parameterIndex}.");
+        }
+
+        return values;
+    }
 
     public void ProcessPath(FarmProcess process, MetricPath path, object segment, object state)
     {
@@ -43,8 +89,13 @@ public class MetricProjection
 
 
                         double value = Convert.ToDouble(o);
-                        if (!StatValues.ContainsKey((segment, path, arg_i))) StatValues[(segment, path, arg_i)] = new();
-                        StatValues[(segment, path, arg_i)].Add(value);
+                        
+                        AddStatValue(
+                            segment,
+                            path,
+                            arg_i,
+                            value);
+                        
                     } else ProcessPath(process, arg, segment, state);
                 }
             }

@@ -46,8 +46,12 @@ public class MetricPath : List<MetricDescriptor.Instance>
                     }
                     else if (desc.Type == MetricParameterType.Aggregate)
                     {
-                        parameters[i] = projection.StatValues[(stats, this, i)];
-
+                        parameters[i] =
+                            projection.GetStatValues(
+                                stats,
+                                this,
+                                i);
+                        
                         index = Count;
                     }
                 }
