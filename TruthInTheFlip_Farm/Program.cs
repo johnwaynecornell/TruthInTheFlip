@@ -7,6 +7,7 @@ using JWCFarm;
 using JWCFarm.Metrics;
 using TruthInTheFlip_CSV_Farm;
 using TruthInTheFlip.Farm.Format;
+using TruthInTheFlip.Format;
 
 FluentEnvironment env = new FluentEnvironment();
 env.AddModule<HelpCommand>();
@@ -26,6 +27,17 @@ env.AddModule<TruthInTheFlip_Fluent>();
 //     },
 //     "Double an input.",
 //     (obj, args) => (double)args[0]! * 2));
+
+/* Here is an example of programmatically adding a regular metric to the catalog for Tracker.*/
+// env.Context.Get<MetricCatalogs>().TryGet(typeof(Tracker), out var catalog);
+// catalog.Add(new MetricDescriptor()
+// {
+//     Type = MetricDescriptor.EType.Property,
+//     Name = "TrueZ2",
+//     Help = "Example duplicate TrueZ",
+//     ValueType = typeof(double),
+//     Getter = (tracker) => ((Tracker)tracker).ZScore - Math.Abs(((Tracker)tracker).Source.ZScoreHeads)
+// });
 
 env.ServeTypes = new Type[] { typeof(FarmCommand), typeof(InfoCommand), typeof(HelpCommand) };
 
