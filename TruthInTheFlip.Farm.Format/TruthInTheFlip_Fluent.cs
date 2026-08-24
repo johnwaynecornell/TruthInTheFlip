@@ -99,7 +99,7 @@ public class TruthInTheFlip_Fluent
     {
         List<MetricDescriptor> l = new List<MetricDescriptor>();
 
-        foreach (var member in arg.GetMembers())
+        foreach (var member in arg.GetMembers(BindingFlags.Public | BindingFlags.Instance))
         {
             if ((member.GetCustomAttributes(typeof(IsMetricAttribute), true).FirstOrDefault() is not null)
                 || (member.GetCustomAttributes(typeof(IsRecordAttribute), true).FirstOrDefault() is not null))
@@ -138,13 +138,13 @@ public class TruthInTheFlip_Fluent
                         if (parameters[i].ParameterType == typeof(List<double>))
                             _p.Add(new MetricParameterDescriptor()
                             {
-                                Parameter = parameters[i],
+                                Name = parameters[i].Name,
                                 Type = MetricParameterType.Aggregate
                             });
                         else
                             _p.Add(new MetricParameterDescriptor()
                             {
-                                Parameter = parameters[i],
+                                Name = parameters[i].Name,
                                 Type = MetricParameterType.Scalar
                             });
                     }
@@ -156,13 +156,63 @@ public class TruthInTheFlip_Fluent
                         ValueType = methodInfo.ReturnType,
                         Help = (member.GetCustomAttributes(typeof(StringHelpAttribute), true)
                             .FirstOrDefault() as StringHelpAttribute).Description,
-                        Method = (MethodInfo)member,
+                        Invoke = (instance, args) =>
+                            ((MethodInfo)member).Invoke(instance, args),
                         Parameters = _p
                     });
 
                 }
             }
-            
+        }
+        
+        foreach (var member in arg.GetMembers(BindingFlags.Public | BindingFlags.Static))
+        {
+            if ((member.GetCustomAttributes(typeof(IsMetricAttribute), true).FirstOrDefault() is not null)
+                || (member.GetCustomAttributes(typeof(IsRecordAttribute), true).FirstOrDefault() is not null))
+            {
+                if (member is MethodInfo methodInfo)
+                {
+                    ParameterInfo[] parameters = methodInfo.GetParameters();
+                    
+                    List<MetricParameterDescriptor> _p = new List<MetricParameterDescriptor>();
+                    
+                    for (int i = 1; i < parameters.Length; i++)
+                    {
+                        if (parameters[i].ParameterType == typeof(List<double>))
+                            _p.Add(new MetricParameterDescriptor()
+                            {
+                                Name = parameters[i].Name,
+                                Type = MetricParameterType.Aggregate
+                            });
+                        else
+                            _p.Add(new MetricParameterDescriptor()
+                            {
+                                Name = parameters[i].Name,
+                                Type = MetricParameterType.Scalar
+                            });
+                    }
+                    
+                    l.Add(new MetricDescriptor
+                    {
+                        Type = MetricDescriptor.EType.Method,
+                        Name = member.Name,
+                        ValueType = methodInfo.ReturnType,
+                        Help = (member.GetCustomAttributes(typeof(StringHelpAttribute), true)
+                            .FirstOrDefault() as StringHelpAttribute).Description,
+                        Invoke = (instance, args) =>
+                        {
+                            object?[] invokeArgs = new object?[args.Length + 1];
+
+                            invokeArgs[0] = instance;
+                            Array.Copy(args, 0, invokeArgs, 1, args.Length);
+
+                            return methodInfo.Invoke(null, invokeArgs);
+                        },
+                        Parameters = _p
+                    });
+
+                }
+            }
         }
 
         if (l.Count == 0) return null;

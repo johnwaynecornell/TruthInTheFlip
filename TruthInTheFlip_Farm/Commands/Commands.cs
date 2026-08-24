@@ -99,7 +99,7 @@ public class Commands
                     stringBuilder.Append(string.Join(",",
                         from p in m.Value.Parameters
                         //select (p.Type == MetricParameterType.Aggregate ? "child_expr" : "expr")));
-                        select (p.Parameter.Name)));//.Type == MetricParameterType.Aggregate ? "child_expr" : "expr")));
+                        select (p.Name)));//.Type == MetricParameterType.Aggregate ? "child_expr" : "expr")));
                     
                     
                     set(0, stringBuilder.ToString());

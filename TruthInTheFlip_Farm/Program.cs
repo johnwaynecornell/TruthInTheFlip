@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Reflection;
 using FluentCommandLine;
 using JWCFarm;
+using JWCFarm.Metrics;
 using TruthInTheFlip_CSV_Farm;
 using TruthInTheFlip.Farm.Format;
 
@@ -13,7 +14,19 @@ env.AddModule<InfoCommand>();
 env.AddModule<Commands>();
 env.AddModule<TruthInTheFlip_Fluent>();
 
-//env.ServeTypes = new Type[] { typeof(FarmCommand), typeof(TrackerProcess), typeof(SegmentStatsProcess), typeof(InfoCommand), typeof(HelpCommand) };
+/* Here is an example of programmatically adding a metric method to the catalog for SegmentStats.*/
+//
+// env.Context.Get<MetricCatalogs>().TryGet(typeof(SegmentStats), out var catalog);
+// catalog.Add(new MetricDescriptor(
+//     "foo",
+//     typeof(double),
+//     new()
+//     {
+//         new("bar", MetricParameterType.Scalar)
+//     },
+//     "Double an input.",
+//     (obj, args) => (double)args[0]! * 2));
+
 env.ServeTypes = new Type[] { typeof(FarmCommand), typeof(InfoCommand), typeof(HelpCommand) };
 
 List<String> cl = new List<String>(args);

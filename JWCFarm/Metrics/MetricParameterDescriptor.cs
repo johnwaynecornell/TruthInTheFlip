@@ -12,6 +12,17 @@ public abstract record MetricArgument;
 
 public sealed class MetricParameterDescriptor
 {
-    public required ParameterInfo Parameter { get; init; }
-    public required MetricParameterType Type { get; init; }
+    public MetricParameterDescriptor()
+    {
+        
+    }
+
+    public MetricParameterDescriptor(string name, MetricParameterType type)
+    {
+        Name = name;
+        Type = type;
+    }
+
+    public string Name { get; init; }
+    public MetricParameterType Type { get; init; }
 }

@@ -52,7 +52,7 @@ public class MetricBinderErrorTests
         var parameters = mi.GetParameters()
             .Select(p => new MetricParameterDescriptor
             {
-                Parameter = p,
+                Name = p.Name,
                 Type = p.ParameterType == typeof(List<double>)
                     ? MetricParameterType.Aggregate
                     : MetricParameterType.Scalar
@@ -65,7 +65,8 @@ public class MetricBinderErrorTests
             Name = name,
             ValueType = mi.ReturnType,
             Help = name,
-            Method = mi,
+            Invoke = (instance, args) =>
+                ((MethodInfo)mi).Invoke(instance, args),
             Parameters = parameters
         };
     }

@@ -56,7 +56,7 @@ public class MetricPath : List<MetricDescriptor.Instance>
                     }
                 }
 
-                o = p.InstanceDescriptor.Method.Invoke(o, parameters );
+                o = p.InstanceDescriptor.Invoke(o, parameters );
             }
         }
         

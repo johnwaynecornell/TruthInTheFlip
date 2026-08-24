@@ -63,7 +63,7 @@ public class MetricBinder
                     {
                         offset = this_offset;
                         error = new MetricBindError(field, this_offset,
-                            $"Expected ',' before parameter '{p.Parameter.Name}' " +
+                            $"Expected ',' before parameter '{p.Name}' " +
                             $"(parameter {pi + 1} of '{funcName}').");
                         return false;
                     }
@@ -94,7 +94,7 @@ public class MetricBinder
                         // inputType is null — no child process type to sample from.
                         offset = this_offset;
                         error = new MetricBindError(field, this_offset,
-                            $"Aggregate parameter '{p.Parameter.Name}' of '{funcName}' " +
+                            $"Aggregate parameter '{p.Name}' of '{funcName}' " +
                             $"requires a child process, but the current process has none.");
                         return false;
                     }

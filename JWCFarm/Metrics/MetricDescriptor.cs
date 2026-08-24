@@ -10,16 +10,32 @@ public class MetricDescriptor
         Method
     }
     
-    public required EType Type { get; init; }
+    public EType Type { get; init; }
     
-    public required string Name { get; init; }
-    public required Type ValueType { get; init; }
-    public required string Help { get; init; }
+    public string Name { get; init; }
+    public Type ValueType { get; init; }
+    public string Help { get; init; }
 
     public Func<object, object?>? Getter { get; set; } = null;
-    public MethodInfo? Method { get; set; } = null;
+    public Func<object, object?[], object?>? Invoke { get; init; }
     
-    public IReadOnlyList<MetricParameterDescriptor> Parameters { get; init; }
+    public IReadOnlyList<MetricParameterDescriptor>? Parameters { get; init; }
+    
+    public MetricDescriptor()
+    {
+
+    }
+    
+    public MetricDescriptor(string name, Type returnType, List<MetricParameterDescriptor> parameters, string help, Func<object, object?[], object?>? invoke )
+    {
+        Type = EType.Method;
+        
+        Name = name;
+        ValueType = returnType;
+        Parameters = parameters;
+        Help = help;
+        Invoke = invoke;
+    }
     
     public class Instance
     {
