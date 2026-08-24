@@ -12,11 +12,14 @@ public abstract class FarmProcess : FarmCommand
                 "Projection not set");
     }
 
-    public virtual bool BindFields(MetricCatalogs catalogs, string[] fields)
+    // Returns false (and sets error) when any field expression is invalid.
+    // Does not print diagnostics — the caller is responsible for rendering the error.
+    public virtual bool BindFields(MetricCatalogs catalogs, string[] fields, out MetricBindError? error)
     {
-        if (!MetricBinder.Bind(this, catalogs, StatType, InputType, out MetricProjection projection, 
-                fields)) throw new ArgumentException("Invalid fields");
-        
+        if (!MetricBinder.Bind(this, catalogs, StatType, InputType,
+                out MetricProjection? projection, out error, fields))
+            return false;
+
         Projection = projection;
         return true;
     }

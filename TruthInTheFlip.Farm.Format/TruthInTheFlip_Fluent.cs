@@ -303,7 +303,14 @@ public class TruthInTheFlip_Fluent
     {
         var catalogs = FluentEnvironment.Current.Context.Get<MetricCatalogs>();
 
-        if (!process.BindFields(catalogs, fields)) throw new ArgumentException("Invalid fields");
+        if (!process.BindFields(catalogs, fields, out MetricBindError? bindError))
+        {
+            Console.Error.WriteLine(bindError!.FormatDiagnostic());
+            var env = FluentEnvironment.Current;
+            env.Status = 1;
+            env.WantExit = true;
+            return new FarmDelegateCommand(_ => { }); // never executed; WantExit stops the loop
+        }
 
         process.Actions = new ProcessActions(
             begin: context =>

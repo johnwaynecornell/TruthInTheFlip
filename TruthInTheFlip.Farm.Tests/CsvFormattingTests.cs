@@ -113,7 +113,7 @@ public class CsvFormattingTests
             spanWriter,
             new TimeSpan(1, 2, 3, 4, 5));
 
-        Assert.Equal("2026-08-11 19:30:45.123", dateWriter.ToString());
+        Assert.Equal("2026-08-11T19:30:45.123Z", dateWriter.ToString());
         Assert.Equal("1.02:03:04.0050000", spanWriter.ToString());
     }
 }

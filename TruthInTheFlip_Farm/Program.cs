@@ -91,7 +91,11 @@ if (cl_index < cl.Count && !env.WantExit)
     Console.WriteLine($"Unconsumed arguments remaining at index {cl_index}: {string.Join(" ", cl.GetRange(cl_index, cl.Count - cl_index))}");
 }
 
-if (helpToken != null || reportCommand == null)
+// Only show help when there was no explicit error that already reported itself.
+// When WantExit is set by an input-error handler (e.g. a bad metric expression),
+// the diagnostic has already been written to stderr; dumping the full help on top
+// of it is noisy and unhelpful.
+if ((helpToken != null || reportCommand == null) && !env.WantExit)
 {
     Console.Error.WriteLine("Usage: TruthInTheFlip_Farm [arguments]");
     Console.Error.WriteLine(@"

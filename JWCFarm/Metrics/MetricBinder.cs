@@ -2,41 +2,56 @@ namespace JWCFarm.Metrics;
 
 public class MetricBinder
 {
-    protected static bool ParseExpression(FarmProcess?  process, MetricCatalogs catalogs, MetricPath path, Type currentType, Type inputType, string field, ref int offset)
+    // Recursive parser. On failure:
+    //   - sets `error` to a structured description
+    //   - sets `offset` to the character position where the error was detected
+    //   - returns false without printing anything
+    // Recursive call failures are propagated as-is (error already set).
+    protected static bool ParseExpression(
+        FarmProcess? process,
+        MetricCatalogs catalogs,
+        MetricPath path,
+        Type currentType,
+        Type inputType,
+        string field,
+        ref int offset,
+        out MetricBindError? error)
     {
-        bool rc = true;
-        
+        error = null;
         Type _currentType = currentType;
-        
-        MetricCatalog catalog;
-        
+        MetricCatalog? catalog;
         int this_offset = offset;
 
+        // Scan forward for '#', stopping at ',' (which belongs to the caller's param loop).
         int i = this_offset;
-        while (i<field.Length && field[i] != '#') 
+        while (i < field.Length && field[i] != '#')
         {
             if (field[i] == ',') i = field.Length; else i++;
         }
-                
-        if (i < field.Length)
+
+        if (i < field.Length) // found '#' → function-call branch
         {
             if (!catalogs.TryGet(_currentType, out catalog))
             {
-                Console.Error.WriteLine($"Metric catalog not found for type {_currentType}");
+                offset = this_offset;
+                error = new MetricBindError(field, this_offset,
+                    $"No metric catalog for type '{_currentType?.Name ?? "null"}'.");
                 return false;
             }
 
             string funcName = field[this_offset..i];
-            this_offset = i + 1;
-            //string _field = field.Substring(i + 1);
-                    
-            if (!catalog.Metrics.TryGetValue(funcName, out var func))
+
+            if (!catalog!.Metrics.TryGetValue(funcName, out var func))
             {
-                Console.Error.WriteLine($"Metric function {funcName} not found for type {_currentType} and field {field}");
+                offset = this_offset;
+                error = new MetricBindError(field, this_offset, funcName.Length,
+                    $"Unknown metric function '{funcName}' on {_currentType!.Name}.");
                 return false;
             }
 
-            List<MetricPath> arguments = new List<MetricPath>();
+            this_offset = i + 1; // skip past '#'
+
+            List<MetricPath> arguments = new();
 
             for (int pi = 0; pi < func.Parameters.Count; pi++)
             {
@@ -44,18 +59,22 @@ public class MetricBinder
 
                 if (pi != 0)
                 {
-                    if (field[this_offset] != ',')
+                    if (this_offset >= field.Length || field[this_offset] != ',')
                     {
-                        Console.Error.WriteLine($"{func.ToString()} parameter {pi} {p.Parameter.Name} missing preceeding comma for type {_currentType} and field {field} ({field.Substring(this_offset)})");
+                        offset = this_offset;
+                        error = new MetricBindError(field, this_offset,
+                            $"Expected ',' before parameter '{p.Parameter.Name}' " +
+                            $"(parameter {pi + 1} of '{funcName}').");
                         return false;
                     }
                     this_offset++;
                 }
-                
+
                 if (p.Type == MetricParameterType.Aggregate) _currentType = inputType;
                 else _currentType = currentType;
 
                 MetricPath argumentPath = new();
+                bool paramOk;
 
                 if (p.Type == MetricParameterType.Aggregate)
                 {
@@ -63,45 +82,44 @@ public class MetricBinder
 
                     if (inputProcess != null)
                     {
-                        rc = ParseExpression(
-                            inputProcess,
-                            catalogs,
-                            argumentPath,
-                            inputProcess.StatType,
-                            inputProcess.InputType,
-                            field, ref this_offset);
+                        paramOk = ParseExpression(
+                            inputProcess, catalogs, argumentPath,
+                            inputProcess.StatType, inputProcess.InputType,
+                            field, ref this_offset, out error);
 
-                        if (rc) inputProcess.Projection.Fields.Add(argumentPath);
+                        if (paramOk) inputProcess.Projection.Fields.Add(argumentPath);
+                    }
+                    else if (_currentType == null)
+                    {
+                        // inputType is null — no child process type to sample from.
+                        offset = this_offset;
+                        error = new MetricBindError(field, this_offset,
+                            $"Aggregate parameter '{p.Parameter.Name}' of '{funcName}' " +
+                            $"requires a child process, but the current process has none.");
+                        return false;
                     }
                     else
                     {
-                        rc = ParseExpression(
-                            null,
-                            catalogs,
-                            argumentPath,
-                            _currentType,
-                            inputType,
-                            field, ref this_offset);
+                        paramOk = ParseExpression(
+                            null, catalogs, argumentPath,
+                            _currentType, inputType,
+                            field, ref this_offset, out error);
                     }
                 }
                 else
                 {
-                    rc = ParseExpression(
-                        process,
-                        catalogs,
-                        argumentPath,
-                        currentType,
-                        inputType,
-                        field, ref this_offset);
+                    paramOk = ParseExpression(
+                        process, catalogs, argumentPath,
+                        currentType, inputType,
+                        field, ref this_offset, out error);
                 }
 
-                if (rc == false)
+                if (!paramOk)
                 {
-                    Console.Error.WriteLine(
-                        $"Metric expression outer failed for type {_currentType} and field {field} ({field.Substring(this_offset)})");
-                    return false;
+                    offset = this_offset;
+                    return false; // error already set by recursive call
                 }
-                
+
                 arguments.Add(argumentPath);
             }
 
@@ -109,75 +127,107 @@ public class MetricBinder
             offset = this_offset;
             return true;
         }
-        
-        int end = field.IndexOf(',', this_offset);
 
-        if (end < 0)
-            end = field.Length;
+        // Property path / numeric literal branch
+        int end = field.IndexOf(',', this_offset);
+        if (end < 0) end = field.Length;
 
         string expression = field[this_offset..end];
-        if (double.TryParse(expression, out double value))
+
+        if (double.TryParse(expression, System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out double value))
         {
             path.Add(MetricDescriptor.CreateInstance(value));
-            
             offset = end;
             return true;
         }
-        
-        foreach (string _part in expression.Split('.'))
+
+        // Dot-separated property path
+        string[] parts = expression.Split('.');
+        int segStart = this_offset;
+
+        foreach (string part in parts)
         {
-            string part = _part;
-    
             if (!catalogs.TryGet(_currentType, out catalog))
             {
-                Console.Error.WriteLine($"Metric catalog not found for type {_currentType}");
+                offset = segStart;
+                error = new MetricBindError(field, segStart, part.Length,
+                    $"No metric catalog for type '{_currentType?.Name ?? "null"}'.");
                 return false;
             }
 
-            if (!catalog.Metrics.TryGetValue(part, out var metric))
+            if (!catalog!.Metrics.TryGetValue(part, out var metric))
             {
-                Console.Error.WriteLine($"Metric not found for type {_currentType} and field {field}");
-                rc = false;
-                break;
+                offset = segStart;
+                error = new MetricBindError(field, segStart, part.Length,
+                    $"Unknown metric '{part}' on {_currentType!.Name}.");
+                return false;
             }
-                
+
             path.Add(metric.CreateInstance(null));
             _currentType = metric.ValueType;
+            segStart += part.Length + 1; // +1 for the '.'
         }
 
-        if (rc) offset = end;
-        return rc;
-
+        offset = end;
+        return true;
     }
-    
-    public static bool Bind(FarmProcess process, MetricCatalogs catalogs, Type type, Type inputType, out MetricProjection target, params string[] fields)
+
+    // Primary overload: returns structured error information.
+    public static bool Bind(
+        FarmProcess? process,
+        MetricCatalogs catalogs,
+        Type type,
+        Type? inputType,
+        out MetricProjection? target,
+        out MetricBindError? bindError,
+        params string[] fields)
     {
-        MetricProjection projection = new MetricProjection();
-        
-        bool rc = true;
-        
-        List<MetricPath> childBind = new List<MetricPath>();
-        
+        MetricProjection projection = new();
+        bindError = null;
+
         foreach (string field in fields)
         {
-            MetricPath path = new MetricPath();
-            Type currentType = type;
+            MetricPath path = new();
             int this_offset = 0;
-            rc = ParseExpression(process, catalogs, path, currentType, inputType, field, ref this_offset);
-            if (this_offset != field.Length) 
+
+            bool ok = ParseExpression(
+                process, catalogs, path,
+                type, inputType!,
+                field, ref this_offset, out MetricBindError? fieldError);
+
+            if (ok && this_offset != field.Length)
             {
-                Console.Error.WriteLine($"Invalid field expression: {field} text remains after offset {this_offset}, {field.Substring(this_offset)}");
-                rc = false;
+                // Expression parsed successfully but left unconsumed text.
+                ok = false;
+                fieldError = new MetricBindError(field, this_offset,
+                    field.Length - this_offset,
+                    $"Unexpected text after expression (starting at position {this_offset}).");
             }
-            if (rc) projection.Fields.Add(path);
+
+            if (!ok)
+            {
+                bindError = fieldError;
+                target = null;
+                return false;
+            }
+
+            projection.Fields.Add(path);
         }
-        
-        
-        if (rc)
-            target = projection;
-        else
-            target = null;
-        
-        return rc;
+
+        target = projection;
+        return true;
+    }
+
+    // Compatibility overload for callers that do not need the structured error.
+    public static bool Bind(
+        FarmProcess? process,
+        MetricCatalogs catalogs,
+        Type type,
+        Type? inputType,
+        out MetricProjection? target,
+        params string[] fields)
+    {
+        return Bind(process, catalogs, type, inputType, out target, out _, fields);
     }
 }
