@@ -72,7 +72,7 @@ cl = new List<string>
     "PctAnticipatedSameSign"
 };
 
-cl = new List<String>("csv segment_agg window by_total 10B file /data/jwc/Documents/Trackers/crypto.tkr by_total 10B by_total 100B Index median#mean#AnticipatedPercentage".Split(' '));
+cl = new List<String>("csv segment_agg window by_total 10B file /data/jwc/Documents/Trackers/crypto.tkr by_total 10B by_total 100B Index mean#median#AnticipatedPercentage".Split(' '));
 
 */
 cl = new List<String>(args);
