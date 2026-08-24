@@ -4,7 +4,7 @@ public class MetricProjection
 {
     public List<MetricPath> Fields { get; } = new();
     
-    public Dictionary<(object, MetricPath), List<double>> StatValues { get; } = new();
+    public Dictionary<(object, MetricPath, int), List<double>> StatValues { get; } = new();
 
     public void ProcessPath(FarmProcess process, MetricPath path, object segment, object state)
     {
@@ -31,7 +31,7 @@ public class MetricProjection
                             //ProcessPath(process.InputProcess, arg, state, state);
                             
                             // argument belongs to upstream product/process
-                            o = arg.Get(process.InputProcess.Projection, state, null, ref ii);
+                            o = arg.Get(process.InputProcess.Projection, state, state, ref ii);
                         }
                         else
                         {
@@ -43,8 +43,8 @@ public class MetricProjection
 
 
                         double value = Convert.ToDouble(o);
-                        if (!StatValues.ContainsKey((segment, path))) StatValues[(segment, path)] = new();
-                        StatValues[(segment, path)].Add(value);
+                        if (!StatValues.ContainsKey((segment, path, arg_i))) StatValues[(segment, path, arg_i)] = new();
+                        StatValues[(segment, path, arg_i)].Add(value);
                     } else ProcessPath(process, arg, segment, state);
                 }
             }

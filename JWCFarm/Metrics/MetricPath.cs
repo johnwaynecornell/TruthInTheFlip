@@ -23,7 +23,10 @@ public class MetricPath : List<MetricDescriptor.Instance>
             if (o == null)
                 throw new NullReferenceException(
                     $"Field {string.Join(".", from p2 in this select p2.InstanceDescriptor.Name)} contains null");
-            if (p.InstanceDescriptor.Type == MetricDescriptor.EType.Property)
+
+			if (p.IsValue)
+			    o = p.Value; 
+            else if (p.InstanceDescriptor.Type == MetricDescriptor.EType.Property)
                 o = p.InstanceDescriptor.Getter(o);
             else if (p.InstanceDescriptor.Type == MetricDescriptor.EType.Method)
             {
@@ -43,7 +46,7 @@ public class MetricPath : List<MetricDescriptor.Instance>
                     }
                     else if (desc.Type == MetricParameterType.Aggregate)
                     {
-                        parameters[i] = projection.StatValues[(stats, this)];
+                        parameters[i] = projection.StatValues[(stats, this, i)];
 
                         index = Count;
                     }
@@ -51,6 +54,11 @@ public class MetricPath : List<MetricDescriptor.Instance>
 
                 o = p.InstanceDescriptor.Method.Invoke(o, parameters );
             }
+        }
+        
+        if (o == null)
+        {
+            
         }
 
         return o;
@@ -77,10 +85,13 @@ public class MetricPath : List<MetricDescriptor.Instance>
         foreach (var p in this)
         {
             writer.Append(mark);
-            writer.Append(p.InstanceDescriptor.Name);
-            
-            if (p.ArgumentPaths != null) writer.Append($"#{string.Join("," , p.ArgumentPaths)}");
-            
+            if (p.IsValue) writer.Append(p.Value);
+            else
+            {
+                writer.Append(p.InstanceDescriptor.Name);
+                
+                if (p.ArgumentPaths != null) writer.Append($"#{string.Join("," , p.ArgumentPaths)}");
+            }
             mark = ".";
         }
         return writer.ToString();

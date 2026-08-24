@@ -23,6 +23,8 @@ public class MetricDescriptor
     
     public class Instance
     {
+        public bool IsValue { get; set; }
+        public object? Value { get; set; } = null;
         public MetricDescriptor InstanceDescriptor { get; set; } = null!;
         public List<MetricPath> ArgumentPaths { get; set; } = new();
     }
@@ -33,6 +35,15 @@ public class MetricDescriptor
         {
             InstanceDescriptor = this,
             ArgumentPaths = parameters
+        };
+    }
+    
+    public static Instance CreateInstance(double value)
+    {
+        return new Instance
+        {
+            IsValue = true,
+            Value = value
         };
     }
 }

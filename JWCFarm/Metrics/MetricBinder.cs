@@ -2,7 +2,7 @@ namespace JWCFarm.Metrics;
 
 public class MetricBinder
 {
-    protected static bool ParseExpression(FarmProcess?  process, MetricCatalogs catalogs, MetricPath path, Type currentType, Type inputType, string field)
+    protected static bool ParseExpression(FarmProcess?  process, MetricCatalogs catalogs, MetricPath path, Type currentType, Type inputType, string field, ref int offset)
     {
         bool rc = true;
         
@@ -10,9 +10,15 @@ public class MetricBinder
         
         MetricCatalog catalog;
         
-        int i = field.IndexOf('#');
+        int this_offset = offset;
+
+        int i = this_offset;
+        while (i<field.Length && field[i] != '#') 
+        {
+            if (field[i] == ',') i = field.Length; else i++;
+        }
                 
-        if (i != -1)
+        if (i < field.Length)
         {
             if (!catalogs.TryGet(_currentType, out catalog))
             {
@@ -20,12 +26,13 @@ public class MetricBinder
                 return false;
             }
 
-            string funcName = field.Substring(0, i);
-            string _field = field.Substring(i + 1);
+            string funcName = field[this_offset..i];
+            this_offset = i + 1;
+            //string _field = field.Substring(i + 1);
                     
             if (!catalog.Metrics.TryGetValue(funcName, out var func))
             {
-                Console.Error.WriteLine($"Metric function not found for type {_currentType} and field {field}");
+                Console.Error.WriteLine($"Metric function {funcName} not found for type {_currentType} and field {field}");
                 return false;
             }
 
@@ -34,6 +41,16 @@ public class MetricBinder
             for (int pi = 0; pi < func.Parameters.Count; pi++)
             {
                 var p = func.Parameters[pi];
+
+                if (pi != 0)
+                {
+                    if (field[this_offset] != ',')
+                    {
+                        Console.Error.WriteLine($"{func.ToString()} parameter {pi} {p.Parameter.Name} missing preceeding comma for type {_currentType} and field {field} ({field.Substring(this_offset)})");
+                        return false;
+                    }
+                    this_offset++;
+                }
                 
                 if (p.Type == MetricParameterType.Aggregate) _currentType = inputType;
                 else _currentType = currentType;
@@ -52,9 +69,9 @@ public class MetricBinder
                             argumentPath,
                             inputProcess.StatType,
                             inputProcess.InputType,
-                            _field);
+                            field, ref this_offset);
 
-                        inputProcess.Projection.Fields.Add(argumentPath);
+                        if (rc) inputProcess.Projection.Fields.Add(argumentPath);
                     }
                     else
                     {
@@ -64,7 +81,7 @@ public class MetricBinder
                             argumentPath,
                             _currentType,
                             inputType,
-                            _field);
+                            field, ref this_offset);
                     }
                 }
                 else
@@ -75,13 +92,13 @@ public class MetricBinder
                         argumentPath,
                         currentType,
                         inputType,
-                        _field);
+                        field, ref this_offset);
                 }
 
                 if (rc == false)
                 {
                     Console.Error.WriteLine(
-                        $"Metric expression outer failed for type {_currentType} and field {_field}");
+                        $"Metric expression outer failed for type {_currentType} and field {field} ({field.Substring(this_offset)})");
                     return false;
                 }
                 
@@ -89,11 +106,25 @@ public class MetricBinder
             }
 
             path.Add(func.CreateInstance(arguments));
-              
+            offset = this_offset;
             return true;
         }
         
-        foreach (string _part in field.Split('.'))
+        int end = field.IndexOf(',', this_offset);
+
+        if (end < 0)
+            end = field.Length;
+
+        string expression = field[this_offset..end];
+        if (double.TryParse(expression, out double value))
+        {
+            path.Add(MetricDescriptor.CreateInstance(value));
+            
+            offset = end;
+            return true;
+        }
+        
+        foreach (string _part in expression.Split('.'))
         {
             string part = _part;
     
@@ -114,6 +145,7 @@ public class MetricBinder
             _currentType = metric.ValueType;
         }
 
+        if (rc) offset = end;
         return rc;
 
     }
@@ -130,7 +162,13 @@ public class MetricBinder
         {
             MetricPath path = new MetricPath();
             Type currentType = type;
-            rc = ParseExpression(process, catalogs, path, currentType, inputType, field);
+            int this_offset = 0;
+            rc = ParseExpression(process, catalogs, path, currentType, inputType, field, ref this_offset);
+            if (this_offset != field.Length) 
+            {
+                Console.Error.WriteLine($"Invalid field expression: {field} text remains after offset {this_offset}, {field.Substring(this_offset)}");
+                rc = false;
+            }
             if (rc) projection.Fields.Add(path);
         }
         

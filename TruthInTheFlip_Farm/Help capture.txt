@@ -39,7 +39,7 @@ Available Commands
 
 Argument Types
 
-<ShowArgument> — Selectable information topic
+<ShowArgument> - Selectable information topic
 
         metrics
             Display the available metric fields.
@@ -48,7 +48,7 @@ Argument Types
         now
             Display the current time in Farm-compatible format.
 
-<FarmProcess> — A process that produces items for Farm operations.
+<FarmProcess> - A process that produces items for Farm operations.
 
         segment tracker segmentation
             Process tracker records as segments.
@@ -68,7 +68,7 @@ Argument Types
     
             tracker               <TrackerSelector>     Tracker source to process.
 
-<AggSelector> — Definition for aggregating SegmentStats into larger segments
+<AggSelector> - Definition for aggregating SegmentStats into larger segments
 
         by_total length
             Segment size in total flips
@@ -85,7 +85,7 @@ Argument Types
     
             source                <AggSelector>         The source selector.
 
-<GradeArgument> — Report detail level
+<GradeArgument> - Report detail level
 
         None
             Show only report metadata.
@@ -106,7 +106,7 @@ Argument Types
         All
             Show High plus Pearson correlations, additional segment statistics, and standout segments.
 
-<TrackerSelector> — Selector for a tracker source
+<TrackerSelector> - Selector for a tracker source
 
         file trackerPath
             Read tracker records from a tracker file.
@@ -136,7 +136,7 @@ Argument Types
             boundary              <TrackerBoundary>     Boundary defining the ending position.
             source                <TrackerSelector>     Tracker source to filter.
 
-<TrackerWindow> — Definition of a rolling tracker window
+<TrackerWindow> - Definition of a rolling tracker window
 
         by_total length
             Creates a bounding function that defines a window based on a maximum number of total flips.
@@ -168,7 +168,7 @@ Argument Types
     
             length                <TimeSpan>            The TimeSpan representing the maximum allowed duration between the head and tail of the window.    default: "01:00:00"
 
-<TrackerBoundary> — Boundary for selecting a position in a tracker stream
+<TrackerBoundary> - Boundary for selecting a position in a tracker stream
 
         absTotal value
             Define a boundary by absolute flip count.
@@ -195,7 +195,7 @@ Argument Types
     
             value                 <DateTimeOffset>      UTC timestamp or offset timestamp used as the boundary.
 
-<SegSelector> — Definition for dividing tracker records into segments
+<SegSelector> - Definition for dividing tracker records into segments
 
         by_total length
             Segment size in total flips

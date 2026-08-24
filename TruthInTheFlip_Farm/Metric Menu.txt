@@ -65,6 +65,19 @@ Metrics:
         WallclockTime              <TimeSpan> Total wall-clock duration of the tracking period.                                
         BatchWallclockTime         <TimeSpan> Wall-clock duration of the last batch processed.                                 
         Source                     <Tracker>  Source of the tracker                                                            
+    functions scalar and aggregate where expr is one sample from the current process and child_expr samples from child process
+        abs#value                   <Double> Get the absolute value of an input.                   
+        negate#value                <Double> Negate an input value.                                
+        square#value                <Double> Square an input value.                                
+        sqrt#value                  <Double> Get the square root of an input.                      
+        ln#value                    <Double> Get the natural logarithm of an input.                
+        pow#value,exponent          <Double> Raise a value to a power.                             
+        offset#value,amount         <Double> Add an offset to an input value.                      
+        offset50#value              <Double> Measure an input relative to the 50 percent baseline. 
+        scale#value,factor          <Double> Multiply an input by a scale factor.                  
+        ratio#numerator,denominator <Double> Divide one input by another.                          
+        clamp#value,min,max         <Double> Limit an input to the inclusive minimum and maximum.  
+        lerp#a,b,amount             <Double> Linearly interpolate between two values.              
 
     TruthInTheFlip.Farm.Format.SegmentStats
         MeanTrueZ                <Double>   Average True Z-Score across the segment.                                                     
@@ -95,6 +108,34 @@ Metrics:
         EndWallclock             <TimeSpan> Wallclock time at the end of the segment.                                                    
         Begin                    <Tracker>  Beginning record of the segment.                                                             
         End                      <Tracker>  Ending record of the segment.                                                                
+    functions scalar and aggregate where expr is one sample from the current process and child_expr samples from child process
+        count#values                            <Double> Find the number of values in an input population.                       
+        sum#values                              <Double> Find the sum of an input population.                                    
+        mean#values                             <Double> Find the arithmetic mean of an input population.                        
+        min#values                              <Double> Find the minimum value in an input population.                          
+        max#values                              <Double> Find the maximum value in an input population.                          
+        median#values                           <Double> Find the median of an input population.                                 
+        variance_population#values              <Double> Find the population variance of an input population.                    
+        variance_sample#values                  <Double> Find the sample variance of an input population.                        
+        stddev_population#values                <Double> Find the population standard deviation of an input population.          
+        stddev_sample#values                    <Double> Find the sample standard deviation of an input population.              
+        rms#values                              <Double> Find the root mean square of an input population.                       
+        mean_abs#values                         <Double> Find the mean absolute value of an input population.                    
+        covariance_population#x_values,y_values <Double> Find the population covariance between two input populations.           
+        covariance_sample#x_values,y_values     <Double> Find the sample covariance between two input populations.               
+        pearson#x_values,y_values               <Double> Find the Pearson correlation coefficient between two input populations. 
+        abs#value                               <Double> Get the absolute value of an input.                                     
+        negate#value                            <Double> Negate an input value.                                                  
+        square#value                            <Double> Square an input value.                                                  
+        sqrt#value                              <Double> Get the square root of an input.                                        
+        ln#value                                <Double> Get the natural logarithm of an input.                                  
+        pow#value,exponent                      <Double> Raise a value to a power.                                               
+        offset#value,amount                     <Double> Add an offset to an input value.                                        
+        offset50#value                          <Double> Measure an input relative to the 50 percent baseline.                   
+        scale#value,factor                      <Double> Multiply an input by a scale factor.                                    
+        ratio#numerator,denominator             <Double> Divide one input by another.                                            
+        clamp#value,min,max                     <Double> Limit an input to the inclusive minimum and maximum.                    
+        lerp#a,b,amount                         <Double> Linearly interpolate between two values.                                
 
     TruthInTheFlip.Farm.Format.SegmentAggregate
         Z                           <SegmentStats> The best TrueZ from the SegmentStats.                                        
@@ -104,25 +145,25 @@ Metrics:
         MedianEndTrueZ              <Double>       The median end TrueZ from the SegmentStats.                                  
         AvgMeanTrueZ                <Double>       The average mean TrueZ from the SegmentStats.                                
         AvgPctAbove50               <Double>       the average Percentage of records where anticipation was better than chance. 
-        AvgMeanA                    <Double>       The average mean anticipation from the SegementStats.                        
-        AvgEndA                     <Double>       The average end anticipation from the SegementStats.                         
-        MedianEndA                  <Double>       The median end anticipation from the SegementStats.                          
-        AvgPctAAtLeast50            <Double>       The average percentage of anticipation above 50% from the SegementStats.     
-        AvgMeanZHeads               <Double>       The average mean ZHeads from the SegementStats.                              
-        AvgEndZHeads                <Double>       The average end ZHeads from the SegementStats.                               
-        MedianEndZHeads             <Double>       The average median end ZHeads from the SegementStats.                        
-        AvgPctZHeadsAbove0          <Double>       The average percentage of ZHeads above zero from the SegementStats.          
-        PctEndAAtLeast_50           <Double>       The percent of end anticipastion >= 50% from the SegementStats.              
-        PctBestAtLeast_1_96         <Double>       The percent of best TrueZ >= 1.96 from the SegementStats.                    
-        PctEndAtLeast_1_96          <Double>       The percent of end TrueZ >= 1.96 from the SegementStats.                     
-        PctMeanAtLeast_1_96         <Double>       The percent of mean TrueZ >= 1.96 from the SegementStats.                    
-        PctEndZHeadsAtLeast_1_96    <Double>       The percent of end ZHeads >= 1.96 from the SegementStats.                    
-        PctAbsEndZHeadsAtLeast_1_96 <Double>       The percent of absolute end ZHeads >= 1.96 from the SegementStats.           
-        PctBestAtLeast_3_00         <Double>       The percent of best TrueZ >= 3.00 from the SegementStats.                    
-        PctEndAtLeast_3_00          <Double>       The percent of end TrueZ >= 3.00 from the SegementStats.                     
-        PctMeanAtLeast_3_00         <Double>       The percent of mean TrueZ >= 3.00 from the SegementStats.                    
-        PctEndZHeadsAtLeast_3_00    <Double>       The percent of end ZHeads >= 3.00 from the SegementStats.                    
-        PctAbsEndZHeadsAtLeast_3_00 <Double>       The percent of absolute end ZHeads >= 3.00 from the SegementStats.           
+        AvgMeanA                    <Double>       The average mean anticipation from the SegmentStats.                         
+        AvgEndA                     <Double>       The average end anticipation from the SegmentStats.                          
+        MedianEndA                  <Double>       The median end anticipation from the SegmentStats.                           
+        AvgPctAAtLeast50            <Double>       The average percentage of anticipation above 50% from the SegmentStats.      
+        AvgMeanZHeads               <Double>       The average mean ZHeads from the SegmentStats.                               
+        AvgEndZHeads                <Double>       The average end ZHeads from the SegmentStats.                                
+        MedianEndZHeads             <Double>       The median end ZHeads from the SegmentStats.                                 
+        AvgPctZHeadsAbove0          <Double>       The average percentage of ZHeads above zero from the SegmentStats.           
+        PctEndAAtLeast_50           <Double>       The percent of end anticipation >= 50% from the SegmentStats.                
+        PctBestAtLeast_1_96         <Double>       The percent of best TrueZ >= 1.96 from the SegmentStats.                     
+        PctEndAtLeast_1_96          <Double>       The percent of end TrueZ >= 1.96 from the SegmentStats.                      
+        PctMeanAtLeast_1_96         <Double>       The percent of mean TrueZ >= 1.96 from the SegmentStats.                     
+        PctEndZHeadsAtLeast_1_96    <Double>       The percent of end ZHeads >= 1.96 from the SegmentStats.                     
+        PctAbsEndZHeadsAtLeast_1_96 <Double>       The percent of absolute end ZHeads >= 1.96 from the SegmentStats.            
+        PctBestAtLeast_3_00         <Double>       The percent of best TrueZ >= 3.00 from the SegmentStats.                     
+        PctEndAtLeast_3_00          <Double>       The percent of end TrueZ >= 3.00 from the SegmentStats.                      
+        PctMeanAtLeast_3_00         <Double>       The percent of mean TrueZ >= 3.00 from the SegmentStats.                     
+        PctEndZHeadsAtLeast_3_00    <Double>       The percent of end ZHeads >= 3.00 from the SegmentStats.                     
+        PctAbsEndZHeadsAtLeast_3_00 <Double>       The percent of absolute end ZHeads >= 3.00 from the SegmentStats.            
         Index                       <Int64>        Sequential index of the segment.                                             
         BeginTotal                  <Int64>        Total flips at the start of the segment.                                     
         EndTotal                    <Int64>        Total flips at the end of the segment.                                       
@@ -130,3 +171,31 @@ Metrics:
         EndWallclock                <TimeSpan>     Wallclock time at the end of the segment.                                    
         Begin                       <SegmentStats> Beginning record of the segment.                                             
         End                         <SegmentStats> Ending record of the segment.                                                
+    functions scalar and aggregate where expr is one sample from the current process and child_expr samples from child process
+        count#values                            <Double> Find the number of values in an input population.                       
+        sum#values                              <Double> Find the sum of an input population.                                    
+        mean#values                             <Double> Find the arithmetic mean of an input population.                        
+        min#values                              <Double> Find the minimum value in an input population.                          
+        max#values                              <Double> Find the maximum value in an input population.                          
+        median#values                           <Double> Find the median of an input population.                                 
+        variance_population#values              <Double> Find the population variance of an input population.                    
+        variance_sample#values                  <Double> Find the sample variance of an input population.                        
+        stddev_population#values                <Double> Find the population standard deviation of an input population.          
+        stddev_sample#values                    <Double> Find the sample standard deviation of an input population.              
+        rms#values                              <Double> Find the root mean square of an input population.                       
+        mean_abs#values                         <Double> Find the mean absolute value of an input population.                    
+        covariance_population#x_values,y_values <Double> Find the population covariance between two input populations.           
+        covariance_sample#x_values,y_values     <Double> Find the sample covariance between two input populations.               
+        pearson#x_values,y_values               <Double> Find the Pearson correlation coefficient between two input populations. 
+        abs#value                               <Double> Get the absolute value of an input.                                     
+        negate#value                            <Double> Negate an input value.                                                  
+        square#value                            <Double> Square an input value.                                                  
+        sqrt#value                              <Double> Get the square root of an input.                                        
+        ln#value                                <Double> Get the natural logarithm of an input.                                  
+        pow#value,exponent                      <Double> Raise a value to a power.                                               
+        offset#value,amount                     <Double> Add an offset to an input value.                                        
+        offset50#value                          <Double> Measure an input relative to the 50 percent baseline.                   
+        scale#value,factor                      <Double> Multiply an input by a scale factor.                                    
+        ratio#numerator,denominator             <Double> Divide one input by another.                                            
+        clamp#value,min,max                     <Double> Limit an input to the inclusive minimum and maximum.                    
+        lerp#a,b,amount                         <Double> Linearly interpolate between two values.                                
