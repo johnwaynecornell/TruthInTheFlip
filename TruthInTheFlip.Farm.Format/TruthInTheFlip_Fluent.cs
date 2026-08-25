@@ -95,7 +95,63 @@ public class TruthInTheFlip_Fluent
         };
     }
 
-    private static MetricCatalog? DefaultReflect(Type arg)
+    public static MetricDescriptor FluentLoadStaticFromMethod(MethodInfo methodInfo)
+    {
+        IsMetricAttribute? metricAttribute =
+            methodInfo.GetCustomAttributes(typeof(IsMetricAttribute), true).FirstOrDefault() as IsMetricAttribute;
+        
+        if (metricAttribute == null)
+            return null;
+        
+        ParameterInfo[] parameters = methodInfo.GetParameters();
+
+        List<MetricParameterDescriptor> _p = new List<MetricParameterDescriptor>();
+
+        int ii = ((parameters.Length > 0) && (parameters[0].ParameterType == typeof(MetricEvaluationContext))) ? 1 : 0;
+        ii++;
+        for (int i = ii; i < parameters.Length; i++)
+        {
+            if (parameters[i].ParameterType == typeof(List<double>))
+                _p.Add(new MetricParameterDescriptor()
+                {
+                    Name = parameters[i].Name,
+                    Type = MetricParameterType.Aggregate
+                });
+            else
+                _p.Add(new MetricParameterDescriptor()
+                {
+                    Name = parameters[i].Name,
+                    Type = MetricParameterType.Scalar
+                });
+        }
+
+        return new MetricDescriptor
+        {
+            Type = MetricDescriptor.EType.Method,
+            Name = methodInfo.Name,
+            ValueType = methodInfo.ReturnType,
+            Help = (methodInfo.GetCustomAttributes(typeof(StringHelpAttribute), true)
+                .FirstOrDefault() as StringHelpAttribute).Description,
+            Invoke = (ctx, instance, args) =>
+            {
+                object?[] invokeArgs = new object?[args.Length + ii];
+                if (ii == 1)
+                    invokeArgs[0] = instance;
+                else
+                {
+                    invokeArgs[0] = ctx;
+                    invokeArgs[1] = instance;
+                }
+
+                Array.Copy(args, 0, invokeArgs, ii, args.Length);
+                return methodInfo.Invoke(null, invokeArgs);
+            },
+            Parameters = _p,
+            SourceExpressions = metricAttribute?.SourceExpressions
+        };
+    }
+    
+    public static MetricCatalog? DefaultReflect(Type arg)
     {
         List<MetricDescriptor> l = new List<MetricDescriptor>();
 
@@ -197,56 +253,7 @@ public class TruthInTheFlip_Fluent
             
             if (metricAttribute is not null || (member.GetCustomAttributes(typeof(IsRecordAttribute), true).FirstOrDefault() is not null))
             {
-                if (member is MethodInfo methodInfo)
-                {
-                    ParameterInfo[] parameters = methodInfo.GetParameters();
-                    
-                    List<MetricParameterDescriptor> _p = new List<MetricParameterDescriptor>();
-                    
-                    int ii = ((parameters.Length > 0) && (parameters[0].ParameterType == typeof(MetricEvaluationContext))) ? 1 : 0;
-                    ii++;
-                    for (int i = ii; i < parameters.Length; i++)
-                    {
-                        if (parameters[i].ParameterType == typeof(List<double>))
-                            _p.Add(new MetricParameterDescriptor()
-                            {
-                                Name = parameters[i].Name,
-                                Type = MetricParameterType.Aggregate
-                            });
-                        else
-                            _p.Add(new MetricParameterDescriptor()
-                            {
-                                Name = parameters[i].Name,
-                                Type = MetricParameterType.Scalar
-                            });
-                    }
-                    
-                    l.Add(new MetricDescriptor
-                    {
-                        Type = MetricDescriptor.EType.Method,
-                        Name = member.Name,
-                        ValueType = methodInfo.ReturnType,
-                        Help = (member.GetCustomAttributes(typeof(StringHelpAttribute), true)
-                            .FirstOrDefault() as StringHelpAttribute).Description,
-                        Invoke = (ctx, instance, args) =>
-                        {
-                                object?[] invokeArgs = new object?[args.Length + ii];
-                                if (ii == 1)
-                                    invokeArgs[0] = instance;
-                                else
-                                {
-                                    invokeArgs[0] = ctx;
-                                    invokeArgs[1] = instance;
-                                }
-                                
-                                Array.Copy(args, 0, invokeArgs, ii, args.Length);
-                                return methodInfo.Invoke(null, invokeArgs);
-                        },
-                        Parameters = _p,
-                        SourceExpressions = metricAttribute?.SourceExpressions
-                    });
-
-                }
+                if (member is MethodInfo methodInfo) l.Add(FluentLoadStaticFromMethod(methodInfo));
             }
         }
 
