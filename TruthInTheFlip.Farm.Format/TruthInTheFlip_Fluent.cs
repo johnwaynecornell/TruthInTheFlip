@@ -162,7 +162,7 @@ public class TruthInTheFlip_Fluent
                             Invoke = (ctx, instance, args) =>
                                 ((MethodInfo)member).Invoke(instance, args),
                             Parameters = _p,
-                            SourceExpressions = metricAttribute?.Dependencies,
+                            SourceExpressions = metricAttribute?.SourceExpressions,
                         });
                     }
                     else //wantsContext
@@ -183,7 +183,7 @@ public class TruthInTheFlip_Fluent
                             },
                             
                             Parameters = _p,
-                            SourceExpressions = metricAttribute?.Dependencies
+                            SourceExpressions = metricAttribute?.SourceExpressions
                         });
                     }
 
@@ -243,7 +243,7 @@ public class TruthInTheFlip_Fluent
                                 return methodInfo.Invoke(null, invokeArgs);
                         },
                         Parameters = _p,
-                        SourceExpressions = metricAttribute?.Dependencies
+                        SourceExpressions = metricAttribute?.SourceExpressions
                     });
 
                 }

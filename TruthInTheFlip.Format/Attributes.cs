@@ -36,12 +36,12 @@ public class MetricTypeAttribute : Attribute
 
 public class IsMetricAttribute : VersioningAttribute
 {
-    public List<string>? Dependencies;
+    public List<string>? SourceExpressions;
     
-    public IsMetricAttribute(string version, string? version_high_exclusive = null, bool obsolete = false, string[]? dependencies = null) : base(
+    public IsMetricAttribute(string version, string? version_high_exclusive = null, bool obsolete = false, string[]? sourceExpressions = null) : base(
         version, version_high_exclusive, obsolete)
     {
-        if (dependencies is not null) Dependencies = new List<string>(dependencies);
+        if (sourceExpressions is not null) SourceExpressions = new List<string>(sourceExpressions);
     }
 }
 
