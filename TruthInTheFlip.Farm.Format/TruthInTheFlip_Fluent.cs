@@ -101,8 +101,9 @@ public class TruthInTheFlip_Fluent
 
         foreach (var member in arg.GetMembers(BindingFlags.Public | BindingFlags.Instance))
         {
-            if ((member.GetCustomAttributes(typeof(IsMetricAttribute), true).FirstOrDefault() is not null)
-                || (member.GetCustomAttributes(typeof(IsRecordAttribute), true).FirstOrDefault() is not null))
+            IsMetricAttribute? metricAttribute = member.GetCustomAttributes(typeof(IsMetricAttribute), true).FirstOrDefault() as IsMetricAttribute;
+            
+            if (metricAttribute is not null || (member.GetCustomAttributes(typeof(IsRecordAttribute), true).FirstOrDefault() is not null))
             {
                 if (member is FieldInfo fieldInfo)
                     l.Add(new MetricDescriptor
@@ -160,7 +161,8 @@ public class TruthInTheFlip_Fluent
                                 .FirstOrDefault() as StringHelpAttribute).Description,
                             Invoke = (ctx, instance, args) =>
                                 ((MethodInfo)member).Invoke(instance, args),
-                            Parameters = _p
+                            Parameters = _p,
+                            SourceExpressions = metricAttribute?.Dependencies,
                         });
                     }
                     else //wantsContext
@@ -180,9 +182,8 @@ public class TruthInTheFlip_Fluent
                                 return ((MethodInfo)member).Invoke(instance, invokeArgs);
                             },
                             
-                            
-                            
-                            Parameters = _p
+                            Parameters = _p,
+                            SourceExpressions = metricAttribute?.Dependencies
                         });
                     }
 
@@ -192,8 +193,9 @@ public class TruthInTheFlip_Fluent
         
         foreach (var member in arg.GetMembers(BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy))
         {
-            if ((member.GetCustomAttributes(typeof(IsMetricAttribute), true).FirstOrDefault() is not null)
-                || (member.GetCustomAttributes(typeof(IsRecordAttribute), true).FirstOrDefault() is not null))
+            IsMetricAttribute? metricAttribute = member.GetCustomAttributes(typeof(IsMetricAttribute), true).FirstOrDefault() as IsMetricAttribute;
+            
+            if (metricAttribute is not null || (member.GetCustomAttributes(typeof(IsRecordAttribute), true).FirstOrDefault() is not null))
             {
                 if (member is MethodInfo methodInfo)
                 {
@@ -240,7 +242,8 @@ public class TruthInTheFlip_Fluent
                                 Array.Copy(args, 0, invokeArgs, ii, args.Length);
                                 return methodInfo.Invoke(null, invokeArgs);
                         },
-                        Parameters = _p
+                        Parameters = _p,
+                        SourceExpressions = metricAttribute?.Dependencies
                     });
 
                 }

@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace TruthInTheFlip.Format;
 
 public class VersioningAttribute : Attribute
@@ -34,12 +36,13 @@ public class MetricTypeAttribute : Attribute
 
 public class IsMetricAttribute : VersioningAttribute
 {
+    public List<string>? Dependencies;
     
-    public IsMetricAttribute(string version, string? version_high_exclusive = null, bool obsolete = false) : base(
+    public IsMetricAttribute(string version, string? version_high_exclusive = null, bool obsolete = false, string[]? dependencies = null) : base(
         version, version_high_exclusive, obsolete)
     {
+        if (dependencies is not null) Dependencies = new List<string>(dependencies);
     }
-    
 }
 
 public class StringHelpAttribute : Attribute
