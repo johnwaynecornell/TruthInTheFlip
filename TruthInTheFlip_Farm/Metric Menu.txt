@@ -66,18 +66,26 @@ Metrics:
         BatchWallclockTime         <TimeSpan> Wall-clock duration of the last batch processed.                                 
         Source                     <Tracker>  Source of the tracker                                                            
     functions scalar and aggregate where expr is one sample from the current process and child_expr samples from child process
-        abs#value                   <Double> Get the absolute value of an input.                   
-        negate#value                <Double> Negate an input value.                                
-        square#value                <Double> Square an input value.                                
-        sqrt#value                  <Double> Get the square root of an input.                      
-        ln#value                    <Double> Get the natural logarithm of an input.                
-        pow#value,exponent          <Double> Raise a value to a power.                             
-        offset#value,amount         <Double> Add an offset to an input value.                      
-        offset50#value              <Double> Measure an input relative to the 50 percent baseline. 
-        scale#value,factor          <Double> Multiply an input by a scale factor.                  
-        ratio#numerator,denominator <Double> Divide one input by another.                          
-        clamp#value,min,max         <Double> Limit an input to the inclusive minimum and maximum.  
-        lerp#a,b,amount             <Double> Linearly interpolate between two values.              
+        abs#value                   <Double> Get the absolute value of an input.                       
+        negate#value                <Double> Negate an input value.                                    
+        square#value                <Double> Square an input value.                                    
+        sqrt#value                  <Double> Get the square root of an input.                          
+        ln#value                    <Double> Get the natural logarithm of an input.                    
+        add#a,b                     <Double> Add two values together.                                  
+        sub#a,b                     <Double> Subtract one value from another.                          
+        mul#a,b                     <Double> Multiply two values together.                             
+        div#a,b                     <Double> Divide one value by another.                              
+        root#value,n                <Double> Calculate the nth root of a value using reciprocal power. 
+        pow#value,exponent          <Double> Raise a value to a power.                                 
+        log#value,baseValue         <Double> Take the logarithm of a value at a base.                  
+        offset#value,amount         <Double> Add an offset to an input value.                          
+        offset50#value              <Double> Measure an input relative to the 50 percent baseline.     
+        scale#value,factor          <Double> Multiply an input by a scale factor.                      
+        ratio#numerator,denominator <Double> Divide one input by another.                              
+        smaller#a,b                 <Double> Take the minimum of two values.                           
+        larger#a,b                  <Double> Take the maximum of two values.                           
+        clamp#value,min,max         <Double> Limit an input to the inclusive minimum and maximum.      
+        lerp#a,b,amount             <Double> Linearly interpolate between two values.                  
 
     TruthInTheFlip.Farm.Format.SegmentStats
         MeanTrueZ                <Double>   Average True Z-Score across the segment.                                                     
@@ -129,11 +137,19 @@ Metrics:
         square#value                            <Double> Square an input value.                                                  
         sqrt#value                              <Double> Get the square root of an input.                                        
         ln#value                                <Double> Get the natural logarithm of an input.                                  
+        add#a,b                                 <Double> Add two values together.                                                
+        sub#a,b                                 <Double> Subtract one value from another.                                        
+        mul#a,b                                 <Double> Multiply two values together.                                           
+        div#a,b                                 <Double> Divide one value by another.                                            
+        root#value,n                            <Double> Calculate the nth root of a value using reciprocal power.               
         pow#value,exponent                      <Double> Raise a value to a power.                                               
+        log#value,baseValue                     <Double> Take the logarithm of a value at a base.                                
         offset#value,amount                     <Double> Add an offset to an input value.                                        
         offset50#value                          <Double> Measure an input relative to the 50 percent baseline.                   
         scale#value,factor                      <Double> Multiply an input by a scale factor.                                    
         ratio#numerator,denominator             <Double> Divide one input by another.                                            
+        smaller#a,b                             <Double> Take the minimum of two values.                                         
+        larger#a,b                              <Double> Take the maximum of two values.                                         
         clamp#value,min,max                     <Double> Limit an input to the inclusive minimum and maximum.                    
         lerp#a,b,amount                         <Double> Linearly interpolate between two values.                                
 
@@ -192,10 +208,18 @@ Metrics:
         square#value                            <Double> Square an input value.                                                  
         sqrt#value                              <Double> Get the square root of an input.                                        
         ln#value                                <Double> Get the natural logarithm of an input.                                  
+        add#a,b                                 <Double> Add two values together.                                                
+        sub#a,b                                 <Double> Subtract one value from another.                                        
+        mul#a,b                                 <Double> Multiply two values together.                                           
+        div#a,b                                 <Double> Divide one value by another.                                            
+        root#value,n                            <Double> Calculate the nth root of a value using reciprocal power.               
         pow#value,exponent                      <Double> Raise a value to a power.                                               
+        log#value,baseValue                     <Double> Take the logarithm of a value at a base.                                
         offset#value,amount                     <Double> Add an offset to an input value.                                        
         offset50#value                          <Double> Measure an input relative to the 50 percent baseline.                   
         scale#value,factor                      <Double> Multiply an input by a scale factor.                                    
         ratio#numerator,denominator             <Double> Divide one input by another.                                            
+        smaller#a,b                             <Double> Take the minimum of two values.                                         
+        larger#a,b                              <Double> Take the maximum of two values.                                         
         clamp#value,min,max                     <Double> Limit an input to the inclusive minimum and maximum.                    
         lerp#a,b,amount                         <Double> Linearly interpolate between two values.                                

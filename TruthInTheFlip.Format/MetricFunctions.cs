@@ -78,6 +78,13 @@ public abstract class MetricFunctions
     {
         return Math.Pow(value, exponent);
     }
+    
+    [IsMetric("TruthInTheFlip.v1.1.0")]
+    [StringHelp( "Take the logarithm of a value at a base.")]
+    public static double log(object sample, double value, double baseValue)
+    {
+        return Math.Log(value, baseValue);
+    }
 
     [IsMetric("TruthInTheFlip.v1.1.0")]
     [StringHelp( "Add an offset to an input value.")]
@@ -107,6 +114,21 @@ public abstract class MetricFunctions
         return numerator / denominator;
     }
 
+    [IsMetric("TruthInTheFlip.v1.1.0")]
+    [StringHelp( "Take the minimum of two values.")]
+    public static double smaller(object sample, double a, double b)
+    {
+        return Math.Min(a, b);
+    }
+    
+    [IsMetric("TruthInTheFlip.v1.1.0")]
+    [StringHelp( "Take the maximum of two values.")]
+    public static double larger(object sample, double a, double b)
+    {
+        return Math.Max(a, b);
+    }
+
+    
     [IsMetric("TruthInTheFlip.v1.1.0")]
     [StringHelp( "Limit an input to the inclusive minimum and maximum.")]
     public static double clamp(object sample, double value, double min, double max)
