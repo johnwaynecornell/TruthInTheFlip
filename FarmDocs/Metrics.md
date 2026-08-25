@@ -752,6 +752,131 @@ For a user, the important consequence is simple:
 
 ---
 
+## 11.1 Super-user metric extension
+
+Advanced callers can register metrics as `MetricDescriptor` instances directly on a `MetricCatalog`. This is the external/super-user extension path. It is distinct from the reflection-based catalog that the executable builds automatically from `[IsMetric]`-annotated members.
+
+### Delegate-based descriptors
+
+A property metric with a delegate getter:
+
+```csharp
+catalog.Add(new MetricDescriptor(
+    "TrueZ2",               // name
+    typeof(double),          // return type
+    "Example TrueZ replica", // help
+    (ctx, tracker) =>        // Func<MetricEvaluationContext, object, object?>
+    {
+        double z  = ctx.Get<double>("ZScore");
+        double zh = ctx.Get<double>("ZScoreHeads");
+        return z - Math.Abs(zh);
+    })
+{
+    SourceExpressions = ["ZScore", "ZScoreHeads"]
+});
+```
+
+A method (function) metric with a delegate invoker:
+
+```csharp
+catalog.Add(new MetricDescriptor(
+    "myFunc",
+    typeof(double),
+    new List<MetricParameterDescriptor>
+    {
+        new MetricParameterDescriptor("x", MetricParameterType.Scalar)
+    },
+    "Double the input.",
+    (ctx, obj, args) => (double)args[0]! * 2.0));
+```
+
+### SourceExpressions
+
+`MetricDescriptor.SourceExpressions` declares which metric expression strings the descriptor needs to be pre-bound before evaluation. The strings use the same expression grammar as user-facing CSV field names.
+
+```csharp
+SourceExpressions = ["ZScore", "ZScoreHeads"]         // flat property sources
+SourceExpressions = ["mean#abs#ZScoreHeads"]           // nested function source
+```
+
+**Design rule:**
+
+```text
+declare dependencies during bind   (SourceExpressions)
+consume dependencies during eval   (ctx.Get<T>("expr"))
+```
+
+Never call `MetricBinder.Bind` from inside a `Getter` or `Invoke` delegate.
+
+### Bind-time preparation
+
+When `MetricBinder.Bind` processes a field expression and encounters a descriptor that declares `SourceExpressions`, it:
+
+1. Binds each source expression at the same type and process context as the descriptor occurrence.
+2. Stores the resulting bound `MetricPath` as a **hidden dependency** in `MetricProjection.Dependencies`.
+3. Applies the same scalar/aggregate descent rules as normal metric expressions.
+
+Hidden dependencies participate in `MetricProjection.Inspect` (aggregate state accumulation) but do **not** appear as CSV output columns. Only expressions listed in the `csv` field list become output columns.
+
+Cycle detection is applied: if a descriptor's `SourceExpressions` would transitively reference itself (e.g. `Foo → Bar → Foo`), binding fails with a structured `MetricBindError` describing the cycle chain.
+
+### MetricEvaluationContext.Get<T>
+
+Inside a `Getter` or `Invoke` delegate, bound source expressions are retrieved via:
+
+```csharp
+T value = ctx.Get<T>("expression");
+```
+
+Where `"expression"` is one of the strings declared in `SourceExpressions`. The expression is looked up by canonical string key in the projection's hidden dependencies and evaluated against the current stats object.
+
+If the expression was not declared in `SourceExpressions`, `Get<T>` throws `KeyNotFoundException` immediately, making the missing declaration visible at development time rather than at deployment.
+
+### Example: flat property dependencies
+
+```csharp
+// Registers TrueZ2 on the Tracker catalog.
+catalog.Add(new MetricDescriptor(
+    "TrueZ2", typeof(double),
+    "TrueZ from declared sources",
+    (ctx, _) =>
+    {
+        double z  = ctx.Get<double>("ZScore");
+        double zh = ctx.Get<double>("ZScoreHeads");
+        return z - Math.Abs(zh);
+    })
+{
+    SourceExpressions = ["ZScore", "ZScoreHeads"]
+});
+```
+
+When `TrueZ2` appears in a `csv tracker` field list, `ZScore` and `ZScoreHeads` are bound as hidden dependencies. The `Getter` retrieves them by canonical string at evaluation time.
+
+### Example: nested function source dependency
+
+```csharp
+// Registers MeanAbsHeads on the SegmentStats catalog.
+catalog.Add(new MetricDescriptor(
+    "MeanAbsHeads", typeof(double),
+    "Mean absolute ZScoreHeads across tracker records in the segment",
+    (ctx, _) => ctx.Get<double>("mean#abs#ZScoreHeads"))
+{
+    SourceExpressions = ["mean#abs#ZScoreHeads"]
+});
+```
+
+When `MeanAbsHeads` appears in a `csv segment` field list, the expression `mean#abs#ZScoreHeads` is fully bound during `MetricBinder.Bind`:
+
+- `mean` → aggregate, descends to Tracker records
+- `abs` → scalar at Tracker level
+- `ZScoreHeads` → Tracker property
+
+Aggregate state is accumulated during `MetricProjection.Inspect` (one value per Tracker record in the segment). The `Getter` retrieves the computed mean via `ctx.Get<double>("mean#abs#ZScoreHeads")` at the segment evaluation boundary.
+
+Hidden dependencies do not appear in CSV output unless explicitly listed as a separate field.
+
+---
+
 ## 12. Metric naming and stability
 
 Metric names are part of the practical CSV interface. Scripts and plots may depend on them, so changing an established metric name should be treated as an interface change rather than a cosmetic edit.

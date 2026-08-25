@@ -2,12 +2,50 @@ namespace JWCFarm.Metrics;
 
 public class MetricBinder
 {
-    // Recursive parser. On failure:
+    // Shared context threaded through ParseExpression for source-expression binding.
+    // Null means no source-expression binding is requested (pure parse-only mode).
+    private sealed class BindContext
+    {
+        public MetricProjection Projection { get; }
+
+        // Names of MetricDescriptors currently having their SourceExpressions bound.
+        // Used to detect cycles (e.g. Foo → Bar → Foo).
+        // The chain is shared across InputProcess descent levels so cycles that
+        // span process boundaries are still detected correctly.
+        public List<string> BindingChain { get; }
+
+        public BindContext(MetricProjection projection)
+        {
+            Projection    = projection;
+            BindingChain  = new();
+        }
+
+        // Create a child context that targets a different projection but shares the
+        // same binding chain. Use this when descending into an InputProcess so that
+        // SourceExpression dependencies are stored in the projection the Getter will
+        // actually receive at evaluation time.
+        public BindContext WithProjection(MetricProjection projection)
+            => new(projection, BindingChain);
+
+        private BindContext(MetricProjection projection, List<string> sharedChain)
+        {
+            Projection   = projection;
+            BindingChain = sharedChain;
+        }
+    }
+
+    // ── recursive parser ──────────────────────────────────────────────────────
+    //
+    // On failure:
     //   - sets `error` to a structured description
     //   - sets `offset` to the character position where the error was detected
     //   - returns false without printing anything
-    // Recursive call failures are propagated as-is (error already set).
-    protected static bool ParseExpression(
+    // Recursive call failures propagate as-is (error already set).
+    //
+    // `bindCtx` is threaded through so that SourceExpressions are bound inline
+    // for every descriptor encountered, at the correct type context.
+
+    private static bool ParseExpression(
         FarmProcess? process,
         MetricCatalogs catalogs,
         MetricPath path,
@@ -15,7 +53,8 @@ public class MetricBinder
         Type inputType,
         string field,
         ref int offset,
-        out MetricBindError? error)
+        out MetricBindError? error,
+        BindContext? bindCtx = null)
     {
         error = null;
         Type _currentType = currentType;
@@ -51,9 +90,18 @@ public class MetricBinder
 
             this_offset = i + 1; // skip past '#'
 
+            // Bind any SourceExpressions declared by this function descriptor.
+            if (!BindSourceExpressionsForDescriptor(
+                    process, catalogs, _currentType, inputType,
+                    func, bindCtx, field, i, out error))
+            {
+                offset = i;
+                return false;
+            }
+
             List<MetricPath> arguments = new();
 
-            for (int pi = 0; pi < func.Parameters.Count; pi++)
+            for (int pi = 0; pi < func.Parameters!.Count; pi++)
             {
                 var p = func.Parameters[pi];
 
@@ -82,16 +130,21 @@ public class MetricBinder
 
                     if (inputProcess != null)
                     {
+                        // Descend into the inner process.  Any SourceExpression
+                        // dependencies discovered here must land in
+                        // inputProcess.Projection — that is the projection the
+                        // Getter's context will carry at evaluation time.
+                        var innerCtx = bindCtx?.WithProjection(inputProcess.Projection);
+
                         paramOk = ParseExpression(
                             inputProcess, catalogs, argumentPath,
                             inputProcess.StatType, inputProcess.InputType,
-                            field, ref this_offset, out error);
+                            field, ref this_offset, out error, innerCtx);
 
                         if (paramOk) inputProcess.Projection.Fields.Add(argumentPath);
                     }
                     else if (_currentType == null)
                     {
-                        // inputType is null — no child process type to sample from.
                         offset = this_offset;
                         error = new MetricBindError(field, this_offset,
                             $"Aggregate parameter '{p.Name}' of '{funcName}' " +
@@ -103,7 +156,7 @@ public class MetricBinder
                         paramOk = ParseExpression(
                             null, catalogs, argumentPath,
                             _currentType, inputType,
-                            field, ref this_offset, out error);
+                            field, ref this_offset, out error, bindCtx);
                     }
                 }
                 else
@@ -111,13 +164,13 @@ public class MetricBinder
                     paramOk = ParseExpression(
                         process, catalogs, argumentPath,
                         currentType, inputType,
-                        field, ref this_offset, out error);
+                        field, ref this_offset, out error, bindCtx);
                 }
 
                 if (!paramOk)
                 {
                     offset = this_offset;
-                    return false; // error already set by recursive call
+                    return false;
                 }
 
                 arguments.Add(argumentPath);
@@ -164,6 +217,16 @@ public class MetricBinder
                 return false;
             }
 
+            // Bind any SourceExpressions declared by this property descriptor.
+            // Use _currentType (before advancing to ValueType) as the receiver context.
+            if (!BindSourceExpressionsForDescriptor(
+                    process, catalogs, _currentType, inputType,
+                    metric, bindCtx, field, segStart, out error))
+            {
+                offset = segStart;
+                return false;
+            }
+
             path.Add(metric.CreateInstance(null));
             _currentType = metric.ValueType;
             segStart += part.Length + 1; // +1 for the '.'
@@ -173,7 +236,85 @@ public class MetricBinder
         return true;
     }
 
+    // ── SourceExpressions binding ─────────────────────────────────────────────
+
+    // Binds all SourceExpressions declared by `descriptor` into bindCtx.Projection.Dependencies.
+    // - currentType : the receiver type where the descriptor was found
+    // - inputType   : the child/input type for aggregate descent at that level
+    // Skips expressions already present in Dependencies (deduplication).
+    // Returns false (with error set) on cycle or parse failure.
+    private static bool BindSourceExpressionsForDescriptor(
+        FarmProcess? process,
+        MetricCatalogs catalogs,
+        Type currentType,
+        Type? inputType,
+        MetricDescriptor descriptor,
+        BindContext? bindCtx,
+        string outerField,
+        int errorOffset,
+        out MetricBindError? error)
+    {
+        error = null;
+
+        if (bindCtx == null ||
+            descriptor.SourceExpressions == null ||
+            descriptor.SourceExpressions.Count == 0)
+            return true;
+
+        // Cycle check: if this descriptor's name is already in the binding chain,
+        // we would recurse into it again — that is a cycle.
+        if (bindCtx.BindingChain.Contains(descriptor.Name))
+        {
+            int cycleStart = bindCtx.BindingChain.IndexOf(descriptor.Name);
+            string chain = string.Join(" → ",
+                bindCtx.BindingChain.Skip(cycleStart).Append(descriptor.Name));
+            error = new MetricBindError(outerField, errorOffset,
+                $"Metric dependency cycle: {chain}.");
+            return false;
+        }
+
+        bindCtx.BindingChain.Add(descriptor.Name);
+
+        try
+        {
+            foreach (string srcExpr in descriptor.SourceExpressions)
+            {
+                // Deduplication: skip if already bound under this canonical key.
+                if (bindCtx.Projection.ContainsDependency(srcExpr)) continue;
+
+                MetricPath srcPath = new();
+                int srcOffset = 0;
+
+                bool ok = ParseExpression(
+                    process, catalogs, srcPath,
+                    currentType, inputType!,
+                    srcExpr, ref srcOffset, out error, bindCtx);
+
+                if (!ok) return false;
+
+                if (srcOffset != srcExpr.Length)
+                {
+                    error = new MetricBindError(srcExpr, srcOffset,
+                        srcExpr.Length - srcOffset,
+                        $"Unexpected text in SourceExpression '{srcExpr}'.");
+                    return false;
+                }
+
+                bindCtx.Projection.AddDependency(srcExpr, srcPath);
+            }
+        }
+        finally
+        {
+            bindCtx.BindingChain.RemoveAt(bindCtx.BindingChain.Count - 1);
+        }
+
+        return true;
+    }
+
+    // ── public Bind overloads ─────────────────────────────────────────────────
+
     // Primary overload: returns structured error information.
+    // Binds SourceExpressions for all descriptors encountered.
     public static bool Bind(
         FarmProcess? process,
         MetricCatalogs catalogs,
@@ -185,6 +326,7 @@ public class MetricBinder
     {
         MetricProjection projection = new();
         bindError = null;
+        var bindCtx = new BindContext(projection);
 
         foreach (string field in fields)
         {
@@ -194,11 +336,10 @@ public class MetricBinder
             bool ok = ParseExpression(
                 process, catalogs, path,
                 type, inputType!,
-                field, ref this_offset, out MetricBindError? fieldError);
+                field, ref this_offset, out MetricBindError? fieldError, bindCtx);
 
             if (ok && this_offset != field.Length)
             {
-                // Expression parsed successfully but left unconsumed text.
                 ok = false;
                 fieldError = new MetricBindError(field, this_offset,
                     field.Length - this_offset,

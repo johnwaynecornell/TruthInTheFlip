@@ -39,6 +39,19 @@ env.AddModule<TruthInTheFlip_Fluent>();
 //     Getter = (tracker) => ((Tracker)tracker).ZScore - Math.Abs(((Tracker)tracker).ZScoreHeads)
 // });
 
+/* Here is an example of programmatically adding an alia for and expression to the catalog for Tracker.*/
+// env.Context.Get<MetricCatalogs>().TryGet(typeof(Tracker), out var catalog);
+// catalog.Add(new MetricDescriptor()
+// {
+//     Type = MetricDescriptor.EType.Property,
+//     Name = "Alias_TrueZ",
+//     Help = "Example duplicate TrueZ",
+//     ValueType = typeof(double),
+//     Getter = (ctx, tracker) => ctx.Get("sub#ZScore,abs#ZScoreHeads"),
+//     SourceExpressions = ["sub#ZScore,abs#ZScoreHeads"]
+//});
+
+
 env.ServeTypes = new Type[] { typeof(FarmCommand), typeof(InfoCommand), typeof(HelpCommand) };
 
 List<String> cl = new List<String>(args);

@@ -16,17 +16,31 @@ public class MetricDescriptor
     public Type ValueType { get; init; }
     public string Help { get; init; }
 
-    public Func<object, object?>? Getter { get; set; } = null;
-    public Func<object, object?[], object?>? Invoke { get; init; }
-    
+    public Func<MetricEvaluationContext, object, object?>? Getter { get; set; } = null;
+    public Func<MetricEvaluationContext, object, object?[], object?>? Invoke { get; init; }
+
     public IReadOnlyList<MetricParameterDescriptor>? Parameters { get; init; }
+
+    // Canonical expression strings that this descriptor requires to be pre-bound during
+    // MetricBinder.Bind. The bound MetricPaths are stored as hidden dependencies in the
+    // MetricProjection and retrieved at evaluation time via MetricEvaluationContext.Get<T>.
+    public IReadOnlyList<string>? SourceExpressions { get; init; }
     
     public MetricDescriptor()
     {
 
     }
     
-    public MetricDescriptor(string name, Type returnType, List<MetricParameterDescriptor> parameters, string help, Func<object, object?[], object?>? invoke )
+    public MetricDescriptor(string name, Type returnType, string help, Func<MetricEvaluationContext, object, object?> getter)
+    {
+        Type = EType.Property;
+        Name = name;
+        ValueType = returnType;
+        Help = help;
+        Getter = getter;
+    }
+    
+    public MetricDescriptor(string name, Type returnType, List<MetricParameterDescriptor> parameters, string help, Func<MetricEvaluationContext, object, object?[], object?>? invoke )
     {
         Type = EType.Method;
         

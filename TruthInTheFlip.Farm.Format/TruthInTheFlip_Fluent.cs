@@ -91,7 +91,7 @@ public class TruthInTheFlip_Fluent
             Name = "Source",
             Help = "Source of the tracker",
             ValueType = typeof(Tracker),
-            Getter = (tracker) => ((Tracker)tracker).Source
+            Getter = (ctx, tracker) => ((Tracker)tracker).Source
         };
     }
 
@@ -113,7 +113,7 @@ public class TruthInTheFlip_Fluent
                         Help =
                             (string)(member.GetCustomAttributes(typeof(StringHelpAttribute), true).FirstOrDefault() as
                                 StringHelpAttribute).Description,
-                        Getter = obj => ((FieldInfo)member).GetValue(obj)
+                        Getter = (ctx, obj) => ((FieldInfo)member).GetValue(obj)
                     });
                 else if (member is PropertyInfo propertyInfo)
                     l.Add(new MetricDescriptor
@@ -124,17 +124,17 @@ public class TruthInTheFlip_Fluent
                         Help =
                             (string)(member.GetCustomAttributes(typeof(StringHelpAttribute), true).FirstOrDefault() as
                                 StringHelpAttribute).Description,
-                        Getter = obj => ((PropertyInfo)member).GetValue(obj)
+                        Getter = (ctx, obj) => ((PropertyInfo)member).GetValue(obj)
                     });
                 else if (member is MethodInfo methodInfo)
                 {
                     ParameterInfo[] parameters = methodInfo.GetParameters();
+                    bool wantsContext = parameters.Length > 0 && parameters[0].ParameterType == typeof(MetricEvaluationContext);
                     
                     List<MetricParameterDescriptor> _p = new List<MetricParameterDescriptor>();
                     
-                    for (int i = 0; i < parameters.Length; i++)
+                    for (int i = wantsContext ? 1 : 0; i < parameters.Length; i++)
                     {
-                        
                         if (parameters[i].ParameterType == typeof(List<double>))
                             _p.Add(new MetricParameterDescriptor()
                             {
@@ -148,24 +148,49 @@ public class TruthInTheFlip_Fluent
                                 Type = MetricParameterType.Scalar
                             });
                     }
-                    
-                    l.Add(new MetricDescriptor
+
+                    if (!wantsContext)
                     {
-                        Type = MetricDescriptor.EType.Method,
-                        Name = member.Name,
-                        ValueType = methodInfo.ReturnType,
-                        Help = (member.GetCustomAttributes(typeof(StringHelpAttribute), true)
-                            .FirstOrDefault() as StringHelpAttribute).Description,
-                        Invoke = (instance, args) =>
-                            ((MethodInfo)member).Invoke(instance, args),
-                        Parameters = _p
-                    });
+                        l.Add(new MetricDescriptor
+                        {
+                            Type = MetricDescriptor.EType.Method,
+                            Name = member.Name,
+                            ValueType = methodInfo.ReturnType,
+                            Help = (member.GetCustomAttributes(typeof(StringHelpAttribute), true)
+                                .FirstOrDefault() as StringHelpAttribute).Description,
+                            Invoke = (ctx, instance, args) =>
+                                ((MethodInfo)member).Invoke(instance, args),
+                            Parameters = _p
+                        });
+                    }
+                    else //wantsContext
+                    {
+                        l.Add(new MetricDescriptor
+                        {
+                            Type = MetricDescriptor.EType.Method,
+                            Name = member.Name,
+                            ValueType = methodInfo.ReturnType,
+                            Help = (member.GetCustomAttributes(typeof(StringHelpAttribute), true)
+                                .FirstOrDefault() as StringHelpAttribute).Description,
+                            Invoke = (ctx, instance, args) =>
+                            {
+                                object?[] invokeArgs = new object?[args.Length + 1];
+                                invokeArgs[0] = ctx;
+                                Array.Copy(args, 0, invokeArgs, 1, args.Length);
+                                return ((MethodInfo)member).Invoke(instance, invokeArgs);
+                            },
+                            
+                            
+                            
+                            Parameters = _p
+                        });
+                    }
 
                 }
             }
         }
         
-        foreach (var member in arg.GetMembers(BindingFlags.Public | BindingFlags.Static))
+        foreach (var member in arg.GetMembers(BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy))
         {
             if ((member.GetCustomAttributes(typeof(IsMetricAttribute), true).FirstOrDefault() is not null)
                 || (member.GetCustomAttributes(typeof(IsRecordAttribute), true).FirstOrDefault() is not null))
@@ -176,7 +201,9 @@ public class TruthInTheFlip_Fluent
                     
                     List<MetricParameterDescriptor> _p = new List<MetricParameterDescriptor>();
                     
-                    for (int i = 1; i < parameters.Length; i++)
+                    int ii = ((parameters.Length > 0) && (parameters[0].ParameterType == typeof(MetricEvaluationContext))) ? 1 : 0;
+                    ii++;
+                    for (int i = ii; i < parameters.Length; i++)
                     {
                         if (parameters[i].ParameterType == typeof(List<double>))
                             _p.Add(new MetricParameterDescriptor()
@@ -199,14 +226,19 @@ public class TruthInTheFlip_Fluent
                         ValueType = methodInfo.ReturnType,
                         Help = (member.GetCustomAttributes(typeof(StringHelpAttribute), true)
                             .FirstOrDefault() as StringHelpAttribute).Description,
-                        Invoke = (instance, args) =>
+                        Invoke = (ctx, instance, args) =>
                         {
-                            object?[] invokeArgs = new object?[args.Length + 1];
-
-                            invokeArgs[0] = instance;
-                            Array.Copy(args, 0, invokeArgs, 1, args.Length);
-
-                            return methodInfo.Invoke(null, invokeArgs);
+                                object?[] invokeArgs = new object?[args.Length + ii];
+                                if (ii == 1)
+                                    invokeArgs[0] = instance;
+                                else
+                                {
+                                    invokeArgs[0] = ctx;
+                                    invokeArgs[1] = instance;
+                                }
+                                
+                                Array.Copy(args, 0, invokeArgs, ii, args.Length);
+                                return methodInfo.Invoke(null, invokeArgs);
                         },
                         Parameters = _p
                     });

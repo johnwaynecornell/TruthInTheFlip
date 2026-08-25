@@ -34,7 +34,7 @@ public class MetricBinderErrorTests
 
     // ── catalog builders ─────────────────────────────────────────────────────
 
-    private static MetricDescriptor Property(string name, Type valueType, Func<object, object?> getter)
+    private static MetricDescriptor Property(string name, Type valueType, Func<MetricEvaluationContext, object, object?> getter)
         => new MetricDescriptor
         {
             Type = MetricDescriptor.EType.Property,
@@ -65,7 +65,7 @@ public class MetricBinderErrorTests
             Name = name,
             ValueType = mi.ReturnType,
             Help = name,
-            Invoke = (instance, args) =>
+            Invoke = (ctx, instance, args) =>
                 ((MethodInfo)mi).Invoke(instance, args),
             Parameters = parameters
         };
@@ -79,8 +79,8 @@ public class MetricBinderErrorTests
         {
             Metrics = new Dictionary<string, MetricDescriptor>
             {
-                ["Score"]  = Property("Score",  typeof(double), o => ((Root)o).Score),
-                ["Nested"] = Property("Nested", typeof(Leaf),   o => ((Root)o).Nested),
+                ["Score"]  = Property("Score",  typeof(double), (ctx, o) => ((Root)o).Score),
+                ["Nested"] = Property("Nested", typeof(Leaf),   (ctx, o) => ((Root)o).Nested),
                 ["abs"]    = Method("abs",    "abs",    typeof(Functions)),
                 ["add"]    = Method("add",    "add",    typeof(Functions)),
                 ["mean"]   = Method("mean",   "mean",   typeof(Functions)),
@@ -92,7 +92,7 @@ public class MetricBinderErrorTests
         {
             Metrics = new Dictionary<string, MetricDescriptor>
             {
-                ["Value"] = Property("Value", typeof(double), o => ((Leaf)o).Value),
+                ["Value"] = Property("Value", typeof(double), (ctx, o) => ((Leaf)o).Value),
                 ["abs"]   = Method("abs", "abs", typeof(Functions)),
             }
         };

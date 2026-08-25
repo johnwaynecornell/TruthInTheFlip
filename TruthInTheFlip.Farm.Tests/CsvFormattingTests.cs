@@ -29,7 +29,7 @@ public class CsvFormattingTests
                 Name = "Number",
                 ValueType = typeof(double),
                 Help = "Number",
-                Getter = value => ((Row)value).Number
+                Getter = (ctx, value) => ((Row)value).Number
             }.CreateInstance(null)
         });
         projection.Fields.Add(new MetricPath
@@ -40,7 +40,7 @@ public class CsvFormattingTests
                 Name = "Nested",
                 ValueType = typeof(NestedRow),
                 Help = "Nested",
-                Getter = value => ((Row)value).Nested
+                Getter = (ctx, value) => ((Row)value).Nested
             }.CreateInstance(null),
             new MetricDescriptor
             {
@@ -48,7 +48,7 @@ public class CsvFormattingTests
                 Name = "Value",
                 ValueType = typeof(string),
                 Help = "Value",
-                Getter = value => ((NestedRow)value).Value
+                Getter = (ctx, value) => ((NestedRow)value).Value
             }.CreateInstance(null)
         });
         return projection;

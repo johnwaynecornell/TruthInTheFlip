@@ -29,7 +29,7 @@ public class MetricBinderTests
                     Name = "Value",
                     ValueType = typeof(int),
                     Help = "Parent value",
-                    Getter = value => ((Parent)value).Value
+                    Getter = (ctx, value) => ((Parent)value).Value
                 },
                 ["Nested"] = new MetricDescriptor
                 {
@@ -37,7 +37,7 @@ public class MetricBinderTests
                     Name = "Nested",
                     ValueType = typeof(Child),
                     Help = "Nested child",
-                    Getter = value => ((Parent)value).Nested
+                    Getter = (ctx, value) => ((Parent)value).Nested
                 }
             }
         };
@@ -52,7 +52,7 @@ public class MetricBinderTests
                     Name = "Name",
                     ValueType = typeof(string),
                     Help = "Child name",
-                    Getter = value => ((Child)value).Name
+                    Getter = (ctx, value) => ((Child)value).Name
                 }
             }
         };
@@ -85,7 +85,7 @@ public class MetricBinderTests
 
         object? value = source;
         foreach (var descriptor in projection.Fields.Single())
-            value = descriptor.InstanceDescriptor.Getter(value!);
+            value = descriptor.InstanceDescriptor.Getter(null, value!);
 
         Assert.Equal("hello", value);
     }
