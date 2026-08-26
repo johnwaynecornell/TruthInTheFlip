@@ -10,6 +10,9 @@ namespace TruthInTheFlip.Farm.Format;
 
 public class TruthInTheFlip_Fluent
 {
+    [ThreadStatic]
+    public static Func<Type, MetricCatalog?>? ReflectOverride;
+    
     public static void FluentModuleInitialize(FluentEnvironment env)
     {
         env.AddModule<TrackerWindows>();
@@ -22,6 +25,8 @@ public class TruthInTheFlip_Fluent
             catalogs = new MetricCatalogs();
             env.Context.Set(catalogs);
         }
+        
+        catalogs.Reflect = ReflectOverride??DefaultReflect;
 
         env.TypeParseHandlers[typeof(TimeSpan)] =
             (type, commandArgs, ref cursor, ref status, message, errorMessage, out result) =>
@@ -76,8 +81,6 @@ public class TruthInTheFlip_Fluent
                 result = parsed;
                 return true;
             };
-
-        env.Context.Get<MetricCatalogs>().Reflect = DefaultReflect;
 
         if (!env.Context.Get<MetricCatalogs>().TryGet(typeof(Tracker), out var catalog))
         {

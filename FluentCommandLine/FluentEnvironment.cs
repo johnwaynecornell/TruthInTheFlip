@@ -113,7 +113,7 @@ public class FluentEnvironment
     /// <summary>
     /// Scans host type for static methods with the correct attributes and loads them into the registry.
     /// </summary>
-    public FluentEnvironment AddModule(Type host)
+    public FluentEnvironment AddModule(Type host, bool suppressModuleInit = false)
     {
         var methods = host.GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
 
@@ -150,8 +150,11 @@ public class FluentEnvironment
             );
         }
 
-        var moduleInit = host.GetMethod("FluentModuleInitialize", BindingFlags.Public | BindingFlags.Static);
-        moduleInit?.Invoke(null, new object[] { this });
+        if (!suppressModuleInit)
+        {
+            var moduleInit = host.GetMethod("FluentModuleInitialize", BindingFlags.Public | BindingFlags.Static);
+            moduleInit?.Invoke(null, new object[] { this });
+        }
         
         return this;
     }
