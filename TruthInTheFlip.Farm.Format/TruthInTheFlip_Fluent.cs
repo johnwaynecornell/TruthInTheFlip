@@ -95,7 +95,7 @@ public class TruthInTheFlip_Fluent
         };
     }
 
-    public static MetricDescriptor? FluentLoadStaticFromMethod(MethodInfo methodInfo)
+    public static MetricDescriptor? MetricLoadStaticFromMethod(MethodInfo methodInfo)
     {
         IsMetricAttribute? metricAttribute =
             methodInfo.GetCustomAttributes(typeof(IsMetricAttribute), true).FirstOrDefault() as IsMetricAttribute;
@@ -255,7 +255,7 @@ public class TruthInTheFlip_Fluent
             {
                 if (member is MethodInfo methodInfo)
                 {
-                    var m = FluentLoadStaticFromMethod(methodInfo);
+                    var m = MetricLoadStaticFromMethod(methodInfo);
                     if (m == null) throw new NullReferenceException($"Failed to load metric from method {methodInfo.Name}");
                     l.Add(m);
                 }
