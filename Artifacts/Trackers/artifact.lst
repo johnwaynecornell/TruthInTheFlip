@@ -3,3 +3,4 @@ crypto3.tkr //  -rsource NET2
 crypto_RandomSD.tkr // -rsource NET2 -anticipation RandomSD NET2
 Quant.tkr // -rsource Quantis PCI 0
 
+Quant_IDQE.tkr // -rsource IDQE Quantis PCI 0
