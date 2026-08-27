@@ -47,7 +47,7 @@ def divide_horizon(
 
 
 def tracker_selector(
-    tracker_modifier: str,
+    tracker_modifier: list[str],
     tracker: Path,
     boundary_type: str,
     begin,
@@ -71,7 +71,7 @@ def tracker_selector(
 
 def query_region(
     executable: str,
-    tracker_modifier: str,
+    tracker_modifier: list[str],
     tracker: Path,
     boundary_type: str,
     begin,
@@ -103,7 +103,7 @@ def query_region(
 def query_horizon_segments(
     executable: str,
     tracker: Path,
-    tracker_modifier: str,
+    tracker_modifier: list[str],
     horizon_start: int,
     horizon_end: int,
     segment_count: int,
