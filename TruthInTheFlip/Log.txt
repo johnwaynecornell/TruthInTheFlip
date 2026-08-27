@@ -3471,3 +3471,10 @@ The visual differences are striking enough to make the panel a useful control vi
 <p>
 This marks the beginning of the post-run harvest phase: the live tracker is now a fixed artifact, and the Farm tooling can be used to compare its internal structure with its siblings at common scales and horizons.
 </p>
+
+___________________________________________________________________________
+╔═══════════════╗
+║20260827_195700║
+╚═══════════════╝
+
+The cleaned complete-segment reports do not undermine the earlier observation. They strengthen confidence that the visual/source differences aren't caused by a partial boundary artifact. But they also remind us that “more jackpots” is currently a small-count observation, not yet evidence of predictability.
