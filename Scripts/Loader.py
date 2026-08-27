@@ -25,26 +25,16 @@ def load_report(executable: str, arguments: list[str]) -> pd.DataFrame:
     return pd.read_csv(io.StringIO(result.stdout))
 
 
-def divide_horizon(
-    start: int,
-    end: int,
-    segment_count: int,
-) -> list[tuple[int, int]]:
-    if segment_count <= 0:
-        raise ValueError("segment_count must be greater than zero")
+def divide_horizon(start: int, end: int, segment_count: int):
+    span = end - start
 
-    width = (end - start) / segment_count
-
-    regions = []
-
-    for i in range(segment_count):
-        begin = round(start + width * i)
-        finish = round(start + width * (i + 1))
-
-        regions.append((begin, finish))
-
-    return regions
-
+    return [
+        (
+            start + span * i // segment_count,
+            start + span * (i + 1) // segment_count,
+        )
+        for i in range(segment_count)
+    ]
 
 def tracker_selector(
     tracker_modifier: list[str],
