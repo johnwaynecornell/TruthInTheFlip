@@ -3432,3 +3432,42 @@ ___________________________________________________________________________
 
 8.9T comparison horizon established.
 Current tracker comparisons are being normalized to a common 8.9 trillion-flip horizon using 100B-flip segments. The new TruthInTheFlip Farm reporting layer and Python scripts make it possible to compare True Z trajectories, Same/Anticipated behavior, and joint scatter distributions across independent tracker sources. Quant_IDQE is continuing toward the full horizon and will be added to the comparison set when mature.
+
+___________________________________________________________________________
+╔═══════════════╗
+║20260827_133446║
+╚═══════════════╝
+
+<h2>Quant IDQE Harvest and Tracker Comparison</h2>
+
+<p>
+The Quant_IDQE run has completed and the tracker has been committed to the project artifacts with its final reports.
+</p>
+
+<p>
+After the long run, the workstation was updated and rebooted successfully. The QRNG passed a post-reboot health check, and Rider run/debug functionality was also confirmed.
+</p>
+
+<p>
+A refreshed four-tracker comparison was generated using <code>TrackerComparison_Panel.py</code>, updated from the earlier version to include <code>Quant_IDQE.tkr</code> alongside the existing comparison trackers.
+</p>
+
+<p>
+The resulting 100B-segment comparison image has been preserved as:
+</p>
+
+<p>
+<code>Scripts/TrackerComparison_Panel_20260827_133446.png</code>
+</p>
+
+<p>
+The panel provides a common-horizon visual comparison of True Z, anticipated edge, same edge, and anticipated-versus-same geometry across the trackers.
+</p>
+
+<p>
+The visual differences are striking enough to make the panel a useful control view, while remaining an invitation for quantitative follow-up rather than a conclusion by itself.
+</p>
+
+<p>
+This marks the beginning of the post-run harvest phase: the live tracker is now a fixed artifact, and the Farm tooling can be used to compare its internal structure with its siblings at common scales and horizons.
+</p>

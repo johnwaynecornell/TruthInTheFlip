@@ -1,6 +1,3 @@
-# Example output:
-# TrackerComparison_Panel_8.9T_2026-08-18.png
-
 from __future__ import annotations
 
 import argparse
@@ -262,12 +259,12 @@ def main() -> None:
             fields,
         ),
         # When mature:
-        # "Quant IDQE": load_tracker_frame(
-        #     executable,
-        #     tracker_path / "Quant_IDQE.tkr",
-        #     horizon,
-        #     fields,
-        # ),
+        "Quant IDQE": load_tracker_frame(
+            executable,
+            tracker_path / "Quant_IDQE.tkr",
+            horizon,
+            fields,
+        ),
     }
 
     plot_comparison(frames)
