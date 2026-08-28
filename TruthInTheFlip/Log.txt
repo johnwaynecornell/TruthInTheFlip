@@ -3478,3 +3478,62 @@ ___________________________________________________________________________
 ╚═══════════════╝
 
 The cleaned complete-segment reports do not undermine the earlier observation. They strengthen confidence that the visual/source differences aren't caused by a partial boundary artifact. But they also remind us that “more jackpots” is currently a small-count observation, not yet evidence of predictability.
+
+___________________________________________________________________________
+╔═══════════════╗
+║20260828_165007║
+╚═══════════════╝
+
+<h2>Anticipation Comparison at 10B Segmentation</h2>
+
+<p>
+A new cross-tracker anticipation comparison has been added using 10B segments across the common analysis horizon.
+</p>
+
+<p>
+The comparison includes the trackers in lineage order:
+<code>crypto3.tkr</code>,
+<code>crypto_RandomSD.tkr</code>,
+<code>Quant.tkr</code>,
+and <code>Quant_IDQE.tkr</code>.
+</p>
+
+<p>
+The preserved sample is:
+</p>
+
+<p>
+<code>Scripts/TrackerAnticipatedComparison.20260828_165007.png</code>
+</p>
+
+<p>
+The corresponding analysis is implemented in
+<code>TrackerAnticipatedComparison.py</code>,
+with <code>TrackerAnticipatedComparison.sh</code> providing the convenience launcher.
+Shared Farm-loading support was also updated in <code>Loader.py</code>.
+</p>
+
+<p>
+The panel compares three Farm-derived metric expressions:
+</p>
+
+<ul>
+    <li><code>offset50#mean#AnticipatedPercentage</code></li>
+    <li><code>offset50#mean#BetSameWinRate</code></li>
+    <li><code>offset50#mean#SamePercentage</code></li>
+</ul>
+
+<p>
+The 10B view was selected after experimenting at finer segmentation because it retains the visible local structure while substantially reducing visual noise.
+All tracker panels share the same axes so differences in excursion, convergence, separation, and local relationship geometry can be compared directly.
+</p>
+
+<p>
+The resulting traces show visually structured periods in which anticipated percentage,
+bet-same win rate, and same percentage converge, separate, and move together over finite regions.
+This is not itself evidence of predictive behavior, but it provides a concrete observational basis for testing whether any of those relationships persist at positive lag.
+</p>
+
+<p>
+The next analytical question is therefore not simply whether these quantities are correlated contemporaneously, but whether a measurable state at one point in the record carries information into a later, genuinely unseen region.
+</p>

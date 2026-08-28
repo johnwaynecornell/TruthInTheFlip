@@ -24,6 +24,34 @@ def load_report(executable: str, arguments: list[str]) -> pd.DataFrame:
 
     return pd.read_csv(io.StringIO(result.stdout))
 
+def load_tracker_frame(executable, process, path, horizon, fields, process_args):
+    frame = load_report(
+        executable,
+        [
+            "csv",
+            process,
+            *horizon,
+            "window",
+            "by_total",
+            "100B",
+            "file",
+            str(path),
+            *process_args,
+            *fields
+        ],
+    )
+
+    required = {*fields}
+    missing = required.difference(frame.columns)
+
+    if missing:
+        raise ValueError(
+            f"Report is missing expected columns: {sorted(missing)}"
+        )
+
+    return frame
+
+
 
 def divide_horizon(start: int, end: int, segment_count: int):
     span = end - start
