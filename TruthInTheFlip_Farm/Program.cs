@@ -26,7 +26,10 @@ env.AddModule<TruthInTheFlip_Fluent>();
 //         new("bar", MetricParameterType.Scalar)
 //     },
 //     "Double an input.",
-//     (obj, args) => (double)args[0]! * 2));
+//     (ctx ,obj, args) => (double)args[0]! * 2)
+// {
+//     SourceExpressions = null
+// });
 
 /* Here is an example of programmatically adding a regular metric to the catalog for Tracker.*/
 // env.Context.Get<MetricCatalogs>().TryGet(typeof(Tracker), out var catalog);
@@ -36,7 +39,7 @@ env.AddModule<TruthInTheFlip_Fluent>();
 //     Name = "TrueZ2",
 //     Help = "Example duplicate TrueZ",
 //     ValueType = typeof(double),
-//     Getter = (tracker) => ((Tracker)tracker).ZScore - Math.Abs(((Tracker)tracker).ZScoreHeads)
+//     Getter = (ctx, tracker) => ((Tracker)tracker).ZScore - Math.Abs(((Tracker)tracker).ZScoreHeads)
 // });
 
 /* Here is an example of programmatically adding an alia for and expression to the catalog for Tracker.*/
@@ -49,7 +52,7 @@ env.AddModule<TruthInTheFlip_Fluent>();
 //     ValueType = typeof(double),
 //     Getter = (ctx, tracker) => ctx.Get("sub#ZScore,abs#ZScoreHeads"),
 //     SourceExpressions = ["sub#ZScore,abs#ZScoreHeads"]
-//});
+// });
 
 
 env.ServeTypes = new Type[] { typeof(FarmCommand), typeof(InfoCommand), typeof(HelpCommand) };

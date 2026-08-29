@@ -31,16 +31,17 @@ public class MetricDescriptor
 
     }
     
-    public MetricDescriptor(string name, Type returnType, string help, Func<MetricEvaluationContext, object, object?> getter)
+    public MetricDescriptor(string name, Type returnType, string help, Func<MetricEvaluationContext, object, object?> getter, IReadOnlyList<string>? sourceExpressions = null)
     {
         Type = EType.Property;
         Name = name;
         ValueType = returnType;
         Help = help;
         Getter = getter;
+        SourceExpressions = sourceExpressions;
     }
     
-    public MetricDescriptor(string name, Type returnType, List<MetricParameterDescriptor> parameters, string help, Func<MetricEvaluationContext, object, object?[], object?>? invoke )
+    public MetricDescriptor(string name, Type returnType, List<MetricParameterDescriptor> parameters, string help, Func<MetricEvaluationContext, object, object?[], object?>? invoke, IReadOnlyList<string>? sourceExpressions = null )
     {
         Type = EType.Method;
         
@@ -49,6 +50,7 @@ public class MetricDescriptor
         Parameters = parameters;
         Help = help;
         Invoke = invoke;
+        SourceExpressions = sourceExpressions;
     }
     
     public class Instance
