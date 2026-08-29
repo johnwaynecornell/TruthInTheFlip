@@ -15,6 +15,10 @@ env.AddModule<InfoCommand>();
 env.AddModule<Commands>();
 env.AddModule<TruthInTheFlip_Fluent>();
 
+Experimental.AddToEnv(env);
+
+List<String> cl = new List<String>(args);
+
 /* Here is an example of programmatically adding a metric method to the catalog for SegmentStats.*/
 //
 // env.Context.Get<MetricCatalogs>().TryGet(typeof(SegmentStats), out var catalog);
@@ -57,10 +61,8 @@ env.AddModule<TruthInTheFlip_Fluent>();
 
 env.ServeTypes = new Type[] { typeof(FarmCommand), typeof(InfoCommand), typeof(HelpCommand) };
 
-List<String> cl = new List<String>(args);
-
 /*
-  
+
 cl = new List<String>("csv segment window by_total 10B file /data/jwc/Documents/Trackers/crypto.tkr by_total 100B Index EndTotal BeginWallclock Begin.absoluteTotal End.absoluteTotal Z.AnticipatedPercentage .END. -info filename.meta.txt".Split(' '));
 cl = new List<String>("csv tracker window by_total 10B file /data/jwc/Documents/Trackers/crypto3.tkr absoluteTotal heads tails anticipated ZScore .END. -info filename.meta.txt".Split(' '));
 

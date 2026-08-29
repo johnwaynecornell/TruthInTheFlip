@@ -3537,3 +3537,90 @@ This is not itself evidence of predictive behavior, but it provides a concrete o
 <p>
 The next analytical question is therefore not simply whether these quantities are correlated contemporaneously, but whether a measurable state at one point in the record carries information into a later, genuinely unseen region.
 </p>
+
+___________________________________________________________________________
+╔═══════════════╗
+║20260829_164929║
+╚═══════════════╝
+
+<h2>Anticipation Lead/Lag Experiment</h2>
+
+<p>
+Following the 10B cross-tracker anticipation comparison, a new experimental
+serial metric was introduced to test whether local anticipation geometry
+contains information that persists forward in the tracker record.
+</p>
+
+<p>
+The experimental metric is:
+</p>
+
+<p>
+<code>BetSameGapTrend#window</code>
+</p>
+
+<p>
+It is registered against <code>SegmentStats</code> by the experimental Farm
+executable and maintains rolling state across serially evaluated segments.
+For each current segment it calculates the difference between
+<code>mean#BetSameWinRate</code> and <code>mean#SamePercentage</code>,
+then compares that gap with the rolling mean of the requested number of
+previous segment gaps.
+</p>
+
+<p>
+The current segment is not admitted into the rolling history until after its
+metric value has been calculated. This keeps the metric causal: its value at
+segment <code>t</code> depends only on the current segment and history available
+through <code>t</code>, never on a future segment.
+</p>
+
+<p>
+Initial experiments concentrate on:
+</p>
+
+<ul>
+    <li><code>BetSameGapTrend#4</code></li>
+    <li><code>BetSameGapTrend#8</code></li>
+</ul>
+
+<p>
+Longer history windows were also examined as controls. As the history window
+increased, the metric increasingly behaved like a representation of the
+slowly varying anticipated state itself. The shorter windows showed the more
+interesting directional lead/lag geometry and were therefore retained as the
+primary candidates.
+</p>
+
+<p>
+The reproducible analysis is implemented in:
+</p>
+
+<p>
+<code>TrackerAnticipationLagReport.py</code>
+</p>
+
+<p>
+The report compares each candidate state with
+<code>offset50#mean#AnticipatedPercentage</code> at positive and negative lags,
+while also reporting the anticipated percentage's own lagged correlation.
+This makes it possible to distinguish simple persistence in the target from
+additional directional information carried by the candidate state.
+</p>
+
+<p>
+The first results show substantial target autocorrelation, as expected, but
+also a repeatable asymmetry in the short-history
+<code>BetSameGapTrend</code> metrics across the tracker controls.
+This is not yet evidence that unseen flips can be guessed above chance.
+The current question is narrower: whether a causal description of the record
+at <code>t</code> contains information about a later aggregate state beyond
+what is already contained in the current aggregate value.
+</p>
+
+<p>
+The next stage is an incremental prediction test comparing a persistence-only
+baseline against a model that also receives
+<code>BetSameGapTrend#4</code> or <code>BetSameGapTrend#8</code>, using
+chronologically separated training and evaluation data.
+</p>
