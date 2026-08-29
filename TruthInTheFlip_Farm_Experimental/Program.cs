@@ -15,6 +15,8 @@ env.AddModule<InfoCommand>();
 env.AddModule<Commands>();
 env.AddModule<TruthInTheFlip_Fluent>();
 
+Experimental.AddToEnv(env);
+
 List<String> cl = new List<String>(args);
 
 /* Here is an example of programmatically adding a metric method to the catalog for SegmentStats.*/

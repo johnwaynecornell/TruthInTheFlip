@@ -65,8 +65,6 @@ def load_my_frame(executable, process, path, horizon, fields, process_args):
         .shift(-1)
     )
 
-    print(path.name+":")
-
     for grain in [ "4","8" ]: #,"16","32","64","128" ]:
         #
         # paired = df.dropna(
@@ -85,13 +83,12 @@ def load_my_frame(executable, process, path, horizon, fields, process_args):
 
         name="BetSameGapTrend#"+grain
 
-        print("  "+name)
+        print(name)
 
         target = "offset50#mean#AnticipatedPercentage"
 
         print("    auto correlation")
         print("      " + "self")
-        print("        lag   state→past   target→target   state→future")
         for lag in range(1, 11):
             target_auto = df[target].corr(df[target].shift(-lag))
 

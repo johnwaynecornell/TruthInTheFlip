@@ -2,19 +2,31 @@ from __future__ import annotations
 
 import io
 import subprocess
+import sys
 from pathlib import Path
 
 import pandas as pd
 
 
 def load_report(executable: str, arguments: list[str]) -> pd.DataFrame:
-    result = subprocess.run(
-        [executable, *arguments],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        check=False,
-    )
+    try:
+        result = subprocess.run(
+            [executable, *arguments],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False,
+        )
+    except FileNotFoundError:
+        print(
+            f"Could not find TruthInTheFlip Farm executable: {executable}",
+            file=sys.stderr,
+        )
+        print(
+            "Install TruthInTheFlip_Farm on PATH or provide it with --farm.",
+            file=sys.stderr,
+        )
+        raise SystemExit(127)
 
     if result.returncode != 0:
         raise RuntimeError(

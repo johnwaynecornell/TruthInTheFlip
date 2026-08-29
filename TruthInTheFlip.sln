@@ -40,6 +40,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "FarmDocs", "FarmDocs", "{5B
 		FarmDocs\PlottingWithPython.md = FarmDocs\PlottingWithPython.md
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TruthInTheFlip_Farm_Experimental", "TruthInTheFlip_Farm_Experimental\TruthInTheFlip_Farm_Experimental.csproj", "{F89CF425-0507-4B4E-B3BF-13036249BECA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -206,6 +208,18 @@ Global
 		{DC7D3C82-66D7-496A-A5FF-99D1647A07E5}.Release|x64.Build.0 = Release|Any CPU
 		{DC7D3C82-66D7-496A-A5FF-99D1647A07E5}.Release|x86.ActiveCfg = Release|Any CPU
 		{DC7D3C82-66D7-496A-A5FF-99D1647A07E5}.Release|x86.Build.0 = Release|Any CPU
+		{F89CF425-0507-4B4E-B3BF-13036249BECA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F89CF425-0507-4B4E-B3BF-13036249BECA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F89CF425-0507-4B4E-B3BF-13036249BECA}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F89CF425-0507-4B4E-B3BF-13036249BECA}.Debug|x64.Build.0 = Debug|Any CPU
+		{F89CF425-0507-4B4E-B3BF-13036249BECA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F89CF425-0507-4B4E-B3BF-13036249BECA}.Debug|x86.Build.0 = Debug|Any CPU
+		{F89CF425-0507-4B4E-B3BF-13036249BECA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F89CF425-0507-4B4E-B3BF-13036249BECA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F89CF425-0507-4B4E-B3BF-13036249BECA}.Release|x64.ActiveCfg = Release|Any CPU
+		{F89CF425-0507-4B4E-B3BF-13036249BECA}.Release|x64.Build.0 = Release|Any CPU
+		{F89CF425-0507-4B4E-B3BF-13036249BECA}.Release|x86.ActiveCfg = Release|Any CPU
+		{F89CF425-0507-4B4E-B3BF-13036249BECA}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{5BAE90CA-8151-41FE-BDC1-5EA0BA95F639} = {FACAC898-46FE-41A0-AD16-BAF747536D70}

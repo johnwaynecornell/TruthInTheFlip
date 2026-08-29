@@ -3624,3 +3624,106 @@ baseline against a model that also receives
 <code>BetSameGapTrend#4</code> or <code>BetSameGapTrend#8</code>, using
 chronologically separated training and evaluation data.
 </p>
+
+___________________________________________________________________________
+╔═══════════════╗
+║20260829_194636║
+╚═══════════════╝
+
+<h2>Anticipation Evaluator and Incremental Prediction Test</h2>
+
+<p>
+The exploratory anticipation work has progressed from visual comparison and lead/lag correlation into a first chronological out-of-sample evaluator.
+</p>
+
+<p>
+The analysis is implemented in:
+</p>
+
+<p>
+<code>TrackerAnticipationEvaluator.py</code>
+</p>
+
+<p>
+A preserved sample of the current evaluator output is:
+</p>
+
+<p>
+<code>TrackerAnticipationEvaluator.20260829_194636.txt</code>
+</p>
+
+<p>
+The evaluator tests whether the causal serial metric
+<code>BetSameGapTrend</code>
+adds information about the next 10B segment's anticipated edge beyond the information already present in the current anticipated edge.
+</p>
+
+<p>
+The current candidates are:
+</p>
+
+<ul>
+    <li><code>BetSameGapTrend#4</code></li>
+    <li><code>BetSameGapTrend#8</code></li>
+</ul>
+
+<p>
+For each tracker, the records are kept in chronological order and divided into an earlier training region and a later evaluation region.
+The baseline model predicts the next anticipated edge using only the current anticipated edge:
+</p>
+
+<p>
+<code>FutureTarget ~ CurrentTarget</code>
+</p>
+
+<p>
+The candidate model adds the experimental rolling state:
+</p>
+
+<p>
+<code>FutureTarget ~ CurrentTarget + BetSameGapTrend</code>
+</p>
+
+<p>
+The evaluation currently uses a 70/30 chronological train/test split rather than shuffled samples, preserving the temporal direction of the experiment.
+</p>
+
+<p>
+Both short-history candidates reduced held-out mean squared error on all four tracker controls.
+The observed improvements were:
+</p>
+
+<ul>
+    <li>Crypto 3: <code>+5.61%</code> for <code>#4</code>, <code>+8.20%</code> for <code>#8</code></li>
+    <li>Random SD: <code>+7.32%</code> for <code>#4</code>, <code>+9.39%</code> for <code>#8</code></li>
+    <li>Quant: <code>+6.35%</code> for <code>#4</code>, <code>+4.62%</code> for <code>#8</code></li>
+    <li>Quant IDQE: <code>+7.13%</code> for <code>#4</code>, <code>+10.29%</code> for <code>#8</code></li>
+</ul>
+
+<p>
+The candidate model's correlation with the held-out future target also improved over the persistence-only baseline in every reported case.
+</p>
+
+<p>
+These results do not yet demonstrate an ability to guess unseen flips above chance.
+The target being predicted is still an aggregate anticipated-edge quantity, and that quantity is itself strongly persistent from one 10B segment to the next.
+</p>
+
+<p>
+The important result is narrower: within this first chronological holdout test,
+<code>BetSameGapTrend#4</code>
+and
+<code>BetSameGapTrend#8</code>
+both contributed measurable information beyond the current target value across all four tracker datasets.
+</p>
+
+<p>
+This makes the next stage a question of robustness rather than immediate strategy design.
+Likely follow-up work includes walk-forward evaluation, stricter separation of development and validation trackers, and eventually testing whether a frozen causal anticipation rule can convert any surviving aggregate-state information into above-chance prediction of unseen outcomes.
+</p>
+
+<p>
+The experimental metric implementation has also been moved into the experimental Farm executable so that exploratory stateful metrics can evolve independently from the stable Farm surface while continuing to use the shared Farm and metric infrastructure.
+</p>
+
+

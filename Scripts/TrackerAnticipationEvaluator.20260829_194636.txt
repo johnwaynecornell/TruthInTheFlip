@@ -1,0 +1,113 @@
+
+========================================================================
+Crypto 3
+/home/jwc/src/NewAge/DotNet/TruthInTheFlip.Dev/Artifacts/Trackers/crypto3.tkr
+========================================================================
+
+BetSameGapTrend#4
+  rows             : 875
+  train / test     : 612 / 263
+  baseline MSE     : 3.15736474218e-09
+  candidate MSE    : 2.98031453198e-09
+  improvement      : +5.607531%
+  baseline corr    : +0.920635
+  candidate corr   : +0.925982
+  state coefficient: +0.176440789402
+
+BetSameGapTrend#8
+  rows             : 871
+  train / test     : 609 / 262
+  baseline MSE     : 3.10443934427e-09
+  candidate MSE    : 2.84986203028e-09
+  improvement      : +8.200428%
+  baseline corr    : +0.922136
+  candidate corr   : +0.929684
+  state coefficient: +0.141464389434
+
+========================================================================
+Random SD
+/home/jwc/src/NewAge/DotNet/TruthInTheFlip.Dev/Artifacts/Trackers/crypto_RandomSD.tkr
+========================================================================
+
+BetSameGapTrend#4
+  rows             : 875
+  train / test     : 612 / 263
+  baseline MSE     : 2.66320419962e-09
+  candidate MSE    : 2.46831406869e-09
+  improvement      : +7.317882%
+  baseline corr    : +0.913857
+  candidate corr   : +0.920722
+  state coefficient: +0.164201974738
+
+BetSameGapTrend#8
+  rows             : 871
+  train / test     : 609 / 262
+  baseline MSE     : 2.67340884431e-09
+  candidate MSE    : 2.4224707669e-09
+  improvement      : +9.386446%
+  baseline corr    : +0.913858
+  candidate corr   : +0.923000
+  state coefficient: +0.153576997673
+
+========================================================================
+Quant
+/home/jwc/src/NewAge/DotNet/TruthInTheFlip.Dev/Artifacts/Trackers/Quant.tkr
+========================================================================
+
+BetSameGapTrend#4
+  rows             : 875
+  train / test     : 612 / 263
+  baseline MSE     : 3.43103809045e-09
+  candidate MSE    : 3.21307706348e-09
+  improvement      : +6.352626%
+  baseline corr    : +0.935447
+  candidate corr   : +0.940175
+  state coefficient: +0.182273966389
+
+BetSameGapTrend#8
+  rows             : 871
+  train / test     : 609 / 262
+  baseline MSE     : 3.4329046838e-09
+  candidate MSE    : 3.2744738193e-09
+  improvement      : +4.615067%
+  baseline corr    : +0.935579
+  candidate corr   : +0.939649
+  state coefficient: +0.164784419435
+
+========================================================================
+Quant IDQE
+/home/jwc/src/NewAge/DotNet/TruthInTheFlip.Dev/Artifacts/Trackers/Quant_IDQE.tkr
+========================================================================
+
+BetSameGapTrend#4
+  rows             : 875
+  train / test     : 612 / 263
+  baseline MSE     : 3.79745234128e-09
+  candidate MSE    : 3.52676943563e-09
+  improvement      : +7.128013%
+  baseline corr    : +0.922684
+  candidate corr   : +0.928899
+  state coefficient: +0.138794307032
+
+BetSameGapTrend#8
+  rows             : 871
+  train / test     : 609 / 262
+  baseline MSE     : 3.80949257456e-09
+  candidate MSE    : 3.41751350538e-09
+  improvement      : +10.289535%
+  baseline corr    : +0.922365
+  candidate corr   : +0.931307
+  state coefficient: +0.142560398584
+
+========================================================================
+SUMMARY
+========================================================================
+   Tracker            Metric  Lag  TrainRows  TestRows   BaselineMSE  CandidateMSE  ImprovementPct  BaselineCorr  CandidateCorr  StateCoefficient
+  Crypto 3 BetSameGapTrend#4    1        612       263 3.1573647e-09 2.9803145e-09       5.6075311    0.92063469     0.92598247        0.17644079
+  Crypto 3 BetSameGapTrend#8    1        609       262 3.1044393e-09  2.849862e-09        8.200428    0.92213581     0.92968372        0.14146439
+ Random SD BetSameGapTrend#4    1        612       263 2.6632042e-09 2.4683141e-09       7.3178816    0.91385651     0.92072156        0.16420197
+ Random SD BetSameGapTrend#8    1        609       262 2.6734088e-09 2.4224708e-09        9.386446    0.91385828     0.92300045          0.153577
+     Quant BetSameGapTrend#4    1        612       263 3.4310381e-09 3.2130771e-09       6.3526263    0.93544696     0.94017502        0.18227397
+     Quant BetSameGapTrend#8    1        609       262 3.4329047e-09 3.2744738e-09       4.6150674    0.93557896     0.93964941        0.16478442
+Quant IDQE BetSameGapTrend#4    1        612       263 3.7974523e-09 3.5267694e-09       7.1280132    0.92268353      0.9288992        0.13879431
+Quant IDQE BetSameGapTrend#8    1        609       262 3.8094926e-09 3.4175135e-09       10.289535     0.9223648     0.93130719         0.1425604
