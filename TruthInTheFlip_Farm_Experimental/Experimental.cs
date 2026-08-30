@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using FluentCommandLine;
 using JWCFarm.Metrics;
 using TruthInTheFlip.Farm.Format;
@@ -15,35 +14,21 @@ namespace TruthInTheFlip_CSV_Farm;
 /// Key characteristics:
 /// <list type="bullet">
 /// <item>
-/// <description><b>Statefulness &amp; Sequential Dependence:</b> Evaluation depends on the history of prior evaluations across records within a projection, meaning evaluation order matters.</description>
+/// <description><b>Statefulness &amp; Sequential Dependence:</b> Evaluation depends on the history of prior evaluations across records within an evaluation session, meaning evaluation order matters.</description>
 /// </item>
 /// <item>
-/// <description><b>Memory &amp; Lifecycle Management:</b> Uses <see cref="ConditionalWeakTable{TKey, TValue}"/> keyed by <see cref="MetricProjection"/> to maintain isolated state per projection while allowing projection instances to be garbage collected naturally without memory leaks.</description>
+/// <description><b>Memory &amp; Lifecycle Management:</b> State is scoped to the current <see cref="MetricEvaluationSession"/> via <see cref="MetricEvaluationContext.GetState{T}"/>. This isolates state per evaluation run, prevents state leakage across repeated executions of a reusable <see cref="MetricProjection"/>, and automatically releases state when the session finishes.</description>
 /// </item>
 /// <item>
-/// <description><b>Result Caching:</b> Per-object results are memoized to ensure idempotency and prevent duplicate evaluations from corrupting the rolling history queue.</description>
+/// <description><b>Result Caching:</b> Per-object results are memoized within the session state to ensure idempotency and prevent duplicate evaluations from corrupting the rolling history queue.</description>
 /// </item>
 /// </list>
 /// </para>
 /// </remarks>
 public class Experimental
 {
-    static ConditionalWeakTable<MetricProjection, Dictionary<int, RollingState>> _betSameGapTrendStates = new();
-    
     public static void AddToEnv(FluentEnvironment env)
     {
-        Func<MetricProjection, int, RollingState> GetState = (MetricProjection projection, int window) =>
-        {
-            var projectionStates = _betSameGapTrendStates.GetOrCreateValue(projection);
-            if (!projectionStates.TryGetValue(window, out RollingState? state))
-            {
-                state = new RollingState();
-                projectionStates[window] = state;
-            }
-
-            return state;
-        };
-
         env.Context.Get<MetricCatalogs>().TryGet(typeof(SegmentStats), out var catalog);
         catalog.Add(new MetricDescriptor(
             "BetSameGapTrend",
@@ -57,12 +42,12 @@ public class Experimental
             {
                 int window = (int)(double)args[0]!;
 
-                // resolve state for this projection + metric/window
+                // resolve state for this session + metric/window
                 // calculate using prior history only
                 // append current gap afterward
                 // cache result for obj
         
-                var state = GetState(ctx.Projection, window);
+                var state = ctx.GetState(("BetSameGapTrend", window), () => new RollingState());
         
                 if (state.Results.TryGetValue(obj, out double priorResult))
                     return priorResult;

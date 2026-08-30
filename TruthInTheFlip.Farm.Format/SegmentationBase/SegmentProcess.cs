@@ -1,4 +1,5 @@
 using JWCFarm;
+using JWCFarm.Metrics;
 using TruthInTheFlip.Format;
 
 namespace TruthInTheFlip.Farm.Format;
@@ -41,7 +42,8 @@ public abstract class SegmentProcess<TStats, TProduct> : TrackerProcessBase wher
             }
             
             
-            Projection?.Inspect(this, currentSegment, state);
+            (Session ?? (Projection != null ? (Session = new MetricEvaluationSession(Projection)) : null))
+                ?.Inspect(this, currentSegment, state);
             currentSegment!.Inspect(state);
             currentSegment.EndTotal = EndTotal(state);
             currentSegment.EndWallclock = EndWallclock(state);

@@ -781,7 +781,8 @@ Owns reusable processing infrastructure:
 - metric descriptors,
 - metric paths,
 - metric binding,
-- metric projections.
+- metric projections,
+- metric evaluation sessions.
 
 JWCFarm deliberately does not require FluentCommandLine. It can therefore be reused from other front ends.
 

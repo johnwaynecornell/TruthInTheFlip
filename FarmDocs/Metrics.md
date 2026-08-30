@@ -871,9 +871,30 @@ When `MeanAbsHeads` appears in a `csv segment` field list, the expression `mean#
 - `abs` → scalar at Tracker level
 - `ZScoreHeads` → Tracker property
 
-Aggregate state is accumulated during `MetricProjection.Inspect` (one value per Tracker record in the segment). The `Getter` retrieves the computed mean via `ctx.Get<double>("mean#abs#ZScoreHeads")` at the segment evaluation boundary.
+Aggregate state is accumulated during `MetricEvaluationSession.Inspect` (one value per Tracker record in the segment). The `Getter` retrieves the computed mean via `ctx.Get<double>("mean#abs#ZScoreHeads")` at the segment evaluation boundary.
 
 Hidden dependencies do not appear in CSV output unless explicitly listed as a separate field.
+
+### Metric execution lifecycle and state management
+
+The metric infrastructure maintains an explicit distinction between bound query plans and execution state:
+
+```text
+MetricProjection
+    reusable, bound metric plan
+
+MetricEvaluationSession
+    transient state for one execution of that projection
+
+MetricEvaluationContext
+    carries both Projection and Session
+```
+
+- **MetricProjection** represents the compiled query plan (output fields and bound hidden `SourceExpressions`). It is completely reusable and contains no execution-lifetime state. Running the same `MetricProjection` multiple times produces independent evaluation sessions.
+- **MetricEvaluationSession** owns all state scoped to one execution run (including aggregate metric sample collections and custom session state).
+- **MetricEvaluationContext** is passed to user-defined metric getters and invocations, providing access to `ctx.Projection`, `ctx.Session`, `ctx.Get<T>("expression")`, and `ctx.GetState<T>(key, factory)`.
+
+User-defined metrics that require serial or evaluation-lifetime state should retrieve their state from the session via `ctx.GetState<T>(key, factory)` (or `ctx.Session.GetState<T>(key, factory)`) rather than storing mutable state globally or on `MetricProjection`.
 
 ---
 

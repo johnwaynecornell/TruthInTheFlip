@@ -2,7 +2,9 @@ namespace JWCFarm.Metrics;
 
 public sealed class MetricEvaluationContext
 {
-    public required MetricProjection Projection { get; init; }
+    public required MetricEvaluationSession Session { get; init; }
+
+    public MetricProjection Projection => Session.Projection;
 
     public required object Stats { get; init; }
 
@@ -16,11 +18,11 @@ public sealed class MetricEvaluationContext
     // Used inside MetricPath.Get to give each Getter/Invoke the correct current object.
     public MetricEvaluationContext WithStats(object newStats) => new()
     {
-        Projection = Projection,
-        Stats      = newStats,
-        Root       = Root,
-        Process    = Process,
-        Path       = Path,
+        Session = Session,
+        Stats   = newStats,
+        Root    = Root,
+        Process = Process,
+        Path    = Path,
     };
 
     // Retrieves the value of a pre-bound SourceExpression dependency.
@@ -32,7 +34,8 @@ public sealed class MetricEvaluationContext
                 $"Metric source expression '{expression}' was not declared as a SourceExpression " +
                 "for this descriptor. Add it to SourceExpressions and rebind.");
 
-        return depPath.Get(Projection, Stats);
+        int index = 0;
+        return depPath.Get(this, Stats, Stats, ref index);
     }
 
     public T Get<T>(string expression)
@@ -43,4 +46,10 @@ public sealed class MetricEvaluationContext
         return (T)Convert.ChangeType(result, typeof(T),
             System.Globalization.CultureInfo.InvariantCulture);
     }
+
+    /// <summary>
+    /// Gets or creates execution-lifetime state for this session.
+    /// </summary>
+    public T GetState<T>(object key, Func<T> factory) where T : class
+        => Session.GetState(key, factory);
 }

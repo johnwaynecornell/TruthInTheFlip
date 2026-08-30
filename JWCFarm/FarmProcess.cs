@@ -12,6 +12,12 @@ public abstract class FarmProcess : FarmCommand
                 "Projection not set");
     }
 
+    public MetricEvaluationSession? Session { get; set; } = null;
+    public MetricEvaluationSession session_get() {
+            return Session ?? throw new InvalidOperationException(
+                "Session not set");
+    }
+
     // Returns false (and sets error) when any field expression is invalid.
     // Does not print diagnostics — the caller is responsible for rendering the error.
     public virtual bool BindFields(MetricCatalogs catalogs, string[] fields, out MetricBindError? error)
@@ -54,6 +60,7 @@ public abstract class FarmProcess : FarmCommand
     {
         try
         {
+            Session = Projection != null ? new MetricEvaluationSession(Projection) : null;
             BeginProcess(context);
 
             foreach (object item in EnumerateItems(context))
@@ -67,6 +74,10 @@ public abstract class FarmProcess : FarmCommand
         {
             AbortProcess(context, e);
             throw;
+        }
+        finally
+        {
+            Session = null;
         }
     }
     

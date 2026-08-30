@@ -7,15 +7,14 @@ public class MetricPath : List<MetricDescriptor.Instance>
 {
     // ── public entry points ────────────────────────────────────────────────────
 
-    // Main entry point used by WriteRow and similar consumers.
-    // Creates a minimal evaluation context from the available information.
-    public object Get(MetricProjection projection, object stats)
+    // Main entry point when evaluating within an explicit session.
+    public object Get(MetricEvaluationSession session, object stats)
     {
         var ctx = new MetricEvaluationContext
         {
-            Projection = projection,
-            Stats      = stats,
-            Root       = stats,
+            Session = session,
+            Stats   = stats,
+            Root    = stats,
         };
 
         object o = stats;
@@ -26,18 +25,26 @@ public class MetricPath : List<MetricDescriptor.Instance>
         return o;
     }
 
-    // Overload used internally by MetricProjection.ProcessPath for aggregate arg evaluation.
-    // Callers that have a richer context (e.g. the FarmProcess) may pass one directly.
-    public object Get(MetricProjection projection, object stats, object root, ref int index)
+    // Overload for standalone/ephemeral evaluation from a projection.
+    public object Get(MetricProjection projection, object stats)
+        => Get(new MetricEvaluationSession(projection), stats);
+
+    // Overload used internally for aggregate arg evaluation within a session.
+    public object Get(MetricEvaluationSession session, object stats, object root, ref int index)
     {
         var ctx = new MetricEvaluationContext
         {
-            Projection = projection,
-            Stats      = stats,
-            Root       = root,
+            Session = session,
+            Stats   = stats,
+            Root    = root,
         };
         return GetInContext(ctx, stats, root, ref index);
     }
+
+    // Overload used internally by MetricProjection.ProcessPath for aggregate arg evaluation.
+    // Callers that have a richer context (e.g. the FarmProcess) may pass one directly.
+    public object Get(MetricProjection projection, object stats, object root, ref int index)
+        => Get(new MetricEvaluationSession(projection), stats, root, ref index);
 
     // Overload for callers that already hold a MetricEvaluationContext.
     public object Get(MetricEvaluationContext ctx, object stats, object root, ref int index)
@@ -91,11 +98,11 @@ public class MetricPath : List<MetricDescriptor.Instance>
                     if (desc.Type == MetricParameterType.Scalar)
                     {
                         int ii = 0;
-                        parameters[i] = arg.Get(ctx.Projection, root, root, ref ii);
+                        parameters[i] = arg.Get(ctx.Session, root, root, ref ii);
                     }
                     else if (desc.Type == MetricParameterType.Aggregate)
                     {
-                        parameters[i] = ctx.Projection.GetStatValues(stats, this, i);
+                        parameters[i] = ctx.Session.GetStatValues(stats, this, i);
                         index = Count; // no further path steps after consuming aggregate
                     }
                 }

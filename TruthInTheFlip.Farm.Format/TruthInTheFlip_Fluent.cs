@@ -417,7 +417,7 @@ public class TruthInTheFlip_Fluent
                 WriteHeader(process.projection_get(), context.Output),
 
             process: (context, stats) =>
-                WriteRow(process.projection_get(), context.Output, stats),
+                WriteRow(process.session_get(), context.Output, stats),
 
             end: context =>
                 context.Output.Flush(),
@@ -476,20 +476,24 @@ public class TruthInTheFlip_Fluent
         writer.WriteLine();
     }
 
-    public static void WriteRow(MetricProjection projection, TextWriter writer, object stats)
+    public static void WriteRow(MetricEvaluationSession session, TextWriter writer, object stats)
     {
         bool f = true;
-        foreach (var field in projection.Fields)
+        foreach (var field in session.Projection.Fields)
         {
             if (!f) writer.Write(",");
             else f = false;
 
-            object? o = field.Get(projection, stats);
+            object? o = field.Get(session, stats);
             CSVOut(writer, o);
         }
 
         writer.WriteLine();
+    }
 
+    public static void WriteRow(MetricProjection projection, TextWriter writer, object stats)
+    {
+        WriteRow(new MetricEvaluationSession(projection), writer, stats);
     }
 
     public static void CSVOut(TextWriter writer, object? obj)

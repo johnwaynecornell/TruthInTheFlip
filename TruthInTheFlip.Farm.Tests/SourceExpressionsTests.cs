@@ -222,11 +222,12 @@ public class SourceExpressionsTests
         var tracker2 = new FakeTracker { ZScore = 0.8, ZScoreHeads =  0.2 };
         var tracker3 = new FakeTracker { ZScore = 1.2, ZScoreHeads = -0.6 };
 
-        projection.Inspect(process, segment, tracker1);
-        projection.Inspect(process, segment, tracker2);
-        projection.Inspect(process, segment, tracker3);
+        var session = new MetricEvaluationSession(projection);
+        session.Inspect(process, segment, tracker1);
+        session.Inspect(process, segment, tracker2);
+        session.Inspect(process, segment, tracker3);
 
-        double result = (double)projection.Fields[0].Get(projection, segment);
+        double result = (double)projection.Fields[0].Get(session, segment);
 
         double expected =
             (Math.Abs(tracker1.ZScoreHeads) +
@@ -399,13 +400,14 @@ public class SourceExpressionsTests
         var tracker1 = new FakeTracker { ZScoreHeads = 0.5 };
         var tracker2 = new FakeTracker { ZScoreHeads = -0.2 };
 
-        projection!.Inspect(process, segment, tracker1);
-        projection.Inspect(process, segment, tracker2);
+        var session = new MetricEvaluationSession(projection!);
+        session.Inspect(process, segment, tracker1);
+        session.Inspect(process, segment, tracker2);
 
         // Retrieve the state for arg index 0 and 1 — must both have 2 items.
         var path   = projection.Fields[0];
-        var xs     = projection.GetStatValues(segment, path, 0);
-        var ys     = projection.GetStatValues(segment, path, 1);
+        var xs     = session.GetStatValues(segment, path, 0);
+        var ys     = session.GetStatValues(segment, path, 1);
 
         Assert.Equal(2, xs.Count);
         Assert.Equal(2, ys.Count);
@@ -476,11 +478,12 @@ public class SourceExpressionsTests
         var tracker2 = new FakeTracker { ZScoreHeads =  0.7 };
         var tracker3 = new FakeTracker { ZScoreHeads = -1.2 };
 
-        projection.Inspect(process, segment, tracker1);
-        projection.Inspect(process, segment, tracker2);
-        projection.Inspect(process, segment, tracker3);
+        var session = new MetricEvaluationSession(projection);
+        session.Inspect(process, segment, tracker1);
+        session.Inspect(process, segment, tracker2);
+        session.Inspect(process, segment, tracker3);
 
-        double result   = (double)projection.Fields[0].Get(projection, segment);
+        double result   = (double)projection.Fields[0].Get(session, segment);
         double meanAbs  = (Math.Abs(-0.3) + Math.Abs(0.7) + Math.Abs(-1.2)) / 3.0;
         double expected = Math.Clamp(meanAbs, -1.0, 0.0);
 
@@ -565,16 +568,21 @@ public class SourceExpressionsTests
         var seg2 = new FakeSegment();
         var t2a  = new FakeTracker { ZScore = 1.2, ZScoreHeads = -0.4 };
 
+        var innerSession = new MetricEvaluationSession(innerProcess.Projection);
+        var outerSession = new MetricEvaluationSession(projection);
+        innerProcess.Session = innerSession;
+        outerProcess.Session = outerSession;
+
         // Inner Inspect: for each tracker record inside each segment, accumulate
         // aggregate state into innerProcess.Projection.
-        innerProcess.Projection.Inspect(innerProcess, seg1, t1a);
-        innerProcess.Projection.Inspect(innerProcess, seg1, t1b);
-        innerProcess.Projection.Inspect(innerProcess, seg2, t2a);
+        innerSession.Inspect(innerProcess, seg1, t1a);
+        innerSession.Inspect(innerProcess, seg1, t1b);
+        innerSession.Inspect(innerProcess, seg2, t2a);
 
         // Outer Inspect: for each segment, compute "mean#namedMethod" and accumulate
         // into the outer projection's aggregate state.
-        projection.Inspect(outerProcess, new FakeSegmentAgg(), seg1);
-        projection.Inspect(outerProcess, new FakeSegmentAgg(), seg2);
+        outerSession.Inspect(outerProcess, new FakeSegmentAgg(), seg1);
+        outerSession.Inspect(outerProcess, new FakeSegmentAgg(), seg2);
 
         // Evaluate — just check it does not throw.
         // (The exact numeric value isn't the focus; the projection-target bug would
@@ -585,13 +593,13 @@ public class SourceExpressionsTests
         var agg2       = new FakeSegmentAgg();
         var seg3       = new FakeSegment();
         var t3a        = new FakeTracker { ZScore = 2.0, ZScoreHeads = -1.0 };
-        innerProcess.Projection.Inspect(innerProcess, seg3, t3a);
-        projection.Inspect(outerProcess, agg2, seg3);
+        innerSession.Inspect(innerProcess, seg3, t3a);
+        outerSession.Inspect(outerProcess, agg2, seg3);
 
         double trueZ3a = t3a.ZScore - Math.Abs(t3a.ZScoreHeads); // 2.0 - 1.0 = 1.0
 
         // The outer mean should return the mean of [namedMethod(t3a)] = [1.0] = 1.0.
-        double result = (double)projection.Fields[0].Get(projection, agg2);
+        double result = (double)projection.Fields[0].Get(outerSession, agg2);
         Assert.Equal(trueZ3a, result, precision: 10);
     }
 
