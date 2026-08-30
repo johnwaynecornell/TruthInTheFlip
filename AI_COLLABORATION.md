@@ -186,6 +186,24 @@ That distinction matters.
 
 * * * * *
 
+Human Contributions
+-------------------
+
+**Note from the human author:**
+
+My part has been design and encapsulation, including primitive design and coordination, which created the stack because
+it was symbolically true enough to serve as a clean foundation.
+
+Examples include the Farm design and "magic commas"—structural choices that established the conceptual vocabulary and
+technical boundaries within which the rest of the project could be built.
+
+The foundational abstractions, the choice of what should be primitive, and the way those pieces fit together were
+decisions made to support reasoning, experimentation, and long-term clarity.
+
+Those choices shaped what became possible later.
+
+* * * * *
+
 Source Control and Attribution
 ------------------------------
 
