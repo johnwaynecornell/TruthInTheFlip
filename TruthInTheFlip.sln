@@ -19,6 +19,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{FACAC898-4
 		README.md = README.md
 		LICENSE = LICENSE
 		Farm.README.md = Farm.README.md
+		AI_COLLABORATION.md = AI_COLLABORATION.md
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TruthInTheFlip_sample_report4", "TruthInTheFlip_sample_report4\TruthInTheFlip_sample_report4.csproj", "{ECAFEA7A-BFFA-43C5-8F8F-B9B54199C3C1}"
