@@ -3726,4 +3726,140 @@ Likely follow-up work includes walk-forward evaluation, stricter separation of d
 The experimental metric implementation has also been moved into the experimental Farm executable so that exploratory stateful metrics can evolve independently from the stable Farm surface while continuing to use the shared Farm and metric infrastructure.
 </p>
 
+___________________________________________________________________________
+╔═══════════════╗
+║20260831_165250║
+╚═══════════════╝
+
+TruthInTheFlip -create -record -window WindowByTotal 100000000000 -print Detailed Quant2.tkr -rsource Quantis PCI 0
+
+<h2>Quant2 Prospective Validation Tracker Started</h2>
+
+<p>
+A new tracker, <code>Quant2.tkr</code>, was started as prospective validation data for the anticipation experiments.
+</p>
+
+<p>
+The tracker uses the standard default meta-guess configuration and direct Quantis PCI source entropy, with no anticipation extractor or experimental feedback path.
+</p>
+
+<p>
+At startup the Quantis PCI device reported installed module mask <code>0x3</code>, functional mask <code>0x2</code>, and unavailable mask <code>0x1</code>. System diagnostics were otherwise clean, and recording was allowed to proceed using the remaining functional entropy module.
+</p>
+
+<p>
+This partial-module condition is part of the provenance of <code>Quant2.tkr</code> and should be retained when the tracker is eventually evaluated. It should not be described later as an exact hardware replication of the earlier Quant run.
+</p>
+
+<p>
+The command-line <code>-window WindowByTotal 100000000000</code> setting controls detailed display/reporting cadence. It does not define the internal recording semantics of the tracker.
+</p>
+
+<p>
+Quant2 is intentionally excluded from candidate metric selection, evaluator development, lag selection, threshold selection, model selection, and other tuning while the anticipation methodology is still under development.
+</p>
+
+<p>
+The intention is to leave the tracker sealed until the causal metric, evaluator, model form, and eventual anticipation rule have been frozen.
+</p>
+
+<p>
+This creates a prospective validation record whose data are being generated before the final method is known.
+</p>
+
+<h2>Anticipation Walk-Forward Robustness Test</h2>
+
+<p>
+The first chronological holdout test of <code>BetSameGapTrend</code> was followed by a stricter walk-forward evaluation designed to test whether the earlier result depended on a favorable 70/30 split.
+</p>
+
+<p>
+The two previously selected candidate states were kept fixed:
+</p>
+
+<ul>
+    <li><code>BetSameGapTrend#4</code></li>
+    <li><code>BetSameGapTrend#8</code></li>
+</ul>
+
+<p>
+No additional window sizes were introduced.
+</p>
+
+<p>
+For each tracker, an expanding chronological training region was used to predict the immediately following evaluation block:
+</p>
+
+<pre><code>0-50%  -> 50-60%
+0-60%  -> 60-70%
+0-70%  -> 70-80%
+0-80%  -> 80-90%
+0-90%  -> 90-100%</code></pre>
+
+<p>
+Within each fold the persistence baseline remained:
+</p>
+
+<p>
+<code>FutureTarget ~ CurrentTarget</code>
+</p>
+
+<p>
+and the candidate model remained:
+</p>
+
+<p>
+<code>FutureTarget ~ CurrentTarget + BetSameGapTrend</code>
+</p>
+
+<p>
+The walk-forward results show that the incremental improvement observed in the earlier holdout test is distributed across multiple chronological regions rather than being confined to one final segment of history.
+</p>
+
+<ul>
+    <li>Crypto 3: <code>#4</code> positive in 5/5 folds, mean improvement <code>+6.11%</code>; <code>#8</code> positive in 5/5 folds, mean improvement <code>+7.05%</code>.</li>
+    <li>Random SD: <code>#4</code> positive in 4/5 folds, mean improvement <code>+6.83%</code>; <code>#8</code> positive in 4/5 folds, mean improvement <code>+8.34%</code>.</li>
+    <li>Quant: <code>#4</code> positive in 4/5 folds, mean improvement <code>+6.63%</code>; <code>#8</code> positive in 4/5 folds, mean improvement <code>+6.05%</code>.</li>
+    <li>Quant IDQE: <code>#4</code> positive in 3/5 folds, mean improvement <code>+3.68%</code>; <code>#8</code> positive in 4/5 folds, mean improvement <code>+5.98%</code>.</li>
+</ul>
+
+<p>
+The result is not perfectly stationary. Some folds are negative, including a notably weak fourth Quant fold, while later regions in several trackers show stronger improvement. This variation is useful rather than inconvenient: the evaluator is exposing regime dependence that a single train/test split could have hidden.
+</p>
+
+<p>
+Despite that variability, both short-history candidates retain positive mean improvement on every development tracker, and the candidate model improves the mean held-out correlation over the persistence baseline in every tracker/metric summary. :contentReference[oaicite:0]{index=0}
+</p>
+
+<p>
+The state coefficients also remain positive across the reported folds rather than repeatedly changing sign, suggesting that the fitted relationship is directionally stable even when its strength varies. :contentReference[oaicite:1]{index=1}
+</p>
+
+<p>
+This clears the first robustness question posed after the original chronological holdout experiment:
+</p>
+
+<p>
+<code>BetSameGapTrend</code> continues to add measurable forecasting information beyond current-target persistence across multiple forward test regions and across all four development trackers.
+</p>
+
+<p>
+This is still not evidence that unseen flips can be guessed above chance. The predicted quantity remains an aggregate anticipated-edge state.
+</p>
+
+<p>
+The next question is whether this incremental information survives when examined more directly as prediction of the persistence residual, and eventually whether a frozen causal rule can translate surviving aggregate-state information into above-chance prediction of unseen outcomes.
+</p>
+
+<p>
+Quant2 remains excluded from this work and is being preserved for later validation.
+</p>
+
+
+
+
+
+
+
+
 
