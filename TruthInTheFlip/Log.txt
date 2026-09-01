@@ -3855,11 +3855,219 @@ The next question is whether this incremental information survives when examined
 Quant2 remains excluded from this work and is being preserved for later validation.
 </p>
 
+___________________________________________________________________________
+╔═══════════════╗
+║20260901_121618║
+╚═══════════════╝
+<h2>Anticipation Evaluation Series Preserved</h2>
 
+<p>
+The anticipation-analysis work has reached a point where the evaluator scripts are no longer being treated as temporary exploratory tooling.
+</p>
 
+<p>
+The evaluation sequence and its corresponding report outputs are being preserved under <code>Scripts</code> as part of the reproducible experimental record.
+</p>
 
+<p>
+The current series is:
+</p>
 
+<ul>
+    <li><code>TrackerAnticipationEvaluator.py</code> — the original chronological 70/30 holdout experiment;</li>
+    <li><code>TrackerAnticipationEvaluator_AnticipatedPercentage.py</code> — expanding walk-forward evaluation against the aggregate anticipated-edge target;</li>
+    <li><code>TrackerAnticipationEvaluator_BetSameWinRate.py</code> — the same walk-forward design redirected toward the future realized BetSame edge;</li>
+    <li><code>TrackerAnticipationEvaluator_BetSameResidual.py</code> — residual and partial-correlation analysis intended to determine whether the candidate state contains information beyond simple persistence of the current BetSame edge.</li>
+</ul>
 
+<p>
+Each script is retained with its corresponding <code>.txt</code> report rather than replacing earlier stages with the latest version.
+</p>
 
+<p>
+This preserves not only the results, but the sequence by which the experimental claim was progressively narrowed.
+</p>
 
+<h3>From Holdout to Walk-Forward Evaluation</h3>
 
+<p>
+The original evaluator compared a persistence-only baseline,
+</p>
+
+<p>
+<code>FutureTarget ~ CurrentTarget</code>
+</p>
+
+<p>
+against a candidate model,
+</p>
+
+<p>
+<code>FutureTarget ~ CurrentTarget + BetSameGapTrend</code>,
+</p>
+
+<p>
+using a chronological 70/30 train/test split.
+</p>
+
+<p>
+Both <code>BetSameGapTrend#4</code> and <code>BetSameGapTrend#8</code> improved held-out prediction across all four development trackers in that initial test.
+</p>
+
+<p>
+Because a single favorable terminal period could produce such a result, the experiment was then converted to expanding walk-forward evaluation. Five successive chronological test regions were evaluated while the training history expanded forward.
+</p>
+
+<p>
+The candidate windows remained fixed at <code>#4</code> and <code>#8</code>. No search for better window sizes was introduced.
+</p>
+
+<h3>Aggregate Anticipation Target</h3>
+
+<p>
+The first walk-forward experiment retained <code>AnticipatedPercentage</code> as the future target.
+</p>
+
+<p>
+The incremental improvement survived across multiple chronological regions and all four development trackers. Crypto 3 was positive in every fold for both candidate windows, while the other trackers retained positive mean improvement despite some unfavorable local regimes.
+</p>
+
+<p>
+This showed that the original 70/30 result was not confined to one favorable final section of the data.
+</p>
+
+<h3>Moving Toward an Outcome-Oriented Target</h3>
+
+<p>
+The next evaluator changed only the predicted quantity.
+</p>
+
+<p>
+Instead of forecasting aggregate <code>AnticipatedPercentage</code>, it forecast the next 10B segment's <code>BetSameWinRate</code> edge relative to 50%.
+</p>
+
+<p>
+This target has a more direct experimental interpretation: a positive future edge means Same was the favorable choice over that future region, while a negative edge means Different was favorable.
+</p>
+
+<p>
+The incremental state continued to survive this harder test.
+</p>
+
+<p>
+For <code>BetSameGapTrend#4</code>, the candidate model produced positive walk-forward improvement in 5/5 Crypto 3 folds, 4/5 Random SD folds, 4/5 Quant folds, and 4/5 Quant IDQE folds.
+</p>
+
+<p>
+For <code>BetSameGapTrend#8</code>, the corresponding counts were 5/5, 4/5, 3/5, and 5/5.
+</p>
+
+<p>
+Mean candidate improvement remained positive for every tracker and both fixed candidate windows.
+</p>
+
+<h3>Residual and Partial-Correlation Test</h3>
+
+<p>
+The final evaluator in this series examined the mechanism behind that incremental improvement.
+</p>
+
+<p>
+First, a persistence model was fitted using prior training data:
+</p>
+
+<p>
+<code>FutureBetSameEdge ~ CurrentBetSameEdge</code>
+</p>
+
+<p>
+The resulting prediction was then applied to the unseen test region, and its residual represented the portion of the future BetSame edge not explained by persistence.
+</p>
+
+<p>
+The raw <code>BetSameGapTrend</code> state was positively correlated with this future residual in most folds and showed essentially the same regime-dependent successes and failures as the candidate MSE comparison.
+</p>
+
+<p>
+A stricter test then removed from <code>BetSameGapTrend</code> the component that could itself be explained by <code>CurrentBetSameEdge</code>. Both residualization models were fitted only on the preceding training region.
+</p>
+
+<p>
+The resulting partial correlation asks a narrower question:
+</p>
+
+<p>
+Does the portion of the causal state that is not explained by the current BetSame edge remain associated with the portion of the future BetSame edge that is not explained by persistence?
+</p>
+
+<p>
+The answer remained predominantly positive.
+</p>
+
+<ul>
+    <li>Crypto 3: both <code>#4</code> and <code>#8</code> positive in 5/5 folds;</li>
+    <li>Random SD: both positive in 4/5 folds;</li>
+    <li>Quant: <code>#4</code> positive in 4/5 and <code>#8</code> in 3/5;</li>
+    <li>Quant IDQE: <code>#4</code> positive in 4/5 and <code>#8</code> in 5/5.</li>
+</ul>
+
+<p>
+Mean partial correlation remained positive for every tracker and both candidate windows, ranging from approximately <code>+0.107</code> to <code>+0.206</code> across the eight tracker/window summaries.
+</p>
+
+<p>
+In several of the strongest regions, partial correlation increased rather than disappearing after the current-target component was removed.
+</p>
+
+<p>
+The failures were also coherent. Regions in which the candidate model lost forecasting accuracy generally showed negative residual and partial correlations as well. This indicates regime dependence rather than a diagnostic that remains positive regardless of predictive performance.
+</p>
+
+<h3>Current Interpretation</h3>
+
+<p>
+This evaluation series supports a more specific statement than the original correlation observations:
+</p>
+
+<p>
+A causal <code>BetSameGapTrend</code> state repeatedly contains forward information about the next 10B BetSame edge that is not reducible to simple persistence of the current BetSame edge.
+</p>
+
+<p>
+This remains an aggregate-state result.
+</p>
+
+<p>
+It does not yet demonstrate above-chance prediction of individual unseen Same/Different outcomes.
+</p>
+
+<p>
+The regression and residual analyses have now served their purpose. Further variations of the same correlation test would risk becoming parameter exploration rather than useful validation.
+</p>
+
+<p>
+The next experimental stage is therefore intended to cross from forecasting to decision:
+</p>
+
+<pre><code>past training only
+        |
+        v
+fit frozen causal model
+        |
+        v
+predict future BetSame edge
+        |
+        +-- positive --> choose Same
+        |
+        +-- negative --> choose Different
+        |
+        v
+score the choice against unseen future outcomes</code></pre>
+
+<p>
+That experiment will test whether the surviving aggregate-state information can be converted into an actual causal Same/Different decision.
+</p>
+
+<p>
+Quant2 remains outside this development sequence as prospective validation data and is not being used for model development, candidate selection, or evaluator tuning.
+</p>
