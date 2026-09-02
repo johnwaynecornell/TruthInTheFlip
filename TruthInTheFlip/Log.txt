@@ -4071,3 +4071,407 @@ That experiment will test whether the surviving aggregate-state information can 
 <p>
 Quant2 remains outside this development sequence as prospective validation data and is not being used for model development, candidate selection, or evaluator tuning.
 </p>
+
+___________________________________________________________________________
+╔═══════════════╗
+║20260902_143608║
+╚═══════════════╝
+
+<h2>Forward Decision Simulation and the Persistence Result</h2>
+
+<p>
+The anticipation experiments have now crossed from forecasting an aggregate state into making explicit causal Same/Different decisions on unseen future data.
+</p>
+
+<p>
+The new evaluator,
+<code>TrackerAnticipationEvaluator_BetSameDecisionZ.py</code>,
+preserves the existing five-fold expanding walk-forward design and converts each strictly out-of-sample prediction of the next 10B BetSame edge into a decision:
+</p>
+
+<pre><code>predicted future edge &gt;= 0  -&gt; Same
+predicted future edge &lt;  0  -&gt; Different</code></pre>
+
+<p>
+Each choice is then scored against the realized BetSame behavior of the future 10B segment.
+</p>
+
+<p>
+The evaluator compares the persistence-only baseline,
+</p>
+
+<p>
+<code>FutureBetSameEdge ~ CurrentBetSameEdge</code>,
+</p>
+
+<p>
+with the previously fixed candidate models,
+</p>
+
+<p>
+<code>FutureBetSameEdge ~ CurrentBetSameEdge + BetSameGapTrend#4</code>
+</p>
+
+<p>
+and
+</p>
+
+<p>
+<code>FutureBetSameEdge ~ CurrentBetSameEdge + BetSameGapTrend#8</code>.
+</p>
+
+<p>
+No new lag, threshold, window size, nonlinear model, or candidate metric was introduced.
+</p>
+
+<h3>A Larger Result Appears</h3>
+
+<p>
+The most important result of this stage is not the incremental improvement from <code>BetSameGapTrend</code>.
+</p>
+
+<p>
+It is the persistence baseline itself.
+</p>
+
+<p>
+Across approximately 4.36 to 4.38 trillion strictly forward-scored flips per development tracker, the persistence-only decision rule produced cumulative nominal binomial Z values near +6 on every tracker:
+</p>
+
+<ul>
+    <li>Crypto 3: approximately <code>+6.72</code>;</li>
+    <li>Random SD: approximately <code>+6.28</code>;</li>
+    <li>Quant: approximately <code>+6.89</code>;</li>
+    <li>Quant IDQE: approximately <code>+6.04</code>.</li>
+</ul>
+
+<p>
+The <code>BetSameGapTrend#8</code> candidate produced corresponding cumulative values of approximately <code>+6.94</code>, <code>+6.31</code>, <code>+6.92</code>, and <code>+6.02</code>. :contentReference[oaicite:0]{index=0}
+</p>
+
+<p>
+The candidate therefore improves the accumulated result modestly on Crypto 3, Random SD, and Quant, while slightly reducing it on Quant IDQE.
+</p>
+
+<p>
+This changes the center of the current question.
+</p>
+
+<p>
+The earlier experiments established that <code>BetSameGapTrend</code> contains incremental forward information beyond simple persistence. The decision simulation now shows that much of the realized forward Same/Different edge is already present in the much simpler persistence structure.
+</p>
+
+<h3>The Scale of the Effect</h3>
+
+<p>
+The observed percentage advantages remain extremely small.
+</p>
+
+<p>
+For example, the Crypto 3 <code>#8</code> candidate accumulates to approximately <code>50.000166%</code> over 4.36 trillion evaluated flips while producing a nominal Z near <code>+6.94</code>. :contentReference[oaicite:1]{index=1}
+</p>
+
+<p>
+This is characteristic of the scale being investigated by TruthInTheFlip: a microscopic directional edge observed across an enormous number of outcomes.
+</p>
+
+<h3>Statistical Caution</h3>
+
+<p>
+The reported Z values are currently described as <em>nominal binomial Z</em>.
+</p>
+
+<p>
+They are calculated from accumulated correct Same/Different outcomes relative to a 50% Bernoulli expectation, but that interpretation assumes independent trials.
+</p>
+
+<p>
+The experiment is specifically investigating serial persistence and temporal structure, so an iid interpretation would be premature.
+</p>
+
+<p>
+The next stage is therefore a control experiment rather than further strategy development.
+</p>
+
+<p>
+The planned control will preserve the already-generated walk-forward decisions while disrupting their exact temporal alignment with future outcomes. A within-fold circular-shift procedure can preserve the local distributions and serial structure of both decision and outcome sequences while asking whether the actual causal alignment is exceptional relative to displaced alignments.
+</p>
+
+<p>
+This should provide an empirical null distribution for cumulative realized edge without relying solely on the iid binomial assumption.
+</p>
+
+<h3>Methodology Frozen for the Control</h3>
+
+<p>
+The current model family remains:
+</p>
+
+<ul>
+    <li>persistence baseline;</li>
+    <li><code>BetSameGapTrend#4</code>;</li>
+    <li><code>BetSameGapTrend#8</code>.</li>
+</ul>
+
+<p>
+Lag remains one 10B segment. The five expanding walk-forward folds remain unchanged.
+</p>
+
+<p>
+Quant2 remains deliberately absent from all development-side evaluation.
+</p>
+
+<p>
+The next question is no longer whether another metric can improve the result.
+</p>
+
+<p>
+The question is whether the forward alignment already observed survives a null model designed to respect the serial structure that produced it.
+</p>
+
+___________________________________________________________________________
+
+<h2>Causal Persistence Survives a Serial-Structure Control</h2>
+
+<p>
+The forward Same/Different decision experiment has now been tested against a serial-structure-preserving temporal control.
+</p>
+
+<p>
+The evaluator,
+<code>TrackerAnticipationEvaluator_BetSameDecisionControl.py</code>,
+retains the previously frozen walk-forward models and decisions.
+No model is retrained inside the control.
+Instead, the realized future BetSame edge within each held-out fold is circularly shifted by a random non-zero offset and the existing decisions are rescored against that displaced future sequence.
+</p>
+
+<p>
+Each control trial therefore preserves the fold's realized-edge values and much of its serial geometry while disrupting the exact temporal alignment between the causal decision and its future outcome.
+</p>
+
+<p>
+The experiment used 10,000 control trials with a fixed seed for reproducibility.
+</p>
+
+<h3>Persistence Baseline</h3>
+
+<p>
+The persistence-only rule continued to stand well outside the circular-shift control distribution on all four development trackers.
+</p>
+
+<ul>
+    <li>Crypto 3: observed Z approximately <code>+6.72</code>, control 95th percentile approximately <code>+2.29</code>;</li>
+    <li>Random SD: observed Z approximately <code>+6.28</code>, control 95th percentile approximately <code>+3.09</code>;</li>
+    <li>Quant: observed Z approximately <code>+6.89</code>, control 95th percentile approximately <code>+2.75</code>;</li>
+    <li>Quant IDQE: observed Z approximately <code>+6.04</code>, control 95th percentile approximately <code>+2.22</code>.</li>
+</ul>
+
+<p>
+For both fixed candidate-window evaluations, none of the 10,000 sampled circular-shift controls reached the observed persistence result. The one-sided Monte Carlo p-value therefore reached the resolution floor of approximately <code>1 / 10001</code>.
+</p>
+
+<p>
+This does not convert the nominal binomial Z values into conventional iid significance claims.
+It does, however, show that the observed causal alignment is not reproduced by arbitrary phase displacement within the same held-out folds.
+</p>
+
+<h3>Incremental BetSameGapTrend Effect</h3>
+
+<p>
+The control also clarified the role of <code>BetSameGapTrend</code>.
+</p>
+
+<p>
+The candidate state continues to show incremental forward forecasting information, but its improvement over the persistence-only decision rule was not exceptional under the circular-shift control.
+</p>
+
+<p>
+Empirical p-values for the candidate-minus-baseline accuracy delta ranged from approximately <code>0.106</code> to <code>0.513</code> across the tracker/window combinations.
+</p>
+
+<p>
+The current evidence therefore supports two separate conclusions:
+</p>
+
+<ul>
+    <li>the persistence-based causal decision exhibits unusually strong temporal alignment;</li>
+    <li>the additional decision-level benefit of <code>BetSameGapTrend</code> is not yet established by this control.</li>
+</ul>
+
+<h3>Current Interpretation</h3>
+
+<p>
+The central experimental object has shifted.
+</p>
+
+<p>
+The most striking result is now the persistence of the BetSame edge itself:
+</p>
+
+<pre><code>current BetSame edge
+        |
+        v
+past-only persistence model
+        |
+        v
+predict next 10B edge sign
+        |
+        +-- positive --> Same
+        |
+        +-- negative --> Different
+        |
+        v
+score against the unseen next region</code></pre>
+
+<p>
+Across all four development tracker histories, this simple causal rule produced accumulated forward accuracy near <code>50.0001%</code> while reaching nominal cumulative Z values around <code>+6</code>.
+</p>
+
+<p>
+The next step is one additional orthogonal structural control.
+Rather than shifting the entire future sequence intact, the next control will preserve short-range local structure inside blocks while randomly permuting those blocks within each held-out fold.
+</p>
+
+<p>
+If the forward persistence result also survives that control, development-side statistical probing will be considered substantially complete before the prospective Quant2 validation stage.
+</p>
+
+___________________________________________________________________________
+
+<h2>Persistence Rule Frozen After Two Structural Controls</h2>
+
+<p>
+The development-side TruthInTheFlip anticipation experiments have reached a stopping point.
+</p>
+
+<p>
+The latest control,
+<code>TrackerAnticipationEvaluator_BetSameDecisionBlockControl.py</code>,
+tested the causal Same/Different decision rule under a second structural null.
+</p>
+
+<p>
+The previously completed circular-shift control preserved each held-out fold's realized-edge sequence while changing its temporal phase.
+The block-permutation control instead divided each fold into four-segment blocks, preserving 40B flips of consecutive local structure inside each block while randomly permuting the larger-scale ordering.
+</p>
+
+<p>
+The already-fitted walk-forward decisions were retained unchanged.
+No model was retrained and no parameters were selected from the control results.
+</p>
+
+<h3>Block-Permutation Result</h3>
+
+<p>
+The persistence-only causal decision again remained far outside the control distribution on every development tracker.
+</p>
+
+<ul>
+    <li>Crypto 3: observed Z approximately <code>+6.72</code>, block-control 95th percentile approximately <code>+1.35</code>;</li>
+    <li>Random SD: observed Z approximately <code>+6.28</code>, block-control 95th percentile approximately <code>+2.16</code>;</li>
+    <li>Quant: observed Z approximately <code>+6.89</code>, block-control 95th percentile approximately <code>+2.17</code>;</li>
+    <li>Quant IDQE: observed Z approximately <code>+6.04</code>, block-control 95th percentile approximately <code>+1.57</code>.</li>
+</ul>
+
+<p>
+None of the 10,000 sampled block-permutation controls reached the observed persistence result.
+The one-sided Monte Carlo p-value therefore again reached the available resolution floor of approximately <code>1 / 10001</code>.
+</p>
+
+<p>
+This independently supports the result of the circular-shift control: the observed forward persistence is not reproduced simply by retaining the local distribution or short-range serial structure while disrupting its actual temporal placement.
+</p>
+
+<h3>BetSameGapTrend Revisited</h3>
+
+<p>
+The additional <code>BetSameGapTrend</code> state remains useful as a forecasting variable, but its incremental benefit at the final Same/Different decision layer did not become exceptional under either structural control.
+</p>
+
+<p>
+The block-control empirical p-values for candidate-minus-baseline decision improvement remained ordinary, ranging from approximately <code>0.115</code> to <code>0.476</code>.
+</p>
+
+<p>
+The development evidence therefore supports a distinction that is now considered important:
+</p>
+
+<ul>
+    <li><code>BetSameGapTrend</code> contains incremental forward forecasting information;</li>
+    <li>the dominant causal decision effect is already present in simple BetSame-edge persistence;</li>
+    <li>a separately established decision-level advantage from <code>BetSameGapTrend</code> has not been demonstrated.</li>
+</ul>
+
+<h3>Frozen Prospective Rule</h3>
+
+<p>
+Further development-side tuning is being stopped here.
+</p>
+
+<p>
+The rule selected for prospective validation is intentionally the simplest surviving rule:
+</p>
+
+<pre><code>FutureBetSameEdge ~ CurrentBetSameEdge
+
+predicted edge &gt;= 0  -&gt; Same
+predicted edge &lt;  0  -&gt; Different
+
+horizon: next 10B segment
+lag: 1</code></pre>
+
+<p>
+No <code>BetSameGapTrend</code> window is required.
+No threshold is introduced.
+No alternate lag, nonlinear classifier, or post-control optimization is planned before prospective validation.
+</p>
+
+<p>
+The historical development result has now survived:
+</p>
+
+<ul>
+    <li>chronological holdout;</li>
+    <li>expanding walk-forward evaluation;</li>
+    <li>direct Same/Different decision scoring;</li>
+    <li>within-fold circular-shift control;</li>
+    <li>40B block-permutation control.</li>
+</ul>
+
+<p>
+The remaining major question belongs to data that has not participated in any of those decisions.
+</p>
+
+<h3>Quant2 Prospective Validation Harvest</h3>
+
+<p>
+<code>Quant2.tkr</code> continues recording independently from the development analysis.
+</p>
+
+<p>
+At the latest recorded checkpoint it had reached:
+</p>
+
+<pre><code>1,885,400,000,000 flips
+wallclock: 1.23:01:05
+throughput: 11,138,696 flips/sec</code></pre>
+
+<p>
+Its current aggregate statistics remain visually unremarkable:
+heads approximately <code>50 - 4.6e-05%</code> with <code>Z = -0.2916</code>,
+and anticipation approximately <code>50 - 1.2e-04%</code> with <code>Z = -0.7880</code>.
+</p>
+
+<p>
+Those values are not being used for development decisions.
+Quant2 remains excluded from candidate selection, model fitting, lag selection, thresholding, controls, and strategy design.
+</p>
+
+<p>
+The existing Quant comparison horizon is approximately <code>8.9034T</code> flips.
+At the current(2026-09-02) observed throughput, Quant2 has approximately <code>7.3 days</code> remaining to reach that horizon, assuming similar sustained performance.
+</p>
+
+<p>
+For the first time in this sequence, the method is now frozen while the validation record is still being generated.
+</p>
