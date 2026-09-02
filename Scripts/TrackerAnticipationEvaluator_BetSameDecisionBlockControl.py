@@ -66,14 +66,14 @@ def parse_args():
         "--control-trials",
         type = int,
         default = 10_000,
-        help = "Number of within-fold circular-shift control trials.",
+        help = "Number of within-fold control-block control trials.",
     )
 
     parser.add_argument(
         "--control-seed",
         type = int,
         default = 20260902,
-        help = "Random seed for the circular-shift control.",
+        help = "Random seed for the control-block control.",
     )
 
     parser.add_argument(        "--control-block-size",
@@ -615,9 +615,6 @@ def evaluate_fold(
             candidate_coefficients[2]
         ),
 
-        "StateCoefficient": float(
-            candidate_coefficients[2]
-        ),
     }
 
 def cumulative_decision_metrics(
@@ -1223,7 +1220,7 @@ def main():
     )
     print()
     print("=" * 78)
-    print("WALK-FORWARD + CIRCULAR-SHIFT CONTROL SUMMARY")
+    print("WALK-FORWARD + control-block CONTROL SUMMARY")
     print("=" * 78)
 
     print(
