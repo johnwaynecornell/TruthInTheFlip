@@ -118,13 +118,15 @@ public class TruthInTheFlip_Fluent
                 _p.Add(new MetricParameterDescriptor()
                 {
                     Name = parameters[i].Name,
-                    Type = MetricParameterType.Aggregate
+                    Type = MetricParameterType.Aggregate,
+                    ReflectedType = parameters[i].ParameterType
                 });
             else
                 _p.Add(new MetricParameterDescriptor()
                 {
                     Name = parameters[i].Name,
-                    Type = MetricParameterType.Scalar
+                    Type = MetricParameterType.Scalar,
+                    ReflectedType = parameters[i].ParameterType
                 });
         }
 
@@ -199,13 +201,15 @@ public class TruthInTheFlip_Fluent
                             _p.Add(new MetricParameterDescriptor()
                             {
                                 Name = parameters[i].Name,
-                                Type = MetricParameterType.Aggregate
+                                Type = MetricParameterType.Aggregate,
+                                ReflectedType = parameters[i].ParameterType
                             });
                         else
                             _p.Add(new MetricParameterDescriptor()
                             {
                                 Name = parameters[i].Name,
-                                Type = MetricParameterType.Scalar
+                                Type = MetricParameterType.Scalar,
+                                ReflectedType = parameters[i].ParameterType
                             });
                     }
 

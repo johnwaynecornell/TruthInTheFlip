@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace JWCFarm.Metrics;
 
 public class MetricBinder
@@ -161,10 +163,23 @@ public class MetricBinder
                 }
                 else
                 {
-                    paramOk = ParseExpression(
-                        process, catalogs, argumentPath,
-                        currentType, inputType,
-                        field, ref this_offset, out error, bindCtx);
+                    int tokenEnd = field.IndexOf(',', this_offset);
+                    if (tokenEnd < 0) tokenEnd = field.Length;
+                    string token = field[this_offset..tokenEnd];
+
+                    if (p.ReflectedType != null && TryParseReflectedValue(p.ReflectedType, token, out object? parsedValue))
+                    {
+                        argumentPath.Add(MetricDescriptor.CreateInstance(parsedValue));
+                        this_offset = tokenEnd;
+                        paramOk = true;
+                    }
+                    else
+                    {
+                        paramOk = ParseExpression(
+                            process, catalogs, argumentPath,
+                            currentType, inputType,
+                            field, ref this_offset, out error, bindCtx);
+                    }
                 }
 
                 if (!paramOk)
@@ -370,5 +385,211 @@ public class MetricBinder
         params string[] fields)
     {
         return Bind(process, catalogs, type, inputType, out target, out _, fields);
+    }
+
+    // ── reflected literal parser ──────────────────────────────────────────────
+    private static bool TryParseReflectedValue(Type targetType, string token, out object? result)
+    {
+        result = null;
+
+        var underlying = Nullable.GetUnderlyingType(targetType);
+        if (underlying != null)
+        {
+            if (string.Equals(token, "null", StringComparison.OrdinalIgnoreCase))
+            {
+                result = null;
+                return true;
+            }
+            targetType = underlying;
+        }
+
+        if (targetType == typeof(string))
+        {
+            result = token;
+            return true;
+        }
+
+        if (targetType == typeof(bool))
+        {
+            if (bool.TryParse(token, out var b))
+            {
+                result = b;
+                return true;
+            }
+            return false;
+        }
+
+        if (targetType == typeof(int))
+        {
+            if (int.TryParse(token, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v))
+            {
+                result = v;
+                return true;
+            }
+            return false;
+        }
+
+        if (targetType == typeof(double))
+        {
+            if (double.TryParse(token, NumberStyles.Float, CultureInfo.InvariantCulture, out var v))
+            {
+                result = v;
+                return true;
+            }
+            return false;
+        }
+
+        if (targetType == typeof(float))
+        {
+            if (float.TryParse(token, NumberStyles.Float, CultureInfo.InvariantCulture, out var v))
+            {
+                result = v;
+                return true;
+            }
+            return false;
+        }
+
+        if (targetType == typeof(long))
+        {
+            if (long.TryParse(token, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v))
+            {
+                result = v;
+                return true;
+            }
+            return false;
+        }
+
+        if (targetType == typeof(decimal))
+        {
+            if (decimal.TryParse(token, NumberStyles.Number, CultureInfo.InvariantCulture, out var v))
+            {
+                result = v;
+                return true;
+            }
+            return false;
+        }
+
+        if (targetType == typeof(TimeSpan))
+        {
+            if (TimeSpan.TryParse(token, CultureInfo.InvariantCulture, out var v))
+            {
+                result = v;
+                return true;
+            }
+            return false;
+        }
+
+        if (targetType == typeof(DateTime))
+        {
+            if (DateTime.TryParse(token, CultureInfo.InvariantCulture, DateTimeStyles.None, out var v))
+            {
+                result = v;
+                return true;
+            }
+            return false;
+        }
+
+        if (targetType == typeof(DateTimeOffset))
+        {
+            if (DateTimeOffset.TryParse(token, CultureInfo.InvariantCulture, DateTimeStyles.None, out var v))
+            {
+                result = v;
+                return true;
+            }
+            return false;
+        }
+
+        if (targetType == typeof(short))
+        {
+            if (short.TryParse(token, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v))
+            {
+                result = v;
+                return true;
+            }
+            return false;
+        }
+
+        if (targetType == typeof(byte))
+        {
+            if (byte.TryParse(token, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v))
+            {
+                result = v;
+                return true;
+            }
+            return false;
+        }
+
+        if (targetType == typeof(sbyte))
+        {
+            if (sbyte.TryParse(token, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v))
+            {
+                result = v;
+                return true;
+            }
+            return false;
+        }
+
+        if (targetType == typeof(uint))
+        {
+            if (uint.TryParse(token, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v))
+            {
+                result = v;
+                return true;
+            }
+            return false;
+        }
+
+        if (targetType == typeof(ulong))
+        {
+            if (ulong.TryParse(token, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v))
+            {
+                result = v;
+                return true;
+            }
+            return false;
+        }
+
+        if (targetType == typeof(ushort))
+        {
+            if (ushort.TryParse(token, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v))
+            {
+                result = v;
+                return true;
+            }
+            return false;
+        }
+
+        if (targetType == typeof(char))
+        {
+            if (char.TryParse(token, out var v))
+            {
+                result = v;
+                return true;
+            }
+            return false;
+        }
+
+        if (targetType == typeof(Guid))
+        {
+            if (Guid.TryParse(token, out var v))
+            {
+                result = v;
+                return true;
+            }
+            return false;
+        }
+
+        if (targetType.IsEnum)
+        {
+            if (Enum.TryParse(targetType, token, ignoreCase: true, out var v) &&
+                (Enum.IsDefined(targetType, v) || targetType.IsDefined(typeof(FlagsAttribute), false)))
+            {
+                result = v;
+                return true;
+            }
+            return false;
+        }
+
+        return false;
     }
 }

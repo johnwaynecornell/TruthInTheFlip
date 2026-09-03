@@ -70,7 +70,7 @@ public class MetricDescriptor
         };
     }
     
-    public static Instance CreateInstance(double value)
+    public static Instance CreateInstance(object? value)
     {
         return new Instance
         {
