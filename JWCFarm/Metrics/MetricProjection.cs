@@ -1,3 +1,5 @@
+using System.Collections;
+
 namespace JWCFarm.Metrics;
 
 /// <summary>
@@ -40,7 +42,7 @@ public class MetricProjection
         session.Inspect(process, segment, state);
     }
 
-    public List<double> GetStatValues(
+    public IList GetStatValues(
         object stats,
         MetricPath path,
         int parameterIndex)

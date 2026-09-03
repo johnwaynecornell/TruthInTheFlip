@@ -98,6 +98,11 @@ public class TruthInTheFlip_Fluent
         };
     }
 
+    private static bool IsConcreteGenericList(Type type)
+    {
+        return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>);
+    }
+
     public static MetricDescriptor? MetricLoadStaticFromMethod(MethodInfo methodInfo)
     {
         IsMetricAttribute? metricAttribute =
@@ -114,7 +119,7 @@ public class TruthInTheFlip_Fluent
         ii++;
         for (int i = ii; i < parameters.Length; i++)
         {
-            if (parameters[i].ParameterType == typeof(List<double>))
+            if (IsConcreteGenericList(parameters[i].ParameterType))
                 _p.Add(new MetricParameterDescriptor()
                 {
                     Name = parameters[i].Name,
@@ -197,7 +202,7 @@ public class TruthInTheFlip_Fluent
                     
                     for (int i = wantsContext ? 1 : 0; i < parameters.Length; i++)
                     {
-                        if (parameters[i].ParameterType == typeof(List<double>))
+                        if (IsConcreteGenericList(parameters[i].ParameterType))
                             _p.Add(new MetricParameterDescriptor()
                             {
                                 Name = parameters[i].Name,

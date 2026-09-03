@@ -36,11 +36,14 @@ public class Experimental
             new()
             {
                 new("window", MetricParameterType.Scalar)
+                {
+                    ReflectedType = typeof(int)
+                }
             },
             "Gap versus the prior rolling mean over the requested history window.",
             (ctx, obj, args) =>
             {
-                int window = (int)(double)args[0]!;
+                int window = (int)args[0]!;
 
                 // resolve state for this session + metric/window
                 // calculate using prior history only

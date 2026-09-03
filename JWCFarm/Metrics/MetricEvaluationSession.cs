@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Runtime.CompilerServices;
 
 namespace JWCFarm.Metrics;
@@ -48,29 +49,62 @@ public sealed class MetricEvaluationSession
 
     private sealed class ProductMetricState
     {
-        public Dictionary<(string canonicalPath, int ParameterIndex), List<double>>
+        public Dictionary<(string canonicalPath, int ParameterIndex), IList>
             Values { get; } = new();
+    }
+
+    private static IList CreateAggregateList(MetricParameterDescriptor descriptor)
+    {
+        if (descriptor.ReflectedType == null)
+        {
+            return new List<double>();
+        }
+
+        if (descriptor.ReflectedType.IsGenericType &&
+            descriptor.ReflectedType.GetGenericTypeDefinition() == typeof(List<>))
+        {
+            return (IList)(Activator.CreateInstance(descriptor.ReflectedType)
+                           ?? throw new InvalidOperationException($"Failed to create aggregate list of type '{descriptor.ReflectedType.FullName}'."));
+        }
+
+        throw new InvalidOperationException(
+            $"Aggregate parameter '{descriptor.Name}' has invalid or unsupported ReflectedType '{descriptor.ReflectedType.FullName}'. " +
+            $"Only concrete List<T> or null (legacy List<double>) are supported for aggregate parameters.");
     }
 
     public void AddStatValue(
         object stats,
         MetricPath path,
         int parameterIndex,
-        double value)
+        MetricParameterDescriptor descriptor,
+        object? value)
     {
         ProductMetricState state = _statValues.GetOrCreateValue(stats);
         var key = (path.ToString(), parameterIndex);
 
         if (!state.Values.TryGetValue(key, out var values))
         {
-            values = new List<double>();
+            values = CreateAggregateList(descriptor);
             state.Values[key] = values;
         }
 
-        values.Add(value);
+        try
+        {
+            values.Add(value);
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidCastException or NullReferenceException)
+        {
+            Type expectedElementType = descriptor.ReflectedType != null && descriptor.ReflectedType.IsGenericType
+                ? descriptor.ReflectedType.GetGenericArguments()[0]
+                : typeof(double);
+            string actualType = value?.GetType().FullName ?? "null";
+            throw new InvalidCastException(
+                $"Cannot add item of type '{actualType}' to aggregate parameter '{descriptor.Name}' " +
+                $"(index {parameterIndex}) of path '{path}'. Expected element type: '{expectedElementType.FullName}'.", ex);
+        }
     }
 
-    public List<double> GetStatValues(
+    public IList GetStatValues(
         object stats,
         MetricPath path,
         int parameterIndex)
@@ -105,7 +139,7 @@ public sealed class MetricEvaluationSession
 
                 if (desc.Type == MetricParameterType.Aggregate)
                 {
-                    object o;
+                    object? o;
                     if (process?.InputProcess != null)
                     {
                         var inputSession = process.InputProcess.Session
@@ -123,8 +157,7 @@ public sealed class MetricEvaluationSession
                         o = arg.Get(this, state, state, ref ii);
                     }
 
-                    double value = Convert.ToDouble(o);
-                    AddStatValue(segment, path, arg_i, value);
+                    AddStatValue(segment, path, arg_i, desc, o);
                 }
                 else
                 {
