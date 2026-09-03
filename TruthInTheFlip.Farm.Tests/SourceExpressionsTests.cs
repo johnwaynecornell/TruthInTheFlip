@@ -32,12 +32,14 @@ public class SourceExpressionsTests
         private readonly Type _statType;
         private readonly Type _inputType;
         private readonly FarmProcess? _inputProcess;
+        private readonly IEnumerable<object>? _items;
 
-        public MockProcess(Type statType, Type inputType, FarmProcess? inputProcess = null)
+        public MockProcess(Type statType, Type inputType, FarmProcess? inputProcess = null, IEnumerable<object>? items = null)
         {
             _statType     = statType;
             _inputType    = inputType;
             _inputProcess = inputProcess;
+            _items        = items;
         }
 
         public override Type StatType  => _statType;
@@ -45,7 +47,7 @@ public class SourceExpressionsTests
         public override FarmProcess? InputProcess => _inputProcess;
 
         protected override IEnumerable<object> EnumerateItems(FarmContext context)
-            => throw new NotSupportedException("MockProcess is for binding/projection tests only.");
+            => _items ?? throw new NotSupportedException("MockProcess is for binding/projection tests only.");
     }
 
     // ── catalog helpers ────────────────────────────────────────────────────────
@@ -601,6 +603,67 @@ public class SourceExpressionsTests
         // The outer mean should return the mean of [namedMethod(t3a)] = [1.0] = 1.0.
         double result = (double)projection.Fields[0].Get(outerSession, agg2);
         Assert.Equal(trueZ3a, result, precision: 10);
+    }
+
+    [Fact]
+    public void NestedProcess_Execute_PreservesInnerSessionForOuterAggregateInspection()
+    {
+        var namedMethod = Prop("namedMethod", typeof(double),
+            (ctx, tracker) =>
+            {
+                double z = ctx.Get<double>("ZScore");
+                return z * 2;
+            },
+            sourceExpressions: ["ZScore"]);
+
+        var cats = CreateBaseCatalogs();
+        cats.Catalogs[typeof(FakeTracker)]!.Metrics["namedMethod"] = namedMethod;
+        cats.Catalogs[typeof(FakeSegmentAgg)] = new MetricCatalog
+        {
+            Metrics = new Dictionary<string, MetricDescriptor>
+            {
+                ["mean"] = AggMethod("mean", typeof(double),
+                    (_, _, args) => ((List<double>)args[0]!).DefaultIfEmpty(double.NaN).Average())
+            }
+        };
+
+        var seg = new FakeSegment();
+        var trackerList = new List<object>
+        {
+            new FakeTracker { ZScore = 5.0 },
+            new FakeTracker { ZScore = 15.0 }
+        };
+
+        var innerProcess = new MockProcess(typeof(FakeSegment), typeof(FakeTracker), items: new[] { seg });
+        innerProcess.Projection = new MetricProjection();
+
+        var outerProcess = new MockProcess(typeof(FakeSegmentAgg), typeof(FakeSegment), innerProcess, items: new[] { new FakeSegmentAgg() });
+
+        bool ok = MetricBinder.Bind(outerProcess, cats, typeof(FakeSegmentAgg), typeof(FakeSegment),
+            out var projection, out var bindError, "mean#mean#namedMethod");
+
+        Assert.True(ok, bindError?.Message);
+        outerProcess.Projection = projection;
+
+        // Mock inner execution that populates inner session
+        innerProcess.Actions = new ProcessActions(
+            process: (_, item) =>
+            {
+                foreach (var t in trackerList)
+                    innerProcess.Session!.Inspect(innerProcess, item, t);
+            });
+
+        innerProcess.Execute(new FarmContext());
+
+        // Inner session should remain populated after innerProcess.Execute
+        Assert.NotNull(innerProcess.Session);
+
+        var outerAgg = new FakeSegmentAgg();
+        var outerSession = new MetricEvaluationSession(projection!);
+        outerSession.Inspect(outerProcess, outerAgg, seg);
+
+        double result = (double)projection!.Fields[0].Get(outerSession, outerAgg);
+        Assert.Equal(20.0, result); // (5*2 + 15*2) / 2 = 20.0
     }
 
     // ── field accessor for MockProcess.Projection (workaround for sealed setter) ──

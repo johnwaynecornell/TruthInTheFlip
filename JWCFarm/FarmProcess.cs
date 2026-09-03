@@ -75,10 +75,6 @@ public abstract class FarmProcess : FarmCommand
             AbortProcess(context, e);
             throw;
         }
-        finally
-        {
-            Session = null;
-        }
     }
     
 }
