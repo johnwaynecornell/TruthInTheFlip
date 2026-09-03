@@ -88,15 +88,18 @@ public sealed class MetricEvaluationSession
             state.Values[key] = values;
         }
 
+        Type expectedElementType = descriptor.ReflectedType != null && descriptor.ReflectedType.IsGenericType
+            ? descriptor.ReflectedType.GetGenericArguments()[0]
+            : typeof(double);
+
+        object? storedValue = MetricBinder.CoerceNumericWidening(value, expectedElementType);
+
         try
         {
-            values.Add(value);
+            values.Add(storedValue);
         }
         catch (Exception ex) when (ex is ArgumentException or InvalidCastException or NullReferenceException)
         {
-            Type expectedElementType = descriptor.ReflectedType != null && descriptor.ReflectedType.IsGenericType
-                ? descriptor.ReflectedType.GetGenericArguments()[0]
-                : typeof(double);
             string actualType = value?.GetType().FullName ?? "null";
             throw new InvalidCastException(
                 $"Cannot add item of type '{actualType}' to aggregate parameter '{descriptor.Name}' " +

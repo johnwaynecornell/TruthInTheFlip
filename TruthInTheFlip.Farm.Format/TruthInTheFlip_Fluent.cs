@@ -178,8 +178,8 @@ public class TruthInTheFlip_Fluent
                         Name = member.Name,
                         ValueType = fieldInfo.FieldType,
                         Help =
-                            (string)(member.GetCustomAttributes(typeof(StringHelpAttribute), true).FirstOrDefault() as
-                                StringHelpAttribute).Description,
+                            (member.GetCustomAttributes(typeof(StringHelpAttribute), true).FirstOrDefault() as
+                                StringHelpAttribute)?.Description ?? member.Name,
                         Getter = (ctx, obj) => ((FieldInfo)member).GetValue(obj)
                     });
                 else if (member is PropertyInfo propertyInfo)
@@ -189,8 +189,8 @@ public class TruthInTheFlip_Fluent
                         Name = member.Name,
                         ValueType = propertyInfo.PropertyType,
                         Help =
-                            (string)(member.GetCustomAttributes(typeof(StringHelpAttribute), true).FirstOrDefault() as
-                                StringHelpAttribute).Description,
+                            (member.GetCustomAttributes(typeof(StringHelpAttribute), true).FirstOrDefault() as
+                                StringHelpAttribute)?.Description ?? member.Name,
                         Getter = (ctx, obj) => ((PropertyInfo)member).GetValue(obj)
                     });
                 else if (member is MethodInfo methodInfo)
@@ -226,7 +226,7 @@ public class TruthInTheFlip_Fluent
                             Name = member.Name,
                             ValueType = methodInfo.ReturnType,
                             Help = (member.GetCustomAttributes(typeof(StringHelpAttribute), true)
-                                .FirstOrDefault() as StringHelpAttribute).Description,
+                                .FirstOrDefault() as StringHelpAttribute)?.Description ?? member.Name,
                             Invoke = (ctx, instance, args) =>
                                 ((MethodInfo)member).Invoke(instance, args),
                             Parameters = _p,
@@ -241,7 +241,7 @@ public class TruthInTheFlip_Fluent
                             Name = member.Name,
                             ValueType = methodInfo.ReturnType,
                             Help = (member.GetCustomAttributes(typeof(StringHelpAttribute), true)
-                                .FirstOrDefault() as StringHelpAttribute).Description,
+                                .FirstOrDefault() as StringHelpAttribute)?.Description ?? member.Name,
                             Invoke = (ctx, instance, args) =>
                             {
                                 object?[] invokeArgs = new object?[args.Length + 1];

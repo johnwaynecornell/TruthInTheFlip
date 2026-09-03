@@ -120,6 +120,8 @@ public class MetricBinder
                     this_offset++;
                 }
 
+                int paramStartOffset = this_offset;
+
                 if (p.Type == MetricParameterType.Aggregate) _currentType = inputType;
                 else _currentType = currentType;
 
@@ -143,7 +145,23 @@ public class MetricBinder
                             inputProcess.StatType, inputProcess.InputType,
                             field, ref this_offset, out error, innerCtx);
 
-                        if (paramOk) inputProcess.Projection.Fields.Add(argumentPath);
+                        if (paramOk)
+                        {
+                            Type expectedElementType = (p.ReflectedType != null && p.ReflectedType.IsGenericType && p.ReflectedType.GetGenericTypeDefinition() == typeof(List<>))
+                                ? p.ReflectedType.GetGenericArguments()[0]
+                                : (p.ReflectedType ?? typeof(double));
+
+                            Type argReturnType = GetPathReturnType(argumentPath);
+                            if (!IsTypeCompatible(expectedElementType, argReturnType))
+                            {
+                                offset = paramStartOffset;
+                                error = new MetricBindError(field, paramStartOffset, this_offset - paramStartOffset,
+                                    $"Aggregate parameter '{p.Name}' of '{funcName}' expects elements of type '{expectedElementType.Name}', but argument is of incompatible type '{argReturnType.Name}'.");
+                                return false;
+                            }
+
+                            inputProcess.Projection.Fields.Add(argumentPath);
+                        }
                     }
                     else if (_currentType == null)
                     {
@@ -159,6 +177,22 @@ public class MetricBinder
                             null, catalogs, argumentPath,
                             _currentType, inputType,
                             field, ref this_offset, out error, bindCtx);
+
+                        if (paramOk)
+                        {
+                            Type expectedElementType = (p.ReflectedType != null && p.ReflectedType.IsGenericType && p.ReflectedType.GetGenericTypeDefinition() == typeof(List<>))
+                                ? p.ReflectedType.GetGenericArguments()[0]
+                                : (p.ReflectedType ?? typeof(double));
+
+                            Type argReturnType = GetPathReturnType(argumentPath);
+                            if (!IsTypeCompatible(expectedElementType, argReturnType))
+                            {
+                                offset = paramStartOffset;
+                                error = new MetricBindError(field, paramStartOffset, this_offset - paramStartOffset,
+                                    $"Aggregate parameter '{p.Name}' of '{funcName}' expects elements of type '{expectedElementType.Name}', but argument is of incompatible type '{argReturnType.Name}'.");
+                                return false;
+                            }
+                        }
                     }
                 }
                 else
@@ -179,6 +213,18 @@ public class MetricBinder
                             process, catalogs, argumentPath,
                             currentType, inputType,
                             field, ref this_offset, out error, bindCtx);
+
+                        if (paramOk && p.ReflectedType != null)
+                        {
+                            Type argReturnType = GetPathReturnType(argumentPath);
+                            if (!IsTypeCompatible(p.ReflectedType, argReturnType))
+                            {
+                                offset = paramStartOffset;
+                                error = new MetricBindError(field, paramStartOffset, this_offset - paramStartOffset,
+                                    $"Parameter '{p.Name}' of '{funcName}' expects type '{p.ReflectedType.Name}', but argument is of incompatible type '{argReturnType.Name}'.");
+                                return false;
+                            }
+                        }
                     }
                 }
 
@@ -591,5 +637,75 @@ public class MetricBinder
         }
 
         return false;
+    }
+
+    // ── static return type & numeric widening helpers ─────────────────────────
+
+    public static Type GetPathReturnType(MetricPath path)
+    {
+        if (path == null || path.Count == 0) return typeof(object);
+
+        var last = path[^1];
+        if (last.IsValue)
+        {
+            return last.Value?.GetType() ?? typeof(object);
+        }
+
+        return last.InstanceDescriptor?.ValueType ?? typeof(object);
+    }
+
+    public static bool IsTypeCompatible(Type? targetType, Type? sourceType)
+    {
+        if (targetType == null || sourceType == null) return true;
+        if (targetType == typeof(object) || sourceType == typeof(object)) return true;
+
+        if (targetType.IsAssignableFrom(sourceType)) return true;
+
+        var targetUnderlying = Nullable.GetUnderlyingType(targetType) ?? targetType;
+        var sourceUnderlying = Nullable.GetUnderlyingType(sourceType) ?? sourceType;
+
+        if (targetUnderlying.IsAssignableFrom(sourceUnderlying)) return true;
+
+        if (IsNumericWidening(targetUnderlying, sourceUnderlying)) return true;
+
+        return false;
+    }
+
+    public static bool IsNumericWidening(Type targetType, Type sourceType)
+    {
+        var s = Type.GetTypeCode(sourceType);
+        var t = Type.GetTypeCode(targetType);
+
+        return s switch
+        {
+            TypeCode.SByte => t is TypeCode.Int16 or TypeCode.Int32 or TypeCode.Int64 or TypeCode.Single or TypeCode.Double or TypeCode.Decimal,
+            TypeCode.Byte => t is TypeCode.Int16 or TypeCode.UInt16 or TypeCode.Int32 or TypeCode.UInt32 or TypeCode.Int64 or TypeCode.UInt64 or TypeCode.Single or TypeCode.Double or TypeCode.Decimal,
+            TypeCode.Int16 => t is TypeCode.Int32 or TypeCode.Int64 or TypeCode.Single or TypeCode.Double or TypeCode.Decimal,
+            TypeCode.UInt16 => t is TypeCode.Int32 or TypeCode.UInt32 or TypeCode.Int64 or TypeCode.UInt64 or TypeCode.Single or TypeCode.Double or TypeCode.Decimal,
+            TypeCode.Int32 => t is TypeCode.Int64 or TypeCode.Single or TypeCode.Double or TypeCode.Decimal,
+            TypeCode.UInt32 => t is TypeCode.Int64 or TypeCode.UInt64 or TypeCode.Single or TypeCode.Double or TypeCode.Decimal,
+            TypeCode.Int64 => t is TypeCode.Single or TypeCode.Double or TypeCode.Decimal,
+            TypeCode.UInt64 => t is TypeCode.Single or TypeCode.Double or TypeCode.Decimal,
+            TypeCode.Char => t is TypeCode.UInt16 or TypeCode.Int32 or TypeCode.UInt32 or TypeCode.Int64 or TypeCode.UInt64 or TypeCode.Single or TypeCode.Double or TypeCode.Decimal,
+            TypeCode.Single => t is TypeCode.Double,
+            _ => false
+        };
+    }
+
+    public static object? CoerceNumericWidening(object? value, Type targetType)
+    {
+        if (value == null) return null;
+        Type nonNullTarget = Nullable.GetUnderlyingType(targetType) ?? targetType;
+        Type nonNullSource = Nullable.GetUnderlyingType(value.GetType()) ?? value.GetType();
+
+        if (nonNullTarget == nonNullSource || nonNullTarget == typeof(object))
+            return value;
+
+        if (IsNumericWidening(nonNullTarget, nonNullSource))
+        {
+            return Convert.ChangeType(value, nonNullTarget, CultureInfo.InvariantCulture);
+        }
+
+        return value;
     }
 }

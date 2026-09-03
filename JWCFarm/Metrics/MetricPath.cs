@@ -98,7 +98,12 @@ public class MetricPath : List<MetricDescriptor.Instance>
                     if (desc.Type == MetricParameterType.Scalar)
                     {
                         int ii = 0;
-                        parameters[i] = arg.Get(ctx.Session, root, root, ref ii);
+                        object? val = arg.Get(ctx.Session, root, root, ref ii);
+                        if (desc.ReflectedType != null)
+                        {
+                            val = MetricBinder.CoerceNumericWidening(val, desc.ReflectedType);
+                        }
+                        parameters[i] = val!;
                     }
                     else if (desc.Type == MetricParameterType.Aggregate)
                     {

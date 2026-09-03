@@ -25,6 +25,10 @@ public class GenericAggregateTests
         public double Factor { get; init; }
 
         [IsMetric("1.0")]
+        [StringHelp("Dynamic object value")]
+        public object? DynamicVal { get; init; }
+
+        [IsMetric("1.0")]
         [StringHelp("Self item")]
         public ItemRecord Self => this;
     }
@@ -240,16 +244,16 @@ public class GenericAggregateTests
         Assert.Equal("Alpha,Beta,Gamma", result);
     }
 
-    // 5. An aggregate expression producing a value incompatible with List<T> fails clearly.
+    // 5. An aggregate expression producing a value incompatible with List<T> at runtime fails clearly.
     [Fact]
     public void IncompatibleType_ThrowsClearInvalidCastException()
     {
         var catalogs = CreateReflectedCatalogs();
         var process = new MockProcess(typeof(ContainerRecord), typeof(ItemRecord));
 
-        // SumInts expects List<int>, but Name produces string
+        // SumInts expects List<int>, DynamicVal is object (passes bind-time, fails at runtime if incompatible)
         bool ok = MetricBinder.Bind(process, catalogs, typeof(ContainerRecord), typeof(ItemRecord),
-            out var projection, out var error, "SumInts#Name");
+            out var projection, out var error, "SumInts#DynamicVal");
 
         Assert.True(ok, error?.ToString());
         Assert.NotNull(projection);
@@ -259,7 +263,7 @@ public class GenericAggregateTests
 
         var ex = Assert.Throws<InvalidCastException>(() =>
         {
-            session.Inspect(process, container, new ItemRecord { Name = "NotAnInt" });
+            session.Inspect(process, container, new ItemRecord { DynamicVal = "NotAnInt" });
         });
 
         Assert.Contains("values", ex.Message);
@@ -291,13 +295,13 @@ public class GenericAggregateTests
         {
             Metrics = new Dictionary<string, MetricDescriptor>
             {
-                ["Score"] = new MetricDescriptor("Score", typeof(int), "Score", (_, o) => ((ItemRecord)o).Score)
+                ["DynamicVal"] = new MetricDescriptor("DynamicVal", typeof(object), "DynamicVal", (_, o) => ((ItemRecord)o).DynamicVal)
             }
         };
 
         var process = new MockProcess(typeof(ContainerRecord), typeof(ItemRecord));
         bool ok = MetricBinder.Bind(process, catalogs, typeof(ContainerRecord), typeof(ItemRecord),
-            out var projection, out var error, "BadAgg#Score");
+            out var projection, out var error, "BadAgg#DynamicVal");
 
         Assert.True(ok, error?.ToString());
         Assert.NotNull(projection);
@@ -307,7 +311,7 @@ public class GenericAggregateTests
 
         var ex = Assert.Throws<InvalidOperationException>(() =>
         {
-            session.Inspect(process, container, new ItemRecord { Score = 10 });
+            session.Inspect(process, container, new ItemRecord { DynamicVal = 10 });
         });
 
         Assert.Contains("unsupported ReflectedType", ex.Message);
