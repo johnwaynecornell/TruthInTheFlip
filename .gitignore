@@ -1,5 +1,1 @@
-.idea/
-bin/
-obj/
-.venv/
-CLAUDE.md
+__pycache__
