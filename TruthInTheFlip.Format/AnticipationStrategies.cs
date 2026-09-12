@@ -233,26 +233,29 @@ public static class AnticipationStrategies
 
         bool once = true;
         
-        RegisterUpdate(guess, (tkr) =>
-        {
-            if (state.Window == null)
+        RegisterLifecycle(guess, new AnticipationLifecycle(){ 
+            PostMerge =   (tkr) =>
             {
-                state.Window = new TrackerWindow((TrackerStore)tkr.Store,
-                    UtilT.ThrowIfNull(windowStrategy, "windowStrategy"));
-            }
-
-            if (state.Window.ForwardAdd(tkr)) state.full = true;
-
-            if (state.full)
-            {
-                if (once) {
-                    Console.Error.WriteLine("BetSamePersistence Anticipation active");
-                    once = false;
+                if (state.Window == null)
+                {
+                    state.Window = new TrackerWindow((TrackerStore)tkr.Store,
+                        UtilT.ThrowIfNull(windowStrategy, "windowStrategy"));
                 }
-                
-                // Guess sane when BetSameWinRate is >= 50
-                state.guessChange = ((Tracker)state.Window.Final()).BetSameWinRate < 50.0;
+
+                if (state.Window.ForwardAdd((Tracker) tkr)) state.full = true;
+
+                if (state.full)
+                {
+                    if (once) {
+                        Console.Error.WriteLine("BetSamePersistence Anticipation active");
+                        once = false;
+                    }
+                    
+                    // Guess same when BetSameWinRate is >= 50
+                    state.guessChange = ((Tracker)state.Window.Final()).BetSameWinRate < 50.0;
+                }
             }
+            
         });
 
         return guess;
@@ -282,52 +285,73 @@ public static class AnticipationStrategies
             };
 
         bool once = true;
-        
-        RegisterUpdate(guess, (tkr) =>
+
+        RegisterLifecycle(guess, new AnticipationLifecycle
         {
-            if (state.Window == null)
+            PostMerge = (tkr) =>
             {
-                state.Window = new TrackerWindow((TrackerStore)tkr.Store,
-                    UtilT.ThrowIfNull(windowStrategy, "windowStrategy"));
-            }
-
-            if (state.Window.ForwardAdd(tkr)) state.full = true;
-
-            if (state.full)
-            {
-                if (once) {
-                    Console.Error.WriteLine("SamePersistence Anticipation active");
-                    once = false;
+                if (state.Window == null)
+                {
+                    state.Window = new TrackerWindow((TrackerStore)tkr.Store,
+                        UtilT.ThrowIfNull(windowStrategy, "windowStrategy"));
                 }
-                
-                // Guess sane when SamePercentage is >= 50
-                state.guessChange = ((Tracker)state.Window.Final()).SamePercentage < 50.0;
+
+                if (state.Window.ForwardAdd((Tracker) tkr)) state.full = true;
+
+                if (state.full)
+                {
+                    if (once)
+                    {
+                        Console.Error.WriteLine("SamePersistence Anticipation active");
+                        once = false;
+                    }
+
+                    // Guess same when SamePercentage is >= 50
+                    state.guessChange = ((Tracker)state.Window.Final()).SamePercentage < 50.0;
+                }
             }
         });
 
         return guess;
     }
+
+    public class AnticipationLifecycle
+    {
+        // Overrides the normal tracker batch begin behavior.
+        // Implementations should invoke tracker.BatchMemberBegin()
+        // if the outer tracker should retain normal accounting.
+        public Action<ITracker>? BatchMemberBegin;
+
+        // Overrides the normal tracker batch end behavior.
+        public Action<ITracker>? BatchMemberEnd;
+
+        // Overrides the normal worker -> master merge.
+        public Action<ITracker, ITracker>? WorkerMerge;
+
+        // Runs after all workers have been merged.
+        public Action<ITracker>? PostMerge;
+    }
     
     private static readonly ConditionalWeakTable<
         TrackerRunner.GuessChange,
-        Action<Tracker>> _updates = new();
+        AnticipationLifecycle> _anticipationMethods = new();
 
-    public static bool TryGetUpdate(
+    public static bool TryGetLifecycle(
         TrackerRunner.GuessChange guessChange,
-        out Action<Tracker>? update)
+        out AnticipationLifecycle? cycle)
     {
-        return _updates.TryGetValue(
+        return _anticipationMethods.TryGetValue(
             guessChange,
-            out update);
+            out cycle);
     }
 
-    private static void RegisterUpdate(
+    private static void RegisterLifecycle(
         TrackerRunner.GuessChange guessChange,
-        Action<Tracker> update)
+        AnticipationLifecycle cycle)
     {
-        _updates.Add(
+        _anticipationMethods.Add(
             guessChange,
-            update);
+            cycle);
     }
     
     public class AnticipationOption : TrackerOption

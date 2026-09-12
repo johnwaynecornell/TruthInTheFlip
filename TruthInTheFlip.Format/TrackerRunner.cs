@@ -15,7 +15,7 @@ public class TrackerRunner : ITrackerRunner
     
     public delegate bool AnticipateDelegate(ITrackerRunner store, ITracker tracker, bool currentFlip);
     public AnticipateDelegate? anticipate_delegate;
-    public Action<Tracker>? anticipation_update_delegate;
+    public AnticipationStrategies.AnticipationLifecycle? lifecycle;
 
     public delegate bool GuessChange(bool currentFlip, bool priorFlip, Tracker t, bool lastGuess, bool currentOutcome);
 
@@ -25,22 +25,8 @@ public class TrackerRunner : ITrackerRunner
     /// that handles all tracking, scoring, and state management for the meta-guessing algorithm.
     /// For predefined strategies and examples, see AnticipationStrategies.
     /// </summary>
-    public AnticipateDelegate MakeAnticipateDelegate(GuessChange guessChange)
+    public static AnticipateDelegate _MakeAnticipateDelegate(GuessChange guessChange)
     {
-        if (AnticipationStrategies.TryGetUpdate(
-                guessChange,
-                out var update))
-        {
-            anticipation_update_delegate = update;
-        }
-        else
-        {
-            //
-            // Important if the same runner is ever reconfigured.
-            //
-            anticipation_update_delegate = null;
-        }
-        
         return (ITrackerRunner runner, ITracker tracker, bool currentFlip) =>
         {
             Tracker t = (Tracker)tracker;
@@ -84,6 +70,26 @@ public class TrackerRunner : ITrackerRunner
         };
     }
 
+    public AnticipateDelegate MakeAnticipateDelegate(GuessChange guessChange)
+    {
+        if (AnticipationStrategies.TryGetLifecycle(
+                guessChange,
+                out var update))
+        {
+            lifecycle = update;
+        }
+        else
+        {
+            //
+            // Important if the same runner is ever reconfigured.
+            //
+            lifecycle = null;
+        }
+        
+        return _MakeAnticipateDelegate(guessChange);
+    }
+
+
     public TrackerRunner(ITrackerStore store, BitFactory bitFactory)
     {
         this.store = store;
@@ -126,7 +132,8 @@ public class TrackerRunner : ITrackerRunner
                 {
                     // 2. body: Runs for each iteration, using the thread-local state
 
-                    scope.run.BatchMemberBegin();
+                    if (lifecycle != null && lifecycle.BatchMemberBegin != null) lifecycle.BatchMemberBegin(scope.run);
+                    else scope.run.BatchMemberBegin();
 
                     try
                     {
@@ -138,7 +145,8 @@ public class TrackerRunner : ITrackerRunner
                     }
                     finally
                     {
-                        scope.run.BatchMemberEnd();
+                        if (lifecycle != null && lifecycle.BatchMemberEnd != null) lifecycle.BatchMemberEnd(scope.run);
+                        else scope.run.BatchMemberEnd();
                     }
 
                     return scope; // Pass the state to the next iteration on this thread
@@ -146,7 +154,11 @@ public class TrackerRunner : ITrackerRunner
                 (scope) =>
                 {
                     // 3. localFinally: Runs once per thread after all its iterations are done
-                    lock (master) master.Merge(scope.run);
+                    lock (master)
+                    {
+                        if (lifecycle != null && lifecycle.WorkerMerge != null)  lifecycle.WorkerMerge(master, scope.run);
+                        else master.Merge(scope.run);
+                    }
                 });
         }
         else
@@ -189,12 +201,11 @@ public class TrackerRunner : ITrackerRunner
         // Every worker has now been merged.
         // Publish the decision for the NEXT Run.
         //
-        if (anticipation_update_delegate != null)
+        if (lifecycle != null && lifecycle.PostMerge != null)
         {
-            anticipation_update_delegate(
+            lifecycle.PostMerge(
                 (Tracker)master);
         }
-        
         
         return (start - DateTime.Now).TotalSeconds;
     }
