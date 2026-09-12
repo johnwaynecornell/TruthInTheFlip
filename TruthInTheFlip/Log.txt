@@ -4525,3 +4525,38 @@ The record was allowed to finish speaking before the experiment resumed.
     <li>Added <code>Scripts/Notes.md</code></li>
     <li>Added <code>Scripts/TrackerAnticipationEvaluator_BetSameDecisionBlockControl2.py</code> with output text and convienience launcher</li>
 </ul>
+
+___________________________________________________________________________
+╔═══════════════╗
+║20260911_200419║
+╚═══════════════╝
+
+<p>
+A new live anticipation seam was added to <code>TrackerRunner</code>, allowing an
+anticipation strategy to register an optional post-run update callback associated
+with its existing <code>GuessChange</code> delegate.
+</p>
+
+<p>
+This makes stateful anticipation practical without placing window maintenance in
+the per-flip hot path. The merged master tracker can now feed a
+<code>TrackerWindow</code> once per completed parallel run while workers simply
+consume the strategy's current decision.
+</p>
+
+<p>
+Two persistence strategies now use this mechanism:
+<code>BetSamePersistence</code>, based on windowed BetSame performance, and the new
+<code>SamePersistence</code>, based directly on the observed Same/Different structure
+of the source stream.
+</p>
+
+<p>
+<code>SamePersistence</code> is intentionally exploratory. Unlike BetSame performance,
+<code>SamePercentage</code> is independent of which side the strategy previously chose,
+removing a feedback dimension from the live predictor.
+</p>
+
+<p>
+I am sampling rsource NET1 overnight to see <code>SamePersistence</code>
+</p>

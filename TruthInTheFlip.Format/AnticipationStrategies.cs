@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using TruthInTheFlip.Format.Options;
 
 namespace TruthInTheFlip.Format;
@@ -199,6 +200,128 @@ public static class AnticipationStrategies
         };
     }
     
+    
+    sealed class BetPersistenceState
+    {
+        public TrackerWindow? Window { get; set; }
+        public bool full = false;
+        public bool guessChange = false;
+    }
+
+    /// <summary>
+    /// Predicts Same or Different from the BetSame win rate of a completed tracker window.
+    /// </summary>
+    [StringHelp(
+        "Windowed BetSame persistence: predict Same when the completed window's BetSameWinRate is at least 50%, otherwise Different.")]
+    public static TrackerRunner.GuessChange BetSamePersistence(Func<Tracker, Tracker, bool> windowStrategy)
+    {
+        BetPersistenceState state = new BetPersistenceState();
+
+        TrackerRunner.GuessChange guess =
+            (bool currentFlip, bool priorFlip, Tracker t, bool lastGuess, bool currentOutcome) =>
+            {
+                return state.guessChange;
+            };
+
+        bool once = true;
+        
+        RegisterUpdate(guess, (tkr) =>
+        {
+            if (state.Window == null)
+            {
+                state.Window = new TrackerWindow((TrackerStore)tkr.Store,
+                    UtilT.ThrowIfNull(windowStrategy, "windowStrategy"));
+            }
+
+            if (state.Window.ForwardAdd(tkr)) state.full = true;
+
+            if (state.full)
+            {
+                if (once) {
+                    Console.Error.WriteLine("BetSamePersistence Anticipation active");
+                    once = false;
+                }
+                
+                // Guess sane when BetSameWinRate is >= 50
+                state.guessChange = ((Tracker)state.Window.Final()).BetSameWinRate < 50.0;
+            }
+        });
+
+        return guess;
+    }
+
+    /// <summary>
+    /// Predicts Same or Different from the observed Same/Different balance
+    /// of a completed tracker window.
+    /// </summary>
+    /// <remarks>
+    /// This strategy uses the underlying transition structure of the source stream,
+    /// independent of which side the anticipation strategy previously selected.
+    /// A window with SamePercentage >= 50% predicts Same; otherwise it predicts Different.
+    /// </remarks>
+    [StringHelp(
+        "Windowed Same/Different persistence: predict Same when the completed window's " +
+        "SamePercentage is at least 50%, otherwise Different.")]
+    public static TrackerRunner.GuessChange SamePersistence(
+        Func<Tracker, Tracker, bool> windowStrategy)
+    {
+        BetPersistenceState state = new BetPersistenceState();
+
+        TrackerRunner.GuessChange guess =
+            (bool currentFlip, bool priorFlip, Tracker t, bool lastGuess, bool currentOutcome) =>
+            {
+                return state.guessChange;
+            };
+
+        bool once = true;
+        
+        RegisterUpdate(guess, (tkr) =>
+        {
+            if (state.Window == null)
+            {
+                state.Window = new TrackerWindow((TrackerStore)tkr.Store,
+                    UtilT.ThrowIfNull(windowStrategy, "windowStrategy"));
+            }
+
+            if (state.Window.ForwardAdd(tkr)) state.full = true;
+
+            if (state.full)
+            {
+                if (once) {
+                    Console.Error.WriteLine("SamePersistence Anticipation active");
+                    once = false;
+                }
+                
+                // Guess sane when SamePercentage is >= 50
+                state.guessChange = ((Tracker)state.Window.Final()).SamePercentage < 50.0;
+            }
+        });
+
+        return guess;
+    }
+    
+    private static readonly ConditionalWeakTable<
+        TrackerRunner.GuessChange,
+        Action<Tracker>> _updates = new();
+
+    public static bool TryGetUpdate(
+        TrackerRunner.GuessChange guessChange,
+        out Action<Tracker>? update)
+    {
+        return _updates.TryGetValue(
+            guessChange,
+            out update);
+    }
+
+    private static void RegisterUpdate(
+        TrackerRunner.GuessChange guessChange,
+        Action<Tracker> update)
+    {
+        _updates.Add(
+            guessChange,
+            update);
+    }
+    
     public class AnticipationOption : TrackerOption
     {
         public DelegateMethodRegistry Registry { get; set; }
@@ -219,8 +342,14 @@ public static class AnticipationStrategies
         {
             Registry.AddFromHostType(typeof(AnticipationStrategies));
             Registry.Strategies["ClassicMetaGuess"].IsDefault = true;
+            
+            DelegateMethodRegistry Registry2 = new DelegateMethodRegistry(typeof(Func<Tracker, Tracker, bool>), "window method");
+            
+            Registry.TypeHandlers[typeof(Func<Tracker, Tracker, bool>)] = Registry2;
+            Registry2.AddFromHostType(typeof(TrackerWindow));
+            Registry2.Strategies["WindowByTotal"].IsDefault = true;
+            
             return this;
-
         }
 
         /// <summary>

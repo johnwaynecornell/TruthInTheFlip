@@ -15,6 +15,7 @@ public class TrackerRunner : ITrackerRunner
     
     public delegate bool AnticipateDelegate(ITrackerRunner store, ITracker tracker, bool currentFlip);
     public AnticipateDelegate? anticipate_delegate;
+    public Action<Tracker>? anticipation_update_delegate;
 
     public delegate bool GuessChange(bool currentFlip, bool priorFlip, Tracker t, bool lastGuess, bool currentOutcome);
 
@@ -26,9 +27,22 @@ public class TrackerRunner : ITrackerRunner
     /// </summary>
     public AnticipateDelegate MakeAnticipateDelegate(GuessChange guessChange)
     {
-        return (ITrackerRunner store, ITracker tracker, bool currentFlip) =>
+        if (AnticipationStrategies.TryGetUpdate(
+                guessChange,
+                out var update))
         {
-
+            anticipation_update_delegate = update;
+        }
+        else
+        {
+            //
+            // Important if the same runner is ever reconfigured.
+            //
+            anticipation_update_delegate = null;
+        }
+        
+        return (ITrackerRunner runner, ITracker tracker, bool currentFlip) =>
+        {
             Tracker t = (Tracker)tracker;
             // If anticipating change, expect !priorFlip. If anticipating same, expect priorFlip.
 
@@ -171,6 +185,17 @@ public class TrackerRunner : ITrackerRunner
 
         master.WallclockEnd();
 
+        //
+        // Every worker has now been merged.
+        // Publish the decision for the NEXT Run.
+        //
+        if (anticipation_update_delegate != null)
+        {
+            anticipation_update_delegate(
+                (Tracker)master);
+        }
+        
+        
         return (start - DateTime.Now).TotalSeconds;
     }
 }
