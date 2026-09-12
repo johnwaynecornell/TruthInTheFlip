@@ -209,10 +209,18 @@ public static class AnticipationStrategies
     }
 
     /// <summary>
-    /// Predicts Same or Different from the BetSame win rate of a completed tracker window.
+    /// Predicts Same or Different from the BetSame win rate of a completed tracker window. Using an assigned inner anticipation so as not be susceptible to internal feedback 
+    /// </summary>
+    //[StringHelp(
+    //    "Windowed BetSame persistence: predict Same when the completed window's BetSameWinRate is at least 50%, otherwise Different. Based on the inner anticipation")]
+    //public static TrackerRunner.GuessChange BetSamePersistence2(TrackerRunner.GuessChange innerAnticipation, Func<Tracker, Tracker, bool> windowStrategy)
+    
+    
+    /// <summary>
+    /// Predicts Same or Different from the BetSame win rate of a completed tracker window. It exists in it's own feedback
     /// </summary>
     [StringHelp(
-        "Windowed BetSame persistence: predict Same when the completed window's BetSameWinRate is at least 50%, otherwise Different.")]
+        "Windowed BetSame persistence: predict Same when the completed window's BetSameWinRate is at least 50%, otherwise Different. Internal feedback")]
     public static TrackerRunner.GuessChange BetSamePersistence(Func<Tracker, Tracker, bool> windowStrategy)
     {
         BetPersistenceState state = new BetPersistenceState();
