@@ -227,10 +227,15 @@ public static class AnticipationStrategies
         
         public virtual void BatchMemberBegin(Tracker host_tkr)
         {
-            Tracker workerT = (Tracker)host_tkr.Store.NewTracker();
-                
-            Workers.AddOrUpdate((Tracker) host_tkr, workerT);
-                
+            // Be safe in the case of ForScope reuse
+            
+            // Retrieve existing thread worker or create once if not present
+            if (!Workers.TryGetValue(host_tkr, out var workerT))
+            {
+                workerT = (Tracker)host_tkr.Store.NewTracker();
+                Workers.Add(host_tkr, workerT);
+            }
+
             var meth = AnticipationLifecycle?.BatchMemberBegin;
             if (meth != null) meth(workerT);
             else workerT.BatchMemberBegin();
