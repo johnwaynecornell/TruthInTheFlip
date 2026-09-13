@@ -4560,3 +4560,26 @@ removing a feedback dimension from the live predictor.
 <p>
 I am sampling rsource NET1 overnight to see <code>SamePersistence</code>
 </p>
+
+___________________________________________________________________________
+╔═══════════════╗
+║20260912_204153║
+╚═══════════════╝
+<p>I am giving <code>SamePersistence.NET1.tkr</code> more time to run. To see if its posative performance continues.</p>
+
+<h2>BetSamePersistence2 and composability</h2>
+
+<p>`BetSamePersistence2` separates the persistence decision from the strategy being measured.</p>
+
+<p>Instead of deriving `BetSameWinRate` from its own outer guesses, it runs an independent inner anticipation
+strategy—`ClassicMetaGuess` by default—through the same tracker bookkeeping used by normal execution. Each outer worker
+owns a subordinate tracker; subordinate workers are merged into an inner master, and completed inner-master snapshots 
+are fed into `TrackerWindow`.</p>
+
+<p>The outer strategy then chooses Same or Different from the windowed `BetSameWinRate` of that inner strategy. 
+This removes the direct self-feedback present in the original `BetSamePersistence` and more closely reproduces the 
+historical persistence mechanism as an observation of another anticipation process.</p>
+
+<p>Lifecycle hooks keep batch setup, worker merging, and post-merge window logic outside the per-flip hot path. 
+The design also composes recursively: subordinate strategies may themselves carry lifecycle behavior or host deeper 
+subordinate strategies.</p>

@@ -200,21 +200,128 @@ public static class AnticipationStrategies
         };
     }
     
+    public class InnerAnticipation
+    {
+        public TrackerRunner.GuessChange InnerStrategy;
+        public AnticipationLifecycle AnticipationLifecycle;
+
+        public Tracker? InnerMaster;
+
+        // subordinate tracker associated with each outer worker
+        public ConditionalWeakTable<Tracker, Tracker> Workers = new();
+        
+        public TrackerRunner.AnticipateDelegate? InnerAnticipateDelegate;
+    }
     
-    sealed class BetPersistenceState
+    public class BetPersistenceState
     {
         public TrackerWindow? Window { get; set; }
         public bool full = false;
         public bool guessChange = false;
+        
+        public InnerAnticipation innerAnticipation;
     }
 
     /// <summary>
     /// Predicts Same or Different from the BetSame win rate of a completed tracker window. Using an assigned inner anticipation so as not be susceptible to internal feedback 
     /// </summary>
-    //[StringHelp(
-    //    "Windowed BetSame persistence: predict Same when the completed window's BetSameWinRate is at least 50%, otherwise Different. Based on the inner anticipation")]
-    //public static TrackerRunner.GuessChange BetSamePersistence2(TrackerRunner.GuessChange innerAnticipation, Func<Tracker, Tracker, bool> windowStrategy)
-    
+    [StringHelp(
+        "Windowed BetSame persistence: predict Same when the completed window's BetSameWinRate is at least 50%, otherwise Different. Based on the inner anticipation")]
+    public static TrackerRunner.GuessChange BetSamePersistence2(TrackerRunner.GuessChange innerAnticipation, Func<Tracker, Tracker, bool> windowStrategy)
+    {
+        AnticipationStrategies.TryGetLifecycle(innerAnticipation, out var innerCycle);
+        
+        BetPersistenceState state = new BetPersistenceState();
+        state.innerAnticipation = new InnerAnticipation()
+        {
+            InnerStrategy = innerAnticipation,
+            InnerAnticipateDelegate = TrackerRunner._MakeAnticipateDelegate(innerAnticipation),
+            AnticipationLifecycle = innerCycle
+            
+        };
+
+        TrackerRunner.GuessChange guess =
+            (bool currentFlip, bool priorFlip, Tracker t, bool lastGuess, bool currentOutcome) =>
+            {
+                if (!state.innerAnticipation.Workers.TryGetValue(t, out var workerT)) throw new Exception("Worker not found");
+                
+                state.innerAnticipation.InnerAnticipateDelegate(null, workerT, currentFlip);
+                return state.guessChange;
+            };
+
+        bool once = true;
+        
+        RegisterLifecycle(guess, new AnticipationLifecycle(){ 
+            BatchMemberBegin = (tkr) =>
+            {
+                tkr.BatchMemberBegin();
+
+                Tracker workerT = (Tracker)tkr.Store.NewTracker();
+                
+                state.innerAnticipation.Workers.Add((Tracker) tkr, workerT);
+                
+                var meth = innerCycle?.BatchMemberBegin;
+                if (meth != null) meth(workerT);
+                else workerT.BatchMemberBegin();
+            },
+            
+            BatchMemberEnd = (tkr) =>
+            {
+                if (!state.innerAnticipation.Workers.TryGetValue((Tracker) tkr, out var workerT)) throw new Exception("Worker not found");
+                
+                tkr.BatchMemberEnd();
+                
+                var meth = innerCycle?.BatchMemberEnd;
+                if (meth != null) meth(workerT);
+                else workerT.BatchMemberEnd();
+                
+            },
+            
+            WorkerMerge = (master, worker) =>
+            {
+                state.innerAnticipation.Workers.TryGetValue((Tracker)worker, out var workerT);
+                
+                lock (master)
+                {
+
+                    master.Merge(worker);
+                    if (state.innerAnticipation.InnerMaster == null) state.innerAnticipation.InnerMaster = (Tracker) master.Store.NewTracker();
+
+                    var meth = innerCycle?.WorkerMerge;
+                    if (meth != null) meth(state.innerAnticipation.InnerMaster, workerT);
+                    else state.innerAnticipation.InnerMaster.Merge(workerT);
+                }
+
+            },
+            
+            PostMerge =   (master) =>
+            {
+                if (innerCycle != null && innerCycle.PostMerge != null) innerCycle.PostMerge(state.innerAnticipation.InnerMaster);
+                
+                if (state.Window == null)
+                {
+                    state.Window = new TrackerWindow((TrackerStore)master.Store,
+                        UtilT.ThrowIfNull(windowStrategy, "windowStrategy"));
+                }
+
+                if (state.Window.ForwardAdd((Tracker) state.innerAnticipation.InnerMaster)) state.full = true;
+
+                if (state.full)
+                {
+                    if (once) {
+                        Console.Error.WriteLine("BetSamePersistence Anticipation active");
+                        once = false;
+                    }
+                    
+                    // Guess same when BetSameWinRate is >= 50
+                    state.guessChange = ((Tracker)state.Window.Final()).BetSameWinRate < 50.0;
+                }
+            }
+            
+        });
+
+        return guess;
+    }
     
     /// <summary>
     /// Predicts Same or Different from the BetSame win rate of a completed tracker window. It exists in it's own feedback
