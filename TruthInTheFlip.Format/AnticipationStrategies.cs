@@ -212,6 +212,11 @@ public static class AnticipationStrategies
         
         public TrackerRunner.AnticipateDelegate? InnerAnticipateDelegate;
 
+        public virtual void Begin(Tracker host_master)
+        {
+            InnerMaster = (Tracker) host_master.Store.NewTracker();
+        }
+        
         public virtual void BatchMemberBegin(Tracker host_tkr)
         {
             Tracker workerT = (Tracker)host_tkr.Store.NewTracker();
@@ -235,8 +240,6 @@ public static class AnticipationStrategies
         public virtual void WorkerMerge(Tracker host_master, Tracker host_tkr)
         {
             if (!Workers.TryGetValue((Tracker) host_tkr, out var workerT)) throw new Exception("Worker not found");
-
-            if (InnerMaster == null) InnerMaster = (Tracker) host_master.Store.NewTracker();
 
             var meth = AnticipationLifecycle?.WorkerMerge;
             if (meth != null) meth(InnerMaster, workerT);
@@ -288,6 +291,11 @@ public static class AnticipationStrategies
         bool once = true;
         
         RegisterLifecycle(guess, new AnticipationLifecycle(){ 
+            Begin = (tkr) =>
+            {
+                state.innerAnticipation.Begin((Tracker)tkr);  
+            },
+            
             BatchMemberBegin = (tkr) =>
             {
                 tkr.BatchMemberBegin();
@@ -298,8 +306,6 @@ public static class AnticipationStrategies
             {
                 tkr.BatchMemberEnd();
                 state.innerAnticipation.BatchMemberEnd((Tracker) tkr);
-                
-                
             },
             
             WorkerMerge = (master, worker) =>
@@ -444,6 +450,8 @@ public static class AnticipationStrategies
 
     public class AnticipationLifecycle
     {
+        public Action<ITracker>? Begin;
+        
         // Overrides the normal tracker batch begin behavior.
         // Implementations should invoke tracker.BatchMemberBegin()
         // if the outer tracker should retain normal accounting.

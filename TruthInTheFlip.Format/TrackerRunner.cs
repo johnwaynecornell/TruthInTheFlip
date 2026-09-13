@@ -125,6 +125,8 @@ public class TrackerRunner : ITrackerRunner
 
         if (anticipate_delegate != null)
         {
+            lifecycle.Begin(master);
+            
             Parallel.For(
                 0, threads,
                 () => new ForScope(store, bitFactory), // 1. localInit: Runs once per thread to initialize the state
