@@ -212,9 +212,14 @@ public static class AnticipationStrategies
         
         public TrackerRunner.AnticipateDelegate? InnerAnticipateDelegate;
 
+        /// <summary>
+        /// Conditionally Initializes the inner master tracker at the beginning of each tracker run.
+        /// </summary>
+        /// <param name="host_master">The host master tracker for the current run.</param>
+        
         public virtual void Begin(Tracker host_master)
         {
-            InnerMaster = (Tracker) host_master.Store.NewTracker();
+            if (InnerMaster == null) InnerMaster = (Tracker) host_master.Store.NewTracker();
             
             var meth = AnticipationLifecycle?.Begin;
             if (meth != null) meth(host_master);
