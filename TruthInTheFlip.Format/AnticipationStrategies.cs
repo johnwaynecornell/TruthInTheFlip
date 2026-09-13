@@ -214,7 +214,9 @@ public static class AnticipationStrategies
 
         public virtual void Begin(Tracker host_master)
         {
-            InnerMaster = (Tracker) host_master.Store.NewTracker();
+            var meth = AnticipationLifecycle?.Begin;
+            if (meth != null) meth(host_master);
+            else InnerMaster = (Tracker) host_master.Store.NewTracker();
         }
         
         public virtual void BatchMemberBegin(Tracker host_tkr)
