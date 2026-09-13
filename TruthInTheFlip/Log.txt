@@ -4606,3 +4606,13 @@ their size.</p>
 <p>The next natural comparison is BetSamePersistence2, which restores an explicit inner anticipation strategy so that 
 windowed BetSameWinRate is derived from the bettor whose performance is being measured. Running it under the same 
 source and 10B window geometry will provide a direct architectural and empirical comparison with SamePersistence.</p>
+
+___________________________________________________________________________
+╔═══════════════╗
+║20260913_183047║
+╚═══════════════╝
+
+Corrected error in InnerAnticipation.
+
+planned command after system maintenance:
+TruthInTheFlip -create -record -print Detailed -window WindowByTotal 10000000000 -rsource NET1 -anticipation BetSamePersistence2 ClassicMetaGuess WindowByTotal 10000000000 BSP2_NET1.tkr

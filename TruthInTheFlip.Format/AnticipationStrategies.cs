@@ -229,7 +229,7 @@ public static class AnticipationStrategies
         {
             Tracker workerT = (Tracker)host_tkr.Store.NewTracker();
                 
-            Workers.Add((Tracker) host_tkr, workerT);
+            Workers.AddOrUpdate((Tracker) host_tkr, workerT);
                 
             var meth = AnticipationLifecycle?.BatchMemberBegin;
             if (meth != null) meth(workerT);
