@@ -4583,3 +4583,26 @@ historical persistence mechanism as an observation of another anticipation proce
 <p>Lifecycle hooks keep batch setup, worker merging, and post-merge window logic outside the per-flip hot path. 
 The design also composes recursively: subordinate strategies may themselves carry lifecycle behavior or host deeper 
 subordinate strategies.</p>
+
+___________________________________________________________________________
+╔═══════════════╗
+║20260913_183047║
+╚═══════════════╝
+<p><code>SamePersistence.NET1.tkr</code> is mature and commited to artifacts.</p>
+
+<p>Created ~/TrackerTemp and generated fine-grained segment reports for all tracker artifacts. Each report uses a 
+10B rolling tracker window and 10B full-segment partitioning:</p>
+
+<pre><cpde>
+ls *.tkr | xargs -I {} sh -c \
+'TruthInTheFlip_Farm_Experimental segment_report All full window by_total 10B file {} full by_total 10B > ~/TrackerTemp/{}.seg_report_fine.txt'
+</code></pre>
+
+<p>The resulting reports are treated as temporary analysis artifacts rather than normal repository content because of 
+their size.</p>
+
+<p>see Artifacts/Trackers/FineSegmentComparison_10B.md for a summary of the fine-grained segment reports.</p>
+
+<p>The next natural comparison is BetSamePersistence2, which restores an explicit inner anticipation strategy so that 
+windowed BetSameWinRate is derived from the bettor whose performance is being measured. Running it under the same 
+source and 10B window geometry will provide a direct architectural and empirical comparison with SamePersistence.</p>
