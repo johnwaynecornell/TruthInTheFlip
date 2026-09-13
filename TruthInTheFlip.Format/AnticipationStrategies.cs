@@ -211,6 +211,42 @@ public static class AnticipationStrategies
         public ConditionalWeakTable<Tracker, Tracker> Workers = new();
         
         public TrackerRunner.AnticipateDelegate? InnerAnticipateDelegate;
+
+        public virtual void BatchMemberBegin(Tracker host_tkr)
+        {
+            Tracker workerT = (Tracker)host_tkr.Store.NewTracker();
+                
+            Workers.Add((Tracker) host_tkr, workerT);
+                
+            var meth = AnticipationLifecycle?.BatchMemberBegin;
+            if (meth != null) meth(workerT);
+            else workerT.BatchMemberBegin();
+        }
+
+        public virtual void BatchMemberEnd(Tracker host_tkr)
+        {
+            if (!Workers.TryGetValue((Tracker) host_tkr, out var workerT)) throw new Exception("Worker not found");
+
+            var meth = AnticipationLifecycle?.BatchMemberEnd;
+            if (meth != null) meth(workerT);
+            else workerT.BatchMemberEnd();
+        }
+        
+        public virtual void WorkerMerge(Tracker host_master, Tracker host_tkr)
+        {
+            if (!Workers.TryGetValue((Tracker) host_tkr, out var workerT)) throw new Exception("Worker not found");
+
+            if (InnerMaster == null) InnerMaster = (Tracker) host_master.Store.NewTracker();
+
+            var meth = AnticipationLifecycle?.WorkerMerge;
+            if (meth != null) meth(InnerMaster, workerT);
+            else InnerMaster.Merge(workerT);
+        }
+
+        public virtual void PostMerge(Tracker host_master)
+        {
+            AnticipationLifecycle?.PostMerge?.Invoke(InnerMaster);
+        }
     }
     
     public class BetPersistenceState
@@ -255,48 +291,32 @@ public static class AnticipationStrategies
             BatchMemberBegin = (tkr) =>
             {
                 tkr.BatchMemberBegin();
-
-                Tracker workerT = (Tracker)tkr.Store.NewTracker();
-                
-                state.innerAnticipation.Workers.Add((Tracker) tkr, workerT);
-                
-                var meth = innerCycle?.BatchMemberBegin;
-                if (meth != null) meth(workerT);
-                else workerT.BatchMemberBegin();
+                state.innerAnticipation.BatchMemberBegin((Tracker) tkr);                
             },
             
             BatchMemberEnd = (tkr) =>
             {
-                if (!state.innerAnticipation.Workers.TryGetValue((Tracker) tkr, out var workerT)) throw new Exception("Worker not found");
-                
                 tkr.BatchMemberEnd();
+                state.innerAnticipation.BatchMemberEnd((Tracker) tkr);
                 
-                var meth = innerCycle?.BatchMemberEnd;
-                if (meth != null) meth(workerT);
-                else workerT.BatchMemberEnd();
                 
             },
             
             WorkerMerge = (master, worker) =>
             {
-                state.innerAnticipation.Workers.TryGetValue((Tracker)worker, out var workerT);
-                
                 lock (master)
                 {
 
                     master.Merge(worker);
-                    if (state.innerAnticipation.InnerMaster == null) state.innerAnticipation.InnerMaster = (Tracker) master.Store.NewTracker();
+                    state.innerAnticipation.WorkerMerge((Tracker) master, (Tracker) worker);
 
-                    var meth = innerCycle?.WorkerMerge;
-                    if (meth != null) meth(state.innerAnticipation.InnerMaster, workerT);
-                    else state.innerAnticipation.InnerMaster.Merge(workerT);
                 }
 
             },
             
             PostMerge =   (master) =>
             {
-                if (innerCycle != null && innerCycle.PostMerge != null) innerCycle.PostMerge(state.innerAnticipation.InnerMaster);
+                state.innerAnticipation.PostMerge((Tracker) master);
                 
                 if (state.Window == null)
                 {
