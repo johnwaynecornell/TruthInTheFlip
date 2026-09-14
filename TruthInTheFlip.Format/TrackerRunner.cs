@@ -1,5 +1,10 @@
 namespace TruthInTheFlip.Format;
 
+/// <summary>
+/// Defines the contract for executing flip tracking and anticipation experiments across bit streams.
+/// Implementations can define custom execution semantics, thread models, or measurement boundaries
+/// tailored to specific experimental identities.
+/// </summary>
 public interface ITrackerRunner
 {
     ITrackerStore store { get; }
@@ -8,6 +13,24 @@ public interface ITrackerRunner
     double Run(ITracker master, int threads = 20, int stride = 10000000);
 }
 
+/// <summary>
+/// High-throughput parallel runner for executing anticipation strategies across concurrent bit streams.
+/// <para>
+/// <b>Execution Architecture &amp; Lifecycle:</b><br/>
+/// - Operates via <see cref="Parallel.For"/> using thread-local state (<see cref="ForScope"/>).<br/>
+/// - Each worker thread maintains a single, persistent tracker (<c>scope.run</c>) across its assigned iterations,
+///   preserving statistical continuity and eliminating allocation churn.<br/>
+/// - Thread-local results are accumulated lock-free during processing and merged into the <c>master</c> tracker
+///   only once per thread upon completion in <c>localFinally</c>.<br/>
+/// </para>
+/// <para>
+/// <b>Custom Runners:</b><br/>
+/// If an experiment requires distinct semantics—such as strict per-iteration tracker isolation,
+/// non-primed stream lengths, or deterministic single-threaded ordering—implement a dedicated
+/// <see cref="ITrackerRunner"/> to grant that experiment its tailored execution identity without
+/// compromising the lock-free throughput of the standard runner.
+/// </para>
+/// </summary>
 public class TrackerRunner : ITrackerRunner
 {
     public ITrackerStore store { get; }
@@ -95,6 +118,10 @@ public class TrackerRunner : ITrackerRunner
         this.store = store;
         this.bitFactory = bitFactory;
     }
+    /// <summary>
+    /// Encapsulates thread-local execution state for worker threads during parallel tracking runs.
+    /// A single scope instance persists across all batch iterations assigned to a given worker thread.
+    /// </summary>
     public class ForScope
     {
         public ITrackerStore store;
@@ -109,11 +136,11 @@ public class TrackerRunner : ITrackerRunner
             consume = new BitFactory.Consumer(bitFactory);
 
             run = store.NewTracker();
-            //initialize the tracker to get the first valid guess to be fair statistically.
+            // Initialize the tracker to get the first valid guess to ensure statistical fairness across the stream.
+            // Two flips establish prior context without skewing overall counts once Reset() clears accumulated counters.
             run.Anticipate(consume.getBit());
             run.Anticipate(consume.getBit());
-            run.Reset(); // This deliberately does not reset the prior flip memory or guess.
-
+            run.Reset(); // Deliberately preserves prior flip memory and guess state while resetting metrics.
         }
     }
 
