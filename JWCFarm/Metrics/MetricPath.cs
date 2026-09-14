@@ -88,11 +88,12 @@ public class MetricPath : List<MetricDescriptor.Instance>
             }
             else if (p.InstanceDescriptor.Type == MetricDescriptor.EType.Method)
             {
-                object[] parameters = new object[p.ArgumentPaths.Count];
+                int argCount = p.ArgumentPaths?.Count ?? 0;
+                object[] parameters = new object[argCount];
 
                 for (int i = 0; i < parameters.Length; i++)
                 {
-                    var arg  = p.ArgumentPaths[i];
+                    var arg  = p.ArgumentPaths![i];
                     var desc = p.InstanceDescriptor.Parameters![i];
 
                     if (desc.Type == MetricParameterType.Scalar)

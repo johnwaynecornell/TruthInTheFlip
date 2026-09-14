@@ -90,6 +90,14 @@ public class MetricBinder
                 return false;
             }
 
+            if (func.Type != MetricDescriptor.EType.Method)
+            {
+                offset = this_offset;
+                error = new MetricBindError(field, this_offset, funcName.Length,
+                    $"Metric '{funcName}' on {_currentType!.Name} is a property and cannot be invoked as a method with '#'.");
+                return false;
+            }
+
             this_offset = i + 1; // skip past '#'
 
             // Bind any SourceExpressions declared by this function descriptor.
@@ -275,6 +283,14 @@ public class MetricBinder
                 offset = segStart;
                 error = new MetricBindError(field, segStart, part.Length,
                     $"Unknown metric '{part}' on {_currentType!.Name}.");
+                return false;
+            }
+
+            if (metric.Type != MetricDescriptor.EType.Property)
+            {
+                offset = segStart;
+                error = new MetricBindError(field, segStart, part.Length,
+                    $"Metric '{part}' on {_currentType!.Name} is a method and must be invoked with '#' (e.g., '{part}#').");
                 return false;
             }
 

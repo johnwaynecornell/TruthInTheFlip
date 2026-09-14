@@ -66,7 +66,7 @@ public class MetricDescriptor
         return new Instance
         {
             InstanceDescriptor = this,
-            ArgumentPaths = parameters
+            ArgumentPaths = parameters ?? (Type == EType.Method ? new List<MetricPath>() : null)
         };
     }
     

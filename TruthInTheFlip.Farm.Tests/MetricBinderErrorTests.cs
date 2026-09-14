@@ -223,6 +223,32 @@ public class MetricBinderErrorTests
         Assert.Contains("child process", error.Message);
     }
 
+    [Fact]
+    public void Error_MethodUsedAsProperty_FailsAtBindTime()
+    {
+        // "abs" is a method on Root, but used without '#' as a property path.
+        bool ok = Bind("abs", out var error);
+
+        Assert.False(ok);
+        Assert.NotNull(error);
+        Assert.Equal(0, error!.Offset);
+        Assert.Equal(3, error.Length);
+        Assert.Contains("is a method and must be invoked with '#'", error.Message);
+    }
+
+    [Fact]
+    public void Error_PropertyUsedAsMethod_FailsAtBindTime()
+    {
+        // "Score" is a property on Root, but invoked with '#' as a function call.
+        bool ok = Bind("Score#", out var error);
+
+        Assert.False(ok);
+        Assert.NotNull(error);
+        Assert.Equal(0, error!.Offset);
+        Assert.Equal(5, error.Length);
+        Assert.Contains("is a property and cannot be invoked as a method with '#'", error.Message);
+    }
+
     // ── valid deep-nested expression unchanged ─────────────────────────────────
 
     [Fact]
