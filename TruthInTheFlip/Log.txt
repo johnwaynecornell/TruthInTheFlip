@@ -4616,3 +4616,52 @@ Corrected error in InnerAnticipation.
 
 planned command after system maintenance:
 TruthInTheFlip -create -record -print Detailed -window WindowByTotal 10000000000 -rsource NET1 -anticipation BetSamePersistence2 ClassicMetaGuess WindowByTotal 10000000000 BSP2_NET1.tkr
+
+___________________________________________________________________________
+╔═══════════════╗
+║20260914_135907║
+╚═══════════════╝
+
+<h2>2026-09-14 — BetSamePersistence2 NET1 run started</h2>
+
+<p>A new live tracker was started to evaluate BetSamePersistence2 against NET1 using
+ClassicMetaGuess as the explicit inner anticipation strategy.
+
+<pre><cpde>
+Start timestamp:
+20260914_133523
+</code></pre>
+
+<h3>Command:</h3>
+<pre><cpde>
+TruthInTheFlip -create -record -print Detailed -window WindowByTotal 10000000000 -rsource NET1 -anticipation BetSamePersistence2 ClassicMetaGuess WindowByTotal 10000000000 BSP2_NET1.tkr
+</code></pre>
+
+<p>BetSamePersistence2 is intended to reproduce the historical BetSame persistence
+mechanism more faithfully than the original live BetSamePersistence experiment.
+ClassicMetaGuess supplies the inner Same/Different bets whose performance is
+measured, while the outer persistence layer observes the resulting windowed
+BetSame behavior and publishes its own Same/Different decision.</p>
+
+<p>The first 10B flips are therefore a warmup period for the persistence window.
+At approximately 10.2B flips the runtime reported:</p>
+<pre><cpde>
+    BetSamePersistence Anticipation active
+</code></pre>
+
+
+<p>This marks the point at which the outer persistence layer began publishing
+decisions from a completed 10B inner-strategy window.</p>
+
+<p>Output before activation should be treated as initialization rather than evidence
+about mature BetSamePersistence2 behavior. In particular, early conditional
+aDiff rates are based on very small bucket counts and are not meaningful as
+strategy results.</p>
+
+<p>No parameters will be adjusted during the run. The intended comparison is with
+the completed SamePersistence.NET1.tkr experiment under the same NET1 source and
+10B window geometry.</p>
+
+<p>At the observed post-start rate of roughly 24.3M flips/sec, the optimistic ETA to
+the established ~8.9034T comparison horizon is about 4 days 5 hours 37 minutes,
+placing completion around September 18 if throughput remains stable.</p>
