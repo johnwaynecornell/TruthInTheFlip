@@ -31,10 +31,16 @@ public class Experimental
     
     // Here is an example metric function invokable through
     // TruthInTheFlip_Farm_Experimantal csv segment full window by_total 10B file ./Quant.tkr by_total 100B mean#standardizedDirectionTail
-    // Invokable as property because of autoProp: true and standard arguments ctx & sample
+    // Invokable as property because of autoProp: true and standard arguments ctx & sample.
+    //
+    // Strongly-typing 'sample' as 'Tracker' (instead of 'object') provides several benefits:
+    // 1. Removes boilerplate casting and improves self-documentation.
+    // 2. Leverages MethodInfo.Invoke runtime assignability without custom dispatch logic.
+    // 3. Enables future metric loaders/reflection scanners to automatically inspect the sample parameter type
+    //    and register the metric into the corresponding catalog (e.g., MetricCatalogs[typeof(Tracker)]) without manual mapping.
     [IsMetric("TruthInTheFlip.v1.1.0", sourceExpressions: new[] { "scale#offset#ZScoreSame,negate#ZScoreHeads,0.7071067811865476" })]
     [StringHelp("show a standardized dirtional score")]
-    public static double standardizedDirectionTail(MetricEvaluationContext ctx, object sample)
+    public static double standardizedDirectionTail(MetricEvaluationContext ctx, Tracker sample)
     {
         return ctx.Get<double>("scale#offset#ZScoreSame,negate#ZScoreHeads,0.7071067811865476");
 
