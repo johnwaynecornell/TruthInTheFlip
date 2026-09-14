@@ -1,6 +1,7 @@
 using FluentCommandLine;
 using JWCFarm.Metrics;
 using TruthInTheFlip.Farm.Format;
+using TruthInTheFlip.Format;
 
 namespace TruthInTheFlip_CSV_Farm;
 
@@ -27,8 +28,23 @@ namespace TruthInTheFlip_CSV_Farm;
 /// </remarks>
 public class Experimental
 {
-    public static void AddToEnv(FluentEnvironment env)
+    
+    // Here is an example metric function invokable through
+    // TruthInTheFlip_Farm_Experimantal csv segment full window by_total 10B file ./Quant.tkr by_total 100B mean#standardizedDirectionTail#
+    // A new MetricDescriptor Field could just as well be used to simplify the invocation
+    [IsMetric("TruthInTheFlip.v1.1.0", sourceExpressions: new[] { "scale#offset#ZScoreSame,negate#ZScoreHeads,0.7071067811865476" })]
+    [StringHelp("show a standardized dirtional score")]
+    public static double standardizedDirectionTail(MetricEvaluationContext ctx, object sample)
     {
+        return ctx.Get<double>("scale#offset#ZScoreSame,negate#ZScoreHeads,0.7071067811865476");
+
+    }
+    
+    public static void AddToEnv(FluentEnvironment env)
+    {   
+        env.Context.Get<MetricCatalogs>().TryGet(typeof(Tracker), out var tracker_catalog);
+        tracker_catalog.Add(TruthInTheFlip_Fluent.MetricLoadStaticFromMethod(typeof(Experimental).GetMethod("standardizedDirectionTail")));
+        
         env.Context.Get<MetricCatalogs>().TryGet(typeof(SegmentStats), out var catalog);
         catalog.Add(new MetricDescriptor(
             "BetSameGapTrend",
