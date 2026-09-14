@@ -30,8 +30,8 @@ public class Experimental
 {
     
     // Here is an example metric function invokable through
-    // TruthInTheFlip_Farm_Experimantal csv segment full window by_total 10B file ./Quant.tkr by_total 100B mean#standardizedDirectionTail#
-    // A new MetricDescriptor Field could just as well be used to simplify the invocation
+    // TruthInTheFlip_Farm_Experimantal csv segment full window by_total 10B file ./Quant.tkr by_total 100B mean#standardizedDirectionTail
+    // Invokable as property because of autoProp: true and standard arguments ctx & sample
     [IsMetric("TruthInTheFlip.v1.1.0", sourceExpressions: new[] { "scale#offset#ZScoreSame,negate#ZScoreHeads,0.7071067811865476" })]
     [StringHelp("show a standardized dirtional score")]
     public static double standardizedDirectionTail(MetricEvaluationContext ctx, object sample)
@@ -43,7 +43,8 @@ public class Experimental
     public static void AddToEnv(FluentEnvironment env)
     {   
         env.Context.Get<MetricCatalogs>().TryGet(typeof(Tracker), out var tracker_catalog);
-        tracker_catalog.Add(TruthInTheFlip_Fluent.MetricLoadStaticFromMethod(typeof(Experimental).GetMethod("standardizedDirectionTail")));
+        
+        tracker_catalog.Add(TruthInTheFlip_Fluent.MetricLoadStaticFromMethod(typeof(Experimental).GetMethod("standardizedDirectionTail"), true));
         
         env.Context.Get<MetricCatalogs>().TryGet(typeof(SegmentStats), out var catalog);
         catalog.Add(new MetricDescriptor(
