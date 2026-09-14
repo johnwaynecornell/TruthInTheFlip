@@ -4625,7 +4625,7 @@ ___________________________________________________________________________
 <h2>2026-09-14 — BetSamePersistence2 NET1 run started</h2>
 
 <p>A new live tracker was started to evaluate BetSamePersistence2 against NET1 using
-ClassicMetaGuess as the explicit inner anticipation strategy.
+ClassicMetaGuess as the explicit inner anticipation strategy.</p>
 
 <pre><cpde>
 Start timestamp:
