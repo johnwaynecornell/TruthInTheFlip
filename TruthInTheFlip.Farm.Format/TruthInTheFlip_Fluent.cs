@@ -103,7 +103,9 @@ public class TruthInTheFlip_Fluent
         return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>);
     }
 
-    public static MetricDescriptor? MetricLoadStaticFromMethod(MethodInfo methodInfo, bool autoProp = false)
+    // I changed the default on autoProp to true to enable seamlessly declaring metric method properties to use 
+    // MetricEvaluationContext and SourceExpressions
+    public static MetricDescriptor? MetricLoadStaticFromMethod(MethodInfo methodInfo, bool autoProp = true)
     {
         IsMetricAttribute? metricAttribute =
             methodInfo.GetCustomAttributes(typeof(IsMetricAttribute), true).FirstOrDefault() as IsMetricAttribute;
