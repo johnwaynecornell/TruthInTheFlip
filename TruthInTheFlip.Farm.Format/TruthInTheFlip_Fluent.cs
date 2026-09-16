@@ -334,6 +334,13 @@ public class TruthInTheFlip_Fluent
         return new SegSelector((stats, tracker) =>
             tracker.Source.WallclockTime - stats.Begin.Source.WallclockTime < length);
     }
+    
+    [FluentMethod("whole")]
+    [KV_FA(FluentAttribute.Help, "Treat the entire selected tracker source as one segment.")]
+    public static SegSelector SegnentWhole()
+    {
+        return new SegSelector((stats, tracker) => true);
+    }
 
     [FluentMethod("by_total", def: true)]
     [KV_FA(FluentAttribute.Help, "Segment size in total flips")]
@@ -357,6 +364,14 @@ public class TruthInTheFlip_Fluent
             tracker.EndWallclock - stats.Begin.Begin.absWallclockTime < length);
     }
 
+    [FluentMethod("whole")]
+    [KV_FA(FluentAttribute.Help, "Treat the entire selected stats source as one segment.")]
+    public static AggSelector Whole()
+    {
+        return new AggSelector((stats, sample) => true);
+    }
+    
+    
     [FluentMethod("file")]
     [KV_FA(FluentAttribute.Help, "Read tracker records from a tracker file.")]
     public static TrackerSelector Tracker(

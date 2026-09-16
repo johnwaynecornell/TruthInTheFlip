@@ -4665,3 +4665,29 @@ the completed SamePersistence.NET1.tkr experiment under the same NET1 source and
 <p>At the observed post-start rate of roughly 24.3M flips/sec, the optimistic ETA to
 the established ~8.9034T comparison horizon is about 4 days 5 hours 37 minutes,
 placing completion around September 18 if throughput remains stable.</p>
+
+___________________________________________________________________________
+╔═══════════════╗
+║20260916_150727║
+╚═══════════════╝
+
+<h3>Whole-source segmentation</h3>
+
+<p>Added <code>whole</code> segmentation for both segment and aggregate paths.</p>
+
+<p><code>whole</code> treats the entire selected input as a single segment or aggregate. This is useful when the 
+segmentation machinery is being used as a reporting surface rather than to divide a run into multiple regions. 
+In particular, it makes whole-run metrics such as <code>MeanA</code>, <code>EndA</code>, and <code>PctAAtLeast50</code> 
+directly available as a single CSV row.</p>
+
+<p>A window should normally be applied before <code>whole</code>. Tracker fields are cumulative, so feeding raw 
+accumulator states directly into a whole-source segment can produce misleading path statistics. A fixed observation 
+window gives the segment a meaningful sampling scale before the entire path is summarized.</p>
+
+<p>Example:</p>
+<pre><code class="language-bash">TruthInTheFlip_Farm csv segment full window by_total 10B file Quant.tkr whole \
+    Begin.absTotal End.absTotal MeanA EndA PctAAtLeast50 \
+    MeanTrueZ EndTrueZ MeanZHeads EndZHeads
+</code></pre>
+
+<p>This effectively asks for one statistical view of the complete selected run at a 10B-flip observational scale.</p>
