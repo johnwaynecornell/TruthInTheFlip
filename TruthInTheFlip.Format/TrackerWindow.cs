@@ -113,10 +113,16 @@ public class TrackerWindow
     public Tracker Add(Tracker In)
     {
         Tracker clone = store.Clone(In);
+        // Preserve the absolute endpoint when the input is already a relative view.
+        // Window bounds may intentionally be expressed in source coordinates.
+        clone.Source = In.Source;
+        clone.From = In.From;
+        clone.IsComplete = In.IsComplete;
         States.Add(clone); 
         
         bool full = MaintainWindow();
         var t = Relative(clone);
+        t.Source = clone.Source;
         t.IsComplete = full;
         return t;
     }

@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-TruthInTheFlip Farm metrics are the values that can be selected as columns when a process is formatted with `csv`.
+TruthInTheFlip Farm metrics are values selected through a metric projection. The same projection mechanism can be rendered as machine-oriented tabular `csv` or human-oriented `pretty` output.
 
 Examples:
 
@@ -30,7 +30,7 @@ prints the registered metric catalogs with each metric's name, CLR type, and des
 
 ## 2. Metrics are selected by the process type
 
-The process supplied to `csv` determines which metric catalog is used.
+The process supplied to `csv` or `pretty` determines which metric catalog is used.
 
 ```text
 csv tracker ...
@@ -44,17 +44,17 @@ csv segment ...
 
 produces `SegmentStats` records, so its first-level fields come from the SegmentStats catalog.
 
-The same `csv` command works with both because field binding is performed against the item type carried by the process.
+Both projection renderers work with these processes because field binding is performed against the item type carried by the process.
 
 Conceptually:
 
 ```text
-csv
+metric projection
     tracker  -> Tracker metrics
     segment  -> SegmentStats metrics
 ```
 
-This is also an extensibility point. A future Farm process can participate in CSV projection when its output type has a registered metric catalog.
+This is also an extensibility point. A future Farm process can participate in metric projection when its output type has a registered metric catalog.
 
 ---
 
@@ -97,7 +97,7 @@ SegmentStats.End
 
 This is different from a hard-coded list of special segment fields. The path follows the type information carried by the metric catalog.
 
-When an intermediate object is unavailable for a particular row, the CSV layer's null-value policy determines how that field is represented.
+When an intermediate object is unavailable for a particular item, the projection renderer's null-value policy determines how that field is represented.
 
 ---
 
@@ -566,9 +566,21 @@ Run `show metrics` to confirm exact names and descriptions in the current build.
 
 ---
 
-## 7. Windowed metrics
+## 7. Observation scale, windows, and populations
 
-A window changes the Tracker view before the process consumes it.
+A source without a window exposes accumulated lifetime states:
+
+```text
+file "Quant.tkr"
+```
+
+A window changes the observational scale before the process consumes the source:
+
+```text
+window by_total 10B file "Quant.tkr"
+```
+
+The latter expresses each observation at a rolling 10-billion-source-flip scale. Path statistics such as `MeanA`, `MeanTrueZ`, and `PctAAtLeast50` therefore depend on the scale established upstream.
 
 For example:
 
@@ -577,7 +589,7 @@ csv tracker window by_total 100B file "crypto3.tkr" \
     absTotal total AnticipatedPercentage ZScore
 ```
 
-Here, metrics based on the ordinary cumulative counters describe the configured window, while the `abs*` coordinates still identify the record's position in the full tracker.
+Here, metrics based on the ordinary counters describe the interval-relative window, while the `abs*` coordinates identify the record's absolute source endpoint.
 
 The same transformation can feed segmentation:
 
@@ -586,7 +598,22 @@ csv segment window by_total 100B file "crypto3.tkr" \
     by_total 100B Index End.absTotal End.AnticipatedPercentage
 ```
 
-This makes windowing useful for asking local questions without losing the original run coordinate.
+Rolling windows initially emit partial observations because less than the requested history is available. Those observations are valid and describe startup at a smaller effective span. Use:
+
+```text
+full window by_total 100B file "crypto3.tkr"
+```
+
+to retain only mature observations when downstream statistics assume a consistent scale.
+
+`whole` then forms one segment or aggregate over the complete upstream population. A whole population of raw accumulated states differs from a whole population of mature 10B rolling states:
+
+```text
+pretty segment full window by_total 10B file "Quant.tkr" \
+    whole MeanA PctAAtLeast50
+```
+
+Without `full`, early partial windows also participate in these path statistics.
 
 When comparing windowed and non-windowed output, be explicit about which values are local measurements and which are absolute coordinates.
 
@@ -792,7 +819,7 @@ catalog.Add(new MetricDescriptor(
 
 ### SourceExpressions
 
-`MetricDescriptor.SourceExpressions` declares which metric expression strings the descriptor needs to be pre-bound before evaluation. The strings use the same expression grammar as user-facing CSV field names.
+`MetricDescriptor.SourceExpressions` declares which metric expression strings the descriptor needs to be pre-bound before evaluation. The strings use the same grammar as user-facing metric/projection expressions.
 
 ```csharp
 SourceExpressions = ["ZScore", "ZScoreHeads"]         // flat property sources
@@ -816,7 +843,7 @@ When `MetricBinder.Bind` processes a field expression and encounters a descripto
 2. Stores the resulting bound `MetricPath` as a **hidden dependency** in `MetricProjection.Dependencies`.
 3. Applies the same scalar/aggregate descent rules as normal metric expressions.
 
-Hidden dependencies participate in `MetricProjection.Inspect` (aggregate state accumulation) but do **not** appear as CSV output columns. Only expressions listed in the `csv` field list become output columns.
+Hidden dependencies participate in `MetricProjection.Inspect` (aggregate state accumulation) but do **not** appear as projected fields. Only expressions explicitly listed for `csv` or `pretty` are rendered.
 
 Cycle detection is applied: if a descriptor's `SourceExpressions` would transitively reference itself (e.g. `Foo → Bar → Foo`), binding fails with a structured `MetricBindError` describing the cycle chain.
 
@@ -873,7 +900,7 @@ When `MeanAbsHeads` appears in a `csv segment` field list, the expression `mean#
 
 Aggregate state is accumulated during `MetricEvaluationSession.Inspect` (one value per Tracker record in the segment). The `Getter` retrieves the computed mean via `ctx.Get<double>("mean#abs#ZScoreHeads")` at the segment evaluation boundary.
 
-Hidden dependencies do not appear in CSV output unless explicitly listed as a separate field.
+Hidden dependencies do not appear in projection output unless explicitly listed as a separate field.
 
 ### Metric execution lifecycle and state management
 
@@ -900,7 +927,7 @@ User-defined metrics that require serial or evaluation-lifetime state should ret
 
 ## 12. Metric naming and stability
 
-Metric names are part of the practical CSV interface. Scripts and plots may depend on them, so changing an established metric name should be treated as an interface change rather than a cosmetic edit.
+Metric names are part of the practical projection interface. Scripts, plots, and human inspection commands may depend on them, so changing an established metric name should be treated as an interface change rather than a cosmetic edit.
 
 At the same time, TruthInTheFlip Farm remains under active development. The generated catalog output therefore takes precedence over examples in static documents.
 

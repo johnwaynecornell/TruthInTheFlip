@@ -1,12 +1,18 @@
 # TruthInTheFlip Farm
 
-**TruthInTheFlip Farm** is a compositional command-line analysis tool for TruthInTheFlip tracker data. It turns tracker files into typed processing pipelines and can project selected metrics as CSV for shells, scripts, Python, spreadsheets, plotting tools, and other downstream consumers.
+**TruthInTheFlip Farm** is a compositional command-line analysis tool for TruthInTheFlip tracker data. It turns tracker recordings into typed processing pipelines, metric projections, and curated reports.
 
-The command language is intentionally compositional. A command describes three separate concerns:
+The command language is intentionally compositional. A command determines:
 
-- **source** — where tracker records come from and how they are selected,
-- **process** — how those records are presented to the Farm,
-- **output** — how the process is rendered.
+1. where tracker state comes from;
+2. the coordinate system and origin in which it is expressed;
+3. the observational scale of each tracker state;
+4. the population or grouping over which statistics are computed;
+5. the output representation.
+
+> **The order of the pipeline is part of the analysis.**
+
+Source transformations are semantic operations, not merely syntactic wrappers. For example, segmenting accumulated lifetime states and segmenting mature rolling-window states produce different statistical populations even when the same metric names are projected.
 
 For example:
 
@@ -46,7 +52,7 @@ or:
 TruthInTheFlip_Farm list
 ```
 
-To inspect the metric names available to CSV projection:
+To inspect the metric names available to metric projection:
 
 ```bash
 TruthInTheFlip_Farm show metrics
@@ -73,7 +79,7 @@ TruthInTheFlip_Farm \
 
 ### Pretty-print output (`pretty`)
 
-The `pretty` command outputs selected metrics in a human-readable, indexed key-value block format rather than CSV:
+The `pretty` command is the human-oriented rendering of the same metric projection mechanism used by `csv`. It preserves each requested metric/projection expression on the left and renders each process item as an indexed record block.
 
 As a usable example...
 ```bash
@@ -91,15 +97,13 @@ TruthInTheFlip_Farm \
 Example output:
 
 ```text
-[1/4]
-    Total = 100
-    ZScore = 0.5
-    AnticipatedPercentage = 50
-[2/4]
-    Total = 200
-    ZScore = 1.2
-    AnticipatedPercentage = 50.5
+[1/179]
+    Index = 0
+    EndTotal = 100000000000
+    MeanTrueZ = -0.3349180880974233
 ```
+
+This is a Farm-native human inspection format. It is not JSON or a Python serialization.
 
 ### Export segment statistics
 
@@ -113,6 +117,35 @@ TruthInTheFlip_Farm \
 
 `Count` arguments accept metric notation such as `K`, `M`, `B`, and `T`, so `100B` means 100 billion.
 
+### Observation scale and coordinate space
+
+Without a window:
+
+```text
+file "Quant.tkr"
+```
+
+the source exposes accumulated lifetime tracker states. With:
+
+```text
+window by_total 10B file "Quant.tkr"
+```
+
+each emitted tracker expresses the state of a rolling interval bounded by 10 billion source flips. The endpoint still has an absolute source coordinate, while ordinary tracker counters describe the interval-relative observation.
+
+This changes the meaning of downstream path statistics. `MeanA`, `MeanTrueZ`, and `PctAAtLeast50` over lifetime states are not the same estimands as those metrics over rolling 10B states.
+
+Rolling windows have a warm-up period. Before enough source history exists to fill the requested bound, the emitted observation is partial: it is valid, but has a smaller effective span. Prefixing the tracker selector with `full` keeps only mature observations:
+
+```text
+pretty segment \
+    full window by_total 10B file "Quant.tkr" \
+    whole \
+    MeanA PctAAtLeast50
+```
+
+Use partial windows when startup behavior matters. Use `full window ...` when later statistics assume a consistent observational scale. Without `full`, early partial windows participate in the `whole` population above.
+
 ### Apply a rolling window
 
 ```bash
@@ -125,6 +158,20 @@ TruthInTheFlip_Farm \
 ```
 
 Here the source is windowed before it is segmented.
+
+## Source algebra
+
+The source surface is a compositional language over `TrackerSelector`: each form below produces a selector, and each transformation consumes one and returns another.
+
+- `file` acquires one tracker recording.
+- `files` acquires and sequentially joins raw compatible recordings.
+- `concat` compositionally joins compatible tracker selectors.
+- `from` / `to` restrict a source by absolute boundaries.
+- `rebase` establishes a new accumulator origin from the first selected record.
+- `window` converts accumulated state into interval-relative state.
+- `full` restricts a tracker source to complete or mature observations.
+
+Because the forms compose, their order carries meaning. `window ... from ... file ...`, for example, is not interchangeable with `from ... window ... file ...`.
 
 ### Join multiple tracker files (`files` and `concat`)
 
@@ -153,7 +200,7 @@ TruthInTheFlip_Farm \
 
 ### Rebase tracker streams (`rebase`)
 
-`rebase` treats the first selected tracker record as a new accumulator origin and expresses subsequent records relative to it. This is useful when independently transformed or windowed tracker streams need to be joined into a common continuous coordinate space:
+`rebase` changes the origin of an accumulated tracker stream by using the first selected record as the baseline and expressing subsequent records relative to it. Joining prepared sources is one application, but it is not the definition of the operation:
 
 ```bash
 TruthInTheFlip_Farm \
@@ -166,11 +213,11 @@ TruthInTheFlip_Farm \
     Index EndTotal MeanTrueZ
 ```
 
-Rebasing removes the inherited lifetime accumulator origin from each windowed stream before `concat` joins them into a continuous timeline.
+In this example, rebasing removes the inherited accumulator origin from each selected stream before `concat` joins them.
 
-### Aggregate across the entire dataset (`whole`)
+### Form one population (`whole`)
 
-The `whole` segmentation selector treats the entire evaluated dataset as a single segment, which is ideal for calculating global summary metrics over a full run:
+`whole` creates one segment or aggregate over the complete population produced by the upstream source/process stage. The upstream expression defines what that population means:
 
 ```bash
 TruthInTheFlip_Farm \
@@ -179,6 +226,8 @@ TruthInTheFlip_Farm \
     whole \
     PctAAtLeast50 MeanA
 ```
+
+A whole segment over raw accumulated tracker records is therefore semantically different from a whole segment over mature 10B rolling windows.
 
 ### Export segment aggregates
 
@@ -197,7 +246,7 @@ The first `by_total` is the `SegSelector` that divides tracker records into segm
 
 ### Run a segment report
 
-`segment_report` produces a curated human-readable report rather than CSV. It accepts a grade that controls the level of detail:
+`segment_report` is a curated analytical report rather than a metric projection. It decides which statistics to present; its grade controls the level of detail:
 
 ```bash
 TruthInTheFlip_Farm segment_report Med file "/path/to/crypto3.tkr" by_total 100B
@@ -220,7 +269,7 @@ TruthInTheFlip_Farm \
 
 ## Metric expressions
 
-CSV field lists support a compact expression language with three operators:
+Metric projection field lists (`csv` and `pretty`) support a compact expression language with three operators:
 
 ```text
 .   metric path traversal  (walk through a nested metric-bearing object)
@@ -294,7 +343,7 @@ mean#abs#stddev_sample#AnticipatedPercentage
       AnticipatedPercentage within each segment (at segment_agg level)
 ```
 
-CSV column names preserve the canonical expression text and are properly quoted when the expression contains a comma. For example, a field list of `mean#anticipatedTails pearson#ZScoreHeads,ZScoreTails` produces a header where the Pearson column is quoted:
+Projection field names preserve the canonical expression text. In `csv`, names are properly quoted when an expression contains a comma. For example, a field list of `mean#anticipatedTails pearson#ZScoreHeads,ZScoreTails` produces a header where the Pearson column is quoted:
 
 ```text
 mean#anticipatedTails,"pearson#ZScoreHeads,ZScoreTails"

@@ -165,34 +165,34 @@ Argument Types
 <TrackerWindow> — Definition of a rolling tracker window
 
         by_total length
-            Creates a bounding function that defines a window based on a maximum number of total flips.
+            Defines a rolling window by maximum absolute-source flip distance.
     
-            length                <Count>               The maximum allowed difference in total flips between the head and tail of the window.    default: "100B"
+            length                <Count>               Maximum source-total distance between the window endpoints.    default: "100B"
     
         by_heads length
-            Creates a bounding function that defines a window based on a maximum number of 'heads' flips.
+            Defines a rolling window by maximum absolute-source heads distance.
     
-            length                <Count>               The maximum allowed difference in heads between the head and tail of the window.    default: "100B"
+            length                <Count>               Maximum source-heads distance between the window endpoints.    default: "100B"
     
         by_tails length
-            Creates a bounding function that defines a window based on a maximum number of 'tails' flips.
+            Defines a rolling window by maximum absolute-source tails distance.
     
-            length                <Count>               The maximum allowed difference in tails between the head and tail of the window.    default: "100B"
+            length                <Count>               Maximum source-tails distance between the window endpoints.    default: "100B"
     
         by_anticipated length
-            Creates a bounding function that defines a window based on a maximum number of anticipated matches.
+            Defines a rolling window by maximum absolute-source anticipated distance.
     
-            length                <Count>               The maximum allowed difference in anticipated flips between the head and tail of the window.    default: "100B"
+            length                <Count>               Maximum source-anticipated distance between the window endpoints.    default: "100B"
     
         by_wallclock_ns length
-            Creates a bounding function that defines a window based on a precise amount of nanoseconds of wallclock compute time.
+            Defines a rolling window by absolute-source wallclock nanoseconds.
     
-            length                <Int64>               The maximum allowed difference in nanoseconds between the head and tail of the window.    default: "3600000000000"
+            length                <Int64>               Maximum source-wallclock nanosecond distance between the window endpoints.    default: "3600000000000"
     
         by_elapsed length
-            Creates a bounding function that defines a window based on a specific duration of wallclock compute time.
+            Defines a rolling window by absolute-source wallclock duration.
     
-            length                <TimeSpan>            The TimeSpan representing the maximum allowed duration between the head and tail of the window.    default: "01:00:00"
+            length                <TimeSpan>            Maximum source-wallclock duration between the window endpoints.    default: "01:00:00"
 
 <TrackerBoundary> — Boundary for selecting a position in a tracker stream
 

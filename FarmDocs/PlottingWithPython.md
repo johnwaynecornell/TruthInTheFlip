@@ -550,9 +550,21 @@ This keeps source selection in the Farm grammar and plotting in Python.
 
 ---
 
-## 14. Window before segmenting
+## 14. Observation scale before segmenting
 
-A window transforms Tracker records before the selected process consumes them.
+A source expression defines the observations that Python eventually receives. The pipeline order is therefore part of the analysis, not merely command-line arrangement.
+
+```text
+file "Quant.tkr"
+```
+
+exposes accumulated lifetime tracker states, while:
+
+```text
+window by_total 10B file "Quant.tkr"
+```
+
+expresses observations at a rolling 10-billion-source-flip scale. Path statistics such as `MeanA`, `MeanTrueZ`, and `PctAAtLeast50` depend on that scale.
 
 For example:
 
@@ -565,7 +577,16 @@ csv segment \
 
 The windowed Tracker values describe the local view, while absolute coordinates such as `absTotal` and `absWallclockTime` continue to locate the record in the underlying run.
 
-This is useful when a plot should show local behavior without losing global position.
+During warm-up, rolling windows are valid partial observations with a smaller effective span. If the plot or its upstream statistics assume a consistent scale, select mature windows explicitly:
+
+```text
+csv segment \
+    full window by_total 10B file "Quant.tkr" \
+    whole \
+    MeanA MeanTrueZ PctAAtLeast50
+```
+
+Here `whole` forms one segment over the complete upstream population of mature rolling 10B observations. Without `full`, startup windows participate. A whole segment over the raw `file` source would be a different population again.
 
 ---
 

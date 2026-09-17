@@ -4,7 +4,19 @@
 
 TruthInTheFlip Farm is a typed, compositional command-line analysis layer for TruthInTheFlip tracker data.
 
-Its job is not to prescribe one report. Instead, it separates source selection, processing, metric projection, and output so they can be composed into small command expressions.
+Its job is not to prescribe one report. Instead, it composes acquisition, coordinate transformation, observational scale, statistical population, metric projection, and output into small typed expressions.
+
+A Farm command determines:
+
+1. where tracker state comes from;
+2. the coordinate system and origin in which it is expressed;
+3. the observational scale of each tracker state;
+4. the population or grouping over which statistics are computed;
+5. the output representation.
+
+> **The order of the pipeline is part of the analysis.**
+
+Source transformations are semantic operations. Moving a transformation changes the tracker states seen downstream and can therefore change the statistical question.
 
 A typical command is:
 
@@ -27,13 +39,14 @@ This composition is central to the design.
 
 ## 2. The grammar in one picture
 
-The public language can be understood as a small typed graph:
+The public language can be understood as a small typed graph. Generated runtime help remains authoritative for the exact surface:
 
 ```text
-output
+projection output
     csv <FarmProcess> <metric fields...>
+    pretty <FarmProcess> <metric fields...>
 
-report (curated, human-readable)
+curated analysis
     segment_report <GradeArgument> <TrackerSelector> <SegSelector>
 
 process
@@ -43,6 +56,9 @@ process
 
 tracker source / transformation
     file <path>
+    files <path...>
+    concat <TrackerSelector> <TrackerSelector>
+    rebase <TrackerSelector>
     window <TrackerWindow> <TrackerSelector>
     from <TrackerBoundary> <TrackerSelector>
     to <TrackerBoundary> <TrackerSelector>
@@ -51,11 +67,13 @@ tracker source / transformation
 segment selector (SegSelector)
     by_total <Count>
     by_elapsed <TimeSpan>
+    whole
     full <SegSelector>
 
 aggregate selector (AggSelector)
     by_total <Count>
     by_elapsed <TimeSpan>
+    whole
     full <AggSelector>
 
 report grade (GradeArgument)
@@ -146,7 +164,7 @@ csv tracker file "crypto3.tkr" Total ZScore AnticipatedPercentage
 csv segment file "crypto3.tkr" by_total 100B Index EndTotal MeanTrueZ EndTrueZ BestTrueZ
 ```
 
-The process decides which items exist. `csv` decides how those items are projected and written.
+The process decides which items exist. `csv` binds the requested metric projection and renders it as machine-oriented tabular output.
 
 This distinction is deliberate: the tracker and segment processes do not need to contain CSV-specific behavior.
 
@@ -156,24 +174,25 @@ This distinction is deliberate: the tracker and segment processes do not need to
 pretty <process> <fields...>
 ```
 
-Formats a Farm process in a human-readable key-value format using the selected metric paths.
+Formats the same metric projection used by `csv` as human-oriented indexed record blocks. The requested metric/projection expression is preserved on the left.
 
 Example:
 
 As a usable example...
 ```bash
-TruthInTheFlip_Farm pretty segment window by_total 10B files "Quant.tkr" "Quant2.tkr" .END. whole MeanA MeanTrueZ PctAAtLeast50
+TruthInTheFlip_Farm pretty segment full window by_total 10B files "Quant.tkr" "Quant2.tkr" .END. whole MeanA MeanTrueZ PctAAtLeast50
 ```
-Authors note: That should really be 'full window by_total' to prevent initial wonkyness. Although the difference is microscopic in most cases.
 
 Produces indexed blocks with key-value pairs for each record:
 
 ```text
-[1/1]
-    MeanA = 49.99999546327958
-    MeanTrueZ = -0.8116200447394081
-    PctAAtLeast50 = 50.2515440763616
+[1/179]
+    Index = 0
+    EndTotal = 100000000000
+    MeanTrueZ = -0.3349180880974233
 ```
+
+This is a Farm-native inspection format, not JSON or Python serialization.
 
 ### `show metrics`
 
@@ -187,7 +206,7 @@ Displays all registered metric catalogs. The output includes:
 - CLR value type,
 - metric help text.
 
-Use this command when choosing fields for `csv`.
+Use this command when choosing fields for `csv` or `pretty`.
 
 ### `-help`
 
@@ -225,7 +244,23 @@ csv tracker file "crypto3.tkr" Total ZScore .END. -info command.info.txt
 
 ---
 
-## 5. Tracker sources
+## 5. Tracker source algebra
+
+The tracker source language is an algebra over `TrackerSelector`. Acquisition forms produce selectors; transformations consume and return selectors, so they can be nested without introducing a separate query syntax.
+
+The current forms are:
+
+```text
+file       acquire one tracker recording
+files      acquire and sequentially join raw compatible recordings
+concat     compositionally join compatible tracker selectors
+from / to  restrict a source by absolute boundaries
+rebase     establish a new accumulator origin from the first selected record
+window     convert accumulated state into interval-relative state
+full       retain complete or mature observations
+```
+
+These are not interchangeable wrappers. Their position determines the coordinate frame, observational scale, and population seen by downstream processes.
 
 ### `file`
 
@@ -251,7 +286,46 @@ csv tracker file "/data/trackers/crypto3.tkr" Total ZScore
 
 ---
 
-## 6. Tracker transformations
+### `files` and `concat`
+
+```text
+files <path...>
+concat <TrackerSelector> <TrackerSelector>
+```
+
+`files` is the convenient acquisition form for sequentially joining raw compatible recordings. `concat` is the compositional form for joining two already-constructed tracker selectors.
+
+```text
+files "Quant.tkr" "Quant2.tkr" .END.
+```
+
+```text
+concat file "Quant.tkr" file "Quant2.tkr"
+```
+
+### `rebase`
+
+```text
+rebase <TrackerSelector>
+```
+
+`rebase` changes the origin of an accumulated tracker stream by using the first selected record as the baseline and expressing subsequent records relative to it. Source preparation before a join is one possible application, not its primary meaning.
+
+## 6. Observation scale and coordinate space
+
+```text
+file "Quant.tkr"
+```
+
+exposes accumulated lifetime tracker states. By contrast:
+
+```text
+window by_total 10B file "Quant.tkr"
+```
+
+expresses observations at a rolling 10-billion-source-flip scale. Ordinary tracker counters describe the interval-relative observation; absolute source coordinates continue to identify its endpoint.
+
+Statistics over a path depend on that upstream scale. `MeanA`, `MeanTrueZ`, and `PctAAtLeast50` computed over lifetime states answer a different question from the same metrics computed over rolling 10B states.
 
 Tracker transformations consume a `TrackerSelector` and return another `TrackerSelector`. This makes them naturally nestable.
 
@@ -283,6 +357,35 @@ by_elapsed
 ```
 
 Each window definition has its own typed length argument and default value. Use `-help` to see the exact current defaults.
+
+The accumulated window selectors use the absolute source endpoints of their input records to measure the bound. This keeps the requested distance tied to source progress even when the visible tracker values are relative to an upstream origin or window.
+
+### `full window`: mature observations
+
+Rolling windows have a warm-up period. Before enough history exists to fill the requested bound, the window emits a valid partial observation with a smaller effective span.
+
+```text
+window by_total 100B file "Quant.tkr"
+```
+
+includes those startup observations. Prefixing the result with `full`:
+
+```text
+full window by_total 100B file "Quant.tkr"
+```
+
+retains only observations for which the requested rolling window has matured. Use partial windows when startup behavior matters; use `full window` when downstream statistics assume a consistent observational scale.
+
+For example:
+
+```text
+pretty segment
+    full window by_total 10B file "Quant.tkr"
+    whole
+    MeanA PctAAtLeast50
+```
+
+Without `full`, the early partial windows participate in those whole-path statistics.
 
 ### `from`
 
@@ -436,6 +539,7 @@ Current segment selectors include:
 ```text
 by_total <Count>
 by_elapsed <TimeSpan>
+whole
 ```
 
 A segment exposes its own aggregate metrics as well as selected tracker records such as `Begin`, `End`, and the tracker associated with its best True Z excursion.
@@ -451,6 +555,16 @@ Tracker records
 ```
 
 Each level is the child process of the one above it. This hierarchy determines how aggregate metric parameters collect their populations (see section 10).
+
+### `whole`
+
+`whole` creates one segment or aggregate over the complete population produced by the upstream source/process stage. It does not define that population independently; the upstream expression does.
+
+```text
+pretty segment full window by_total 10B file "Quant.tkr" whole MeanA PctAAtLeast50
+```
+
+Here the population is the sequence of mature rolling 10B observations. A `whole` segment over `file "Quant.tkr"` instead contains raw accumulated lifetime states. The output metrics have the same names, but their analytical meaning differs.
 
 ### `segment_agg`
 
@@ -479,7 +593,7 @@ Current aggregate selectors are the same `by_total` and `by_elapsed` forms avail
 segment_report <GradeArgument> <TrackerSelector> <SegSelector>
 ```
 
-`segment_report` produces a curated human-readable report rather than CSV. It collects `SegmentStats` items and writes a formatted summary whose depth is controlled by the `GradeArgument`.
+`segment_report` is curated analysis rather than a projection renderer. It collects `SegmentStats` items and decides which statistics to present in a formatted summary whose depth is controlled by the `GradeArgument`.
 
 ```text
 segment_report Med file "crypto3.tkr" by_total 100B
@@ -529,7 +643,7 @@ No statistics are attempted when the segment list is empty.
 
 ### When to use `segment_report` versus `csv segment`
 
-`segment_report` is a curated summary intended for human reading. `csv segment` and `csv segment_agg` are projection interfaces intended for programmatic downstream analysis, scripting, and plotting.
+`segment_report` is a curated summary intended for human reading. `csv` and `pretty` are renderings of the common metric projection mechanism: `csv` is machine-oriented/tabular, while `pretty` is human-oriented. Either can project tracker, segment, or segment-aggregate processes.
 
 ---
 
@@ -722,7 +836,18 @@ UTC boundary commands accept `DateTimeOffset` values, allowing either `Z` timest
 
 ---
 
-## 12. CSV behavior
+## 12. Projection output
+
+`csv` and `pretty` are two renderings of the same metric projection mechanism:
+
+```text
+csv       machine-oriented/tabular projection
+pretty    human-oriented indexed record projection
+```
+
+`segment_report` belongs to a different category. It is curated analysis that selects and arranges statistics rather than rendering an arbitrary requested field list.
+
+### CSV behavior
 
 `csv` binds the requested field list against the process item type, then installs CSV-specific lifecycle actions on the process:
 
@@ -735,7 +860,7 @@ abort   -> report the failure
 
 The process itself remains format-neutral.
 
-This allows the architecture to grow other output adapters later without duplicating tracker or segment enumeration.
+`pretty` binds the same expressions, preserves their canonical text as field names, and renders one process item per indexed block.
 
 CSV is written to standard output so it can be redirected or captured by a subprocess.
 
@@ -992,7 +1117,7 @@ TruthInTheFlip_Farm \
 TruthInTheFlip_Farm show metrics
 ```
 
-Then copy the desired metric names directly into the CSV field list.
+Then copy the desired metric names directly into the `csv` or `pretty` projection field list.
 
 ---
 

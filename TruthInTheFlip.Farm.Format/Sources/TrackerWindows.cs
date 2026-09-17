@@ -17,63 +17,63 @@ public class TrackerWindows
         }
 
         [FluentMethod("by_total")]
-        [KV_FA(FluentAttribute.Help, "Creates a bounding function that defines a window based on a maximum number of total flips.")]
+        [KV_FA(FluentAttribute.Help, "Defines a rolling window by maximum absolute-source flip distance.")]
         public static TrackerWindow ByTotal(
             [KV_FA(FluentAttribute.Def, "100B")]
-            [KV_FA(FluentAttribute.Help, "The maximum allowed difference in total flips between the head and tail of the window.")]
+            [KV_FA(FluentAttribute.Help, "Maximum source-total distance between the window endpoints.")]
             Count length)
         {
-            return new TrackerWindow((A, B) => (A.total - B.total) <= length);
+            return new TrackerWindow((A, B) => (A.Source.total - B.Source.total) <= length);
         }
 
         [FluentMethod("by_heads")]
-        [KV_FA(FluentAttribute.Help, "Creates a bounding function that defines a window based on a maximum number of 'heads' flips.")]
+        [KV_FA(FluentAttribute.Help, "Defines a rolling window by maximum absolute-source heads distance.")]
         public static TrackerWindow ByHeads(
             [KV_FA(FluentAttribute.Def, "100B")]
-            [KV_FA(FluentAttribute.Help, "The maximum allowed difference in heads between the head and tail of the window.")]
+            [KV_FA(FluentAttribute.Help, "Maximum source-heads distance between the window endpoints.")]
             Count length)
         {
-            return new TrackerWindow((A, B) => (A.heads - B.heads) <= length);
+            return new TrackerWindow((A, B) => (A.Source.heads - B.Source.heads) <= length);
         }
 
         [FluentMethod("by_tails")]
-        [KV_FA(FluentAttribute.Help, "Creates a bounding function that defines a window based on a maximum number of 'tails' flips.")]
+        [KV_FA(FluentAttribute.Help, "Defines a rolling window by maximum absolute-source tails distance.")]
         public static TrackerWindow ByTails(
             [KV_FA(FluentAttribute.Def, "100B")]
-            [KV_FA(FluentAttribute.Help, "The maximum allowed difference in tails between the head and tail of the window.")]
+            [KV_FA(FluentAttribute.Help, "Maximum source-tails distance between the window endpoints.")]
             Count length)
         {
-            return new TrackerWindow((A, B) => (A.tails - B.tails) <= length);
+            return new TrackerWindow((A, B) => (A.Source.tails - B.Source.tails) <= length);
         }
 
         [FluentMethod("by_anticipated")]
-        [KV_FA(FluentAttribute.Help, "Creates a bounding function that defines a window based on a maximum number of anticipated matches.")]
+        [KV_FA(FluentAttribute.Help, "Defines a rolling window by maximum absolute-source anticipated distance.")]
         public static TrackerWindow ByAnticipated(
             [KV_FA(FluentAttribute.Def, "100B")]
-            [KV_FA(FluentAttribute.Help, "The maximum allowed difference in anticipated flips between the head and tail of the window.")]
+            [KV_FA(FluentAttribute.Help, "Maximum source-anticipated distance between the window endpoints.")]
             Count length)
         {
-            return new TrackerWindow((A, B) => (A.anticipated - B.anticipated) <= length);
+            return new TrackerWindow((A, B) => (A.Source.anticipated - B.Source.anticipated) <= length);
         }
 
         [FluentMethod("by_wallclock_ns")]
-        [KV_FA(FluentAttribute.Help, "Creates a bounding function that defines a window based on a precise amount of nanoseconds of wallclock compute time.")]
+        [KV_FA(FluentAttribute.Help, "Defines a rolling window by absolute-source wallclock nanoseconds.")]
         public static TrackerWindow ByWallclockTimeNs(
             [KV_FA(FluentAttribute.Def, "3600000000000")]
-            [KV_FA(FluentAttribute.Help, "The maximum allowed difference in nanoseconds between the head and tail of the window.")]
+            [KV_FA(FluentAttribute.Help, "Maximum source-wallclock nanosecond distance between the window endpoints.")]
             long length)
         {
-            return new TrackerWindow((A, B) => (A.wallclockTimeNs - B.wallclockTimeNs) <= length);
+            return new TrackerWindow((A, B) => (A.Source.wallclockTimeNs - B.Source.wallclockTimeNs) <= length);
         }
 
         [FluentMethod("by_elapsed")]
-        [KV_FA(FluentAttribute.Help, "Creates a bounding function that defines a window based on a specific duration of wallclock compute time.")]
+        [KV_FA(FluentAttribute.Help, "Defines a rolling window by absolute-source wallclock duration.")]
         public static TrackerWindow ByElapsed(
             [KV_FA(FluentAttribute.Def, "01:00:00")]
-            [KV_FA(FluentAttribute.Help, "The TimeSpan representing the maximum allowed duration between the head and tail of the window.")]
+            [KV_FA(FluentAttribute.Help, "Maximum source-wallclock duration between the window endpoints.")]
             TimeSpan length)
         {
-            return new TrackerWindow((A, B) => (A.WallclockTime - B.WallclockTime) <= length);
+            return new TrackerWindow((A, B) => (A.Source.WallclockTime - B.Source.WallclockTime) <= length);
         }
     }
     
