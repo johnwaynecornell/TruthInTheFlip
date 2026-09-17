@@ -381,6 +381,23 @@ public class TruthInTheFlip_Fluent
         return new TrackerSelector(() => OpenTrackerStream(trackerPath));
     }
 
+    [FluentMethod("concat")]
+    [KV_FA(FluentAttribute.Help, "Sequentially combine two tracker selectors.")]
+    public static TrackerSelector Concat(
+        TrackerSelector a,
+        TrackerSelector b)
+    {
+        return TrackerSelector.Join(a, b);
+    }
+    
+    [FluentMethod("files")]
+    [KV_FA(FluentAttribute.Help, "Sequentially combine a list of tracker files.")]
+    public static TrackerSelector Files(params string[] paths)
+    {
+        return TrackerSelector.Join(
+            paths.Select(Tracker).ToArray());
+    }
+    
     [FluentMethod("full")]
     [KV_FA(FluentAttribute.Help, "Use only full trackers.")]
     public static TrackerSelector fullTracker(
@@ -389,7 +406,7 @@ public class TruthInTheFlip_Fluent
     {
         return new TrackerSelector(source, t => ((Tracker)t).IsComplete);
     }
-
+    
     [FluentMethod("full")]
     [KV_FA(FluentAttribute.Help, "Use only complete segments.")]
     public static SegSelector fullSegSelector(

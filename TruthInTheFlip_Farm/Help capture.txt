@@ -117,6 +117,17 @@ Argument Types
     
             trackerPath           <String>              Path to the tracker file.
     
+        concat a b
+            Sequentially combine two tracker selectors.
+    
+            a                     <TrackerSelector>     
+            b                     <TrackerSelector>     
+    
+        files paths
+            Sequentially combine a list of tracker files.
+    
+            paths                 <String[]>            
+    
         full source
             Use only full trackers.
     

@@ -96,6 +96,43 @@ TruthInTheFlip_Farm \
 
 Here the source is windowed before it is segmented.
 
+### Join multiple tracker files (`files` and `concat`)
+
+Multiple tracker files can be joined into a continuous accumulated tracker stream. Joining occurs at the accumulated-source level, rebasing each subsequent stream onto the cumulative state of the preceding one. Applying a window *after* joining yields continuous, relative rolling metrics across the combined horizon without boundary discontinuities.
+
+Use `files ... .END.` to sequentially join a list of file paths:
+
+```bash
+TruthInTheFlip_Farm \
+    csv segment full \
+    window by_total 100B \
+        files "Quant.tkr" "Quant2.tkr" .END. \
+    whole \
+    PctAAtLeast50 MeanA
+```
+
+Alternatively, `concat` provides the compositional selector form for combining two tracker selectors:
+
+```bash
+TruthInTheFlip_Farm \
+    csv segment \
+    concat file "Quant.tkr" file "Quant2.tkr" \
+    by_total 100B \
+    Index EndTotal MeanTrueZ
+```
+
+### Aggregate across the entire dataset (`whole`)
+
+The `whole` segmentation selector treats the entire evaluated dataset as a single segment, which is ideal for calculating global summary metrics over a full run:
+
+```bash
+TruthInTheFlip_Farm \
+    csv segment full \
+    file "crypto3.tkr" \
+    whole \
+    PctAAtLeast50 MeanA
+```
+
 ### Export segment aggregates
 
 `segment_agg` groups segments into larger aggregates and produces a `SegmentAggregate` record for each group.

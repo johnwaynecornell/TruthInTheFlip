@@ -299,6 +299,44 @@ public sealed class TrackerFileSmokeTests
         }
     }
 
+    [Fact]
+    public void TrackerSelectorJoin_InvokesEachSourceOnce()
+    {
+        string path1 = CreateTrackerFile();
+        string path2 = CreateTrackerFile();
+
+        try
+        {
+            int source1Calls = 0;
+            int source2Calls = 0;
+
+            var sel1 = new TrackerSelector(() =>
+            {
+                source1Calls++;
+                return TruthInTheFlip_Fluent.OpenTrackerStream(path1);
+            });
+
+            var sel2 = new TrackerSelector(() =>
+            {
+                source2Calls++;
+                return TruthInTheFlip_Fluent.OpenTrackerStream(path2);
+            });
+
+            var joined = TrackerSelector.Join(sel1, sel2);
+            using var stream = joined.Source();
+            var records = stream.Records.ToList();
+
+            Assert.Equal(1, source1Calls);
+            Assert.Equal(1, source2Calls);
+            Assert.Equal(8, records.Count);
+        }
+        finally
+        {
+            File.Delete(path1);
+            File.Delete(path2);
+        }
+    }
+
     private static void AssertAbsTotals(
         string csv,
         params long[] expected)
