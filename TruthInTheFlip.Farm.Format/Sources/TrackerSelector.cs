@@ -23,6 +23,41 @@ public class TrackerSelector
         };
     }
     
+    public static TrackerSelector Rebase(TrackerSelector source)
+    {
+        return new TrackerSelector(() =>
+        {
+            TrackerStream input = source.Source();
+
+            return new TrackerStream(
+                input.Store,
+                RebaseRecords(input));
+        });
+    }
+
+    private static IEnumerable<ITracker> RebaseRecords(TrackerStream stream)
+    {
+        using (stream)
+        {
+            TrackerStore store = stream.Store;
+            int[] ver =
+                TrackerStore.ReadVersion("TruthInTheFlip.v", store.Version!)
+                ?? throw new InvalidOperationException();
+
+            using var enumerator = stream.Records.Cast<Tracker>().GetEnumerator();
+            if (!enumerator.MoveNext())
+                yield break;
+
+            Tracker baseline = enumerator.Current;
+
+            while (enumerator.MoveNext())
+            {
+                Tracker raw = enumerator.Current;
+                yield return UtilT.Subtract(store, ver, raw, baseline);
+            }
+        }
+    }
+    
     public static TrackerSelector Join(params TrackerSelector[] sources)
     {
         return new TrackerSelector(() =>

@@ -390,6 +390,15 @@ public class TruthInTheFlip_Fluent
         return TrackerSelector.Join(a, b);
     }
     
+    [FluentMethod("rebase")]
+    [KV_FA(FluentAttribute.Help, "Express tracker records relative to the first record.")]
+    public static TrackerSelector Rebase(
+        [KV_FA(FluentAttribute.Help, "The tracker source to rebase.")]
+        TrackerSelector source)
+    {
+        return TrackerSelector.Rebase(source);
+    }
+    
     [FluentMethod("files")]
     [KV_FA(FluentAttribute.Help, "Sequentially combine a list of tracker files.")]
     public static TrackerSelector Files(params string[] paths)

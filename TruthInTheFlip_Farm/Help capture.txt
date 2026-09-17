@@ -123,6 +123,11 @@ Argument Types
             a                     <TrackerSelector>     
             b                     <TrackerSelector>     
     
+        rebase source
+            Express tracker records relative to the first record.
+    
+            source                <TrackerSelector>     The tracker source to rebase.
+    
         files paths
             Sequentially combine a list of tracker files.
     

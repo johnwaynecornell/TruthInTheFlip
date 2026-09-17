@@ -121,6 +121,23 @@ TruthInTheFlip_Farm \
     Index EndTotal MeanTrueZ
 ```
 
+### Rebase tracker streams (`rebase`)
+
+`rebase` treats the first selected tracker record as a new accumulator origin and expresses subsequent records relative to it. This is useful when independently transformed or windowed tracker streams need to be joined into a common continuous coordinate space:
+
+```bash
+TruthInTheFlip_Farm \
+    csv segment \
+    window by_total 100B \
+    concat \
+        rebase from absTotal 100B file "Quant1.tkr" \
+        rebase file "Quant2.tkr" \
+    by_total 100B \
+    Index EndTotal MeanTrueZ
+```
+
+Rebasing removes the inherited lifetime accumulator origin from each windowed stream before `concat` joins them into a continuous timeline.
+
 ### Aggregate across the entire dataset (`whole`)
 
 The `whole` segmentation selector treats the entire evaluated dataset as a single segment, which is ideal for calculating global summary metrics over a full run:
