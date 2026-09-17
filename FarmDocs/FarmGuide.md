@@ -164,6 +164,7 @@ As a usable example...
 ```bash
 TruthInTheFlip_Farm pretty segment window by_total 10B files "Quant.tkr" "Quant2.tkr" .END. whole MeanA MeanTrueZ PctAAtLeast50
 ```
+Authors note: That should really be 'full window by_total' to prevent initial wonkyness. Although the difference is microscopic in most cases.
 
 Produces indexed blocks with key-value pairs for each record:
 
