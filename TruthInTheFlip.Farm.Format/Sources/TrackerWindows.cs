@@ -99,7 +99,7 @@ public class TrackerWindows
                 ApplyWindow(window, input.Records);
 
             return new TrackerStream(input.Store, records);
-        });
+        }, isAccumulated: false);
     }
 
     private static IEnumerable<ITracker> ApplyWindow(

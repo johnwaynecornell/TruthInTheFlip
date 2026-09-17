@@ -10,13 +10,22 @@ public class TrackerSelector
 {
     public Func<TrackerStream> Source { get; init; }
 
-    public TrackerSelector(Func<TrackerStream> source)
+    public bool IsAccumulated { get; init; }
+
+    public TrackerSelector(
+        Func<TrackerStream> source,
+        bool isAccumulated = true)
     {
-        this.Source = source;
+        Source = source;
+        IsAccumulated = isAccumulated;
     }
-    
-    public TrackerSelector(TrackerSelector source, Func<ITracker, bool> predicate)
+
+    public TrackerSelector(
+        TrackerSelector source,
+        Func<ITracker, bool> predicate)
     {
+        IsAccumulated = source.IsAccumulated;
+
         Source = () =>
         {
             return new TrackerStream(source.Source(), predicate);
@@ -25,14 +34,16 @@ public class TrackerSelector
     
     public static TrackerSelector Rebase(TrackerSelector source)
     {
-        return new TrackerSelector(() =>
-        {
-            TrackerStream input = source.Source();
+        return new TrackerSelector(
+            () =>
+            {
+                TrackerStream input = source.Source();
 
-            return new TrackerStream(
-                input.Store,
-                RebaseRecords(input));
-        });
+                return new TrackerStream(
+                    input.Store,
+                    RebaseRecords(input));
+            },
+            source.IsAccumulated);
     }
 
     private static IEnumerable<ITracker> RebaseRecords(TrackerStream stream)
@@ -65,6 +76,14 @@ public class TrackerSelector
             if (sources.Length == 0)
                 throw new FarmInputException("Join requires at least one source.");
 
+            if (sources.Any(source => !source.IsAccumulated))
+            {
+                throw new FarmInputException(
+                    "concat can join only accumulated tracker sources. " +
+                    "Join the accumulated sources before applying window; " +
+                    "window produces interval-relative observations.");
+            }
+            
             TrackerStream first = sources[0].Source();
 
             return new TrackerStream(
