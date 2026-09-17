@@ -22,6 +22,12 @@ Available Commands
         process               <FarmProcess>         Process whose items will be written as CSV.
         fields                <String[]>            Metric paths to include as CSV columns.
 
+    pretty process fields
+        Format a process in human-readable format using the selected metric fields.
+
+        process               <FarmProcess>         Process whose items will be written in pretty format.
+        fields                <String[]>            Metric paths to include.
+
     segment_report grade tracker segmentation
         Report on tracker records as segments.
 

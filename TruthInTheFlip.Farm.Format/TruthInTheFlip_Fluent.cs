@@ -509,6 +509,82 @@ public class TruthInTheFlip_Fluent
         return new FarmDelegateCommand((ctx) => { process.Execute(ctx); });
     }
 
+    [FluentMethod]
+    [KV_FA(FluentAttribute.Help, "Format a process in human-readable format using the selected metric fields.")]
+    public static FarmCommand pretty(
+        [KV_FA(FluentAttribute.Help, "Process whose items will be written in pretty format.")]
+        FarmProcess process,
+        [KV_FA(FluentAttribute.Help, "Metric paths to include.")]
+        params string[] fields)
+    {
+        var catalogs = FluentEnvironment.Current.Context.Get<MetricCatalogs>();
+
+        if (!process.BindFields(catalogs, fields, out MetricBindError? bindError))
+        {
+            Console.Error.WriteLine(bindError!.FormatDiagnostic());
+            var env = FluentEnvironment.Current;
+            env.Status = 1;
+            env.WantExit = true;
+            return new FarmDelegateCommand(_ => { }); // never executed; WantExit stops the loop
+        }
+
+        List<List<(string, string)>> body = new();
+        
+        process.Actions = new ProcessActions(
+            begin: context => { },
+            
+            process:
+            (context, stats) =>
+            {
+                var row = new List<(string, string)>();
+                var session = process.session_get();
+                
+                foreach (var field in session.Projection.Fields)
+                {
+                    row.Add((field.ToString(), PrettyOut(field.Get(session, stats))));
+                }
+                
+                body.Add(row);
+            },
+
+            end: context => { },
+
+            abort: HandleAbort);
+        
+        return new FarmDelegateCommand((ctx) =>
+        {
+            process.Execute(ctx);
+            for (int i = 0; i < body.Count; i++)
+            {
+                ctx.Output.WriteLine($"[{i+1}/{body.Count}]");
+                foreach ((string name, string value) in body[i]) ctx.Output.WriteLine($"    {name} = {value}");
+            }
+        });
+    }
+
+    public static string PrettyOut(object? obj)
+    {
+        if (obj == null)
+            return "null";
+
+        return obj switch
+        {
+            double d => d.ToString(CultureInfo.InvariantCulture),
+            float f => f.ToString(CultureInfo.InvariantCulture),
+            decimal dec => dec.ToString(CultureInfo.InvariantCulture),
+            DateTime dt => dt.ToUniversalTime()
+                .ToString("yyyy-MM-ddTHH:mm:ss.fffZ",
+                    CultureInfo.InvariantCulture),
+            DateTimeOffset dto => dto.ToUniversalTime()
+                .ToString("yyyy-MM-ddTHH:mm:ss.fffZ",
+                    CultureInfo.InvariantCulture),
+            TimeSpan ts => ts.ToString("c", CultureInfo.InvariantCulture),
+            bool b => b ? "true" : "false",
+            IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture),
+            _ => obj.ToString() ?? ""
+        };
+    }
+    
     [FluentMethod("segment")]
     [KV_FA(FluentAttribute.Help, "Process tracker records as segments.")]
     public static FarmProcess Segment(

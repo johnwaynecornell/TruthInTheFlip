@@ -150,6 +150,30 @@ The process decides which items exist. `csv` decides how those items are project
 
 This distinction is deliberate: the tracker and segment processes do not need to contain CSV-specific behavior.
 
+### `pretty`
+
+```text
+pretty <process> <fields...>
+```
+
+Formats a Farm process in a human-readable key-value format using the selected metric paths.
+
+Example:
+
+As a usable example...
+```bash
+TruthInTheFlip_Farm pretty segment window by_total 10B files "Quant.tkr" "Quant2.tkr" .END. whole MeanA MeanTrueZ PctAAtLeast50
+```
+
+Produces indexed blocks with key-value pairs for each record:
+
+```text
+[1/1]
+    MeanA = 49.99999546327958
+    MeanTrueZ = -0.8116200447394081
+    PctAAtLeast50 = 50.2515440763616
+```
+
 ### `show metrics`
 
 ```text

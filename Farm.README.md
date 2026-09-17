@@ -71,6 +71,36 @@ TruthInTheFlip_Farm \
     > tracker.csv
 ```
 
+### Pretty-print output (`pretty`)
+
+The `pretty` command outputs selected metrics in a human-readable, indexed key-value block format rather than CSV:
+
+As a usable example...
+```bash
+TruthInTheFlip_Farm pretty segment window by_total 10B files "Quant.tkr" "Quant2.tkr" .END. by_total 100B MeanA MeanTrueZ PctAAtLeast50
+```
+
+And to display form...
+```bash
+TruthInTheFlip_Farm \
+    pretty tracker \
+    file "/path/to/crypto3.tkr" \
+    Total ZScore AnticipatedPercentage
+```
+
+Example output:
+
+```text
+[1/4]
+    Total = 100
+    ZScore = 0.5
+    AnticipatedPercentage = 50
+[2/4]
+    Total = 200
+    ZScore = 1.2
+    AnticipatedPercentage = 50.5
+```
+
 ### Export segment statistics
 
 ```bash
