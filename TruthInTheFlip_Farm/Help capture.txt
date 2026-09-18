@@ -22,6 +22,12 @@ Available Commands
         process               <FarmProcess>         Process whose items will be written as CSV.
         fields                <String[]>            Metric paths to include as CSV columns.
 
+    json process fields
+        Format a process as streaming JSON Lines using the selected metric fields.
+
+        process               <FarmProcess>         Process whose items will be written as JSON Lines.
+        fields                <String[]>            Metric paths to include as JSON properties.
+
     pretty process fields
         Format a process in human-readable format using the selected metric fields.
 
