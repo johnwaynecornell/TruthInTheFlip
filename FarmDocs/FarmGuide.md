@@ -168,6 +168,34 @@ The process decides which items exist. `csv` binds the requested metric projecti
 
 This distinction is deliberate: the tracker and segment processes do not need to contain CSV-specific behavior.
 
+### `json`
+
+```text
+json <process> <fields...>
+```
+
+Formats the same metric projection as compact JSON Lines (NDJSON), with one
+JSON object per process item and no enclosing array. Zero items produce no
+output. Projection expressions are preserved as property names, including
+function punctuation:
+
+```bash
+TruthInTheFlip_Farm json segment \
+    file "crypto3.tkr" by_total 100B \
+    Index EndTotal mean#anticipatedTails \
+    pearson#ZScoreHeads,ZScoreTails
+```
+
+```json
+{"Index":0,"EndTotal":100000000000,"mean#anticipatedTails":49.9998,"pearson#ZScoreHeads,ZScoreTails":0.123}
+```
+
+The output is suitable for streaming consumers such as `jq`:
+
+```bash
+TruthInTheFlip_Farm json tracker file "crypto3.tkr" total ZScore | jq -c 'select(.ZScore > 1.96)'
+```
+
 ### `pretty`
 
 ```text
@@ -206,7 +234,7 @@ Displays all registered metric catalogs. The output includes:
 - CLR value type,
 - metric help text.
 
-Use this command when choosing fields for `csv` or `pretty`.
+Use this command when choosing fields for `csv`, `json`, or `pretty`.
 
 ### `-help`
 
@@ -643,7 +671,7 @@ No statistics are attempted when the segment list is empty.
 
 ### When to use `segment_report` versus `csv segment`
 
-`segment_report` is a curated summary intended for human reading. `csv` and `pretty` are renderings of the common metric projection mechanism: `csv` is machine-oriented/tabular, while `pretty` is human-oriented. Either can project tracker, segment, or segment-aggregate processes.
+`segment_report` is a curated summary intended for human reading. `csv`, `json`, and `pretty` are renderings of the common metric projection mechanism: `csv` is machine-oriented/tabular, `json` is machine-oriented/structured streaming, and `pretty` is human-oriented. Each can project tracker, segment, or segment-aggregate processes.
 
 ---
 
@@ -838,11 +866,13 @@ UTC boundary commands accept `DateTimeOffset` values, allowing either `Z` timest
 
 ## 12. Projection output
 
-`csv` and `pretty` are two renderings of the same metric projection mechanism:
+`csv`, `json`, and `pretty` render the same metric projection mechanism:
 
 ```text
-csv       machine-oriented/tabular projection
-pretty    human-oriented indexed record projection
+csv              tabular machine interchange
+json             structured streaming machine interchange (NDJSON)
+pretty           human inspection / record presentation
+segment_report   curated analytical report
 ```
 
 `segment_report` belongs to a different category. It is curated analysis that selects and arranges statistics rather than rendering an arbitrary requested field list.
@@ -861,6 +891,17 @@ abort   -> report the failure
 The process itself remains format-neutral.
 
 `pretty` binds the same expressions, preserves their canonical text as field names, and renders one process item per indexed block.
+
+`json` also preserves canonical projection-expression text exactly as the JSON
+property name. Dots, `#`, and commas are ordinary JSON property-name
+characters; normal JSON escaping handles quotes, backslashes, control
+characters, and Unicode. Each item is evaluated and emitted immediately as one
+compact object followed by a newline. Finite CLR numerics remain JSON numbers,
+booleans remain booleans, and null remains null. Dates use the Farm's UTC
+ISO-8601 convention, and durations use invariant constant (`c`) format. Because
+standard JSON has no non-finite numbers, `NaN`, positive infinity, and negative
+infinity are emitted as the strings `"NaN"`, `"Infinity"`, and `"-Infinity"` so
+their meanings are retained rather than conflated with null.
 
 CSV is written to standard output so it can be redirected or captured by a subprocess.
 

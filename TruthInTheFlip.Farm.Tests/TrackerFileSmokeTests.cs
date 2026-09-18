@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json;
 using FluentCommandLine;
 using JWCFarm;
 using Microsoft.VisualStudio.TestPlatform.TestHost;
@@ -10,6 +11,60 @@ namespace TruthInTheFlip.Farm.Tests;
 
 public sealed class TrackerFileSmokeTests
 {
+    [Fact]
+    public void JsonTracker_ReadsGeneratedTrackerFileAsNdjson()
+    {
+        string path = CreateTrackerFile();
+
+        try
+        {
+            string json = RunFarm(
+                "json", "tracker", "file", path,
+                "total", "absTotal", "ZScore");
+
+            string[] lines = NonEmptyLines(json);
+            Assert.Equal(4, lines.Length);
+
+            using JsonDocument first = JsonDocument.Parse(lines[0]);
+            Assert.Equal(100, first.RootElement.GetProperty("total").GetInt64());
+            Assert.Equal(JsonValueKind.Number,
+                first.RootElement.GetProperty("ZScore").ValueKind);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void JsonSegment_PreservesMetricFunctionExpressionsAsKeys()
+    {
+        string path = CreateTrackerFile();
+
+        try
+        {
+            string json = RunFarm(
+                "json", "segment", "file", path, "whole",
+                "Index", "BeginTotal", "EndTotal", "MeanTrueZ",
+                "mean#anticipatedTails",
+                "pearson#ZScoreHeads,ZScoreTails");
+
+            string line = Assert.Single(NonEmptyLines(json));
+            using JsonDocument document = JsonDocument.Parse(line);
+            JsonElement root = document.RootElement;
+
+            Assert.Equal(JsonValueKind.Number, root.GetProperty("Index").ValueKind);
+            Assert.Equal(JsonValueKind.Number, root.GetProperty("EndTotal").ValueKind);
+            Assert.True(root.TryGetProperty("mean#anticipatedTails", out _));
+            Assert.True(root.TryGetProperty(
+                "pearson#ZScoreHeads,ZScoreTails", out _));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     [Fact]
     public void CsvTracker_ReadsGeneratedTrackerFile()
     {

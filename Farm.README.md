@@ -105,6 +105,35 @@ Example output:
 
 This is a Farm-native human inspection format. It is not JSON or a Python serialization.
 
+### Stream structured output (`json`)
+
+`json` uses the same metric binding and projection machinery as `csv` and
+`pretty`, but emits compact JSON Lines / NDJSON: one object per process item,
+one line at a time, with no enclosing array.
+
+```bash
+TruthInTheFlip_Farm json segment \
+    full window by_total 10B file "Quant.tkr" \
+    by_total 100B \
+    Index EndTotal mean#anticipatedTails \
+    pearson#ZScoreHeads,ZScoreTails
+```
+
+Projection expressions are intentionally preserved as JSON property names, so
+keys such as `mean#anticipatedTails` and
+`pearson#ZScoreHeads,ZScoreTails` are not sanitized or renamed. The stream can
+be piped directly to tools such as `jq`:
+
+```bash
+TruthInTheFlip_Farm json tracker file "Quant.tkr" total ZScore | jq -c 'select(.ZScore > 1.96)'
+```
+
+Use `csv` for tabular machine interchange, `json` for structured streaming
+machine interchange, `pretty` for human inspection, and `segment_report` for a
+curated analytical report. Non-finite floating-point results are represented
+as the strings `"NaN"`, `"Infinity"`, or `"-Infinity"`; ordinary numerics retain
+their JSON numeric type, and null remains JSON null.
+
 ### Export segment statistics
 
 ```bash
@@ -269,7 +298,7 @@ TruthInTheFlip_Farm \
 
 ## Metric expressions
 
-Metric projection field lists (`csv` and `pretty`) support a compact expression language with three operators:
+Metric projection field lists (`csv`, `json`, and `pretty`) support a compact expression language with three operators:
 
 ```text
 .   metric path traversal  (walk through a nested metric-bearing object)

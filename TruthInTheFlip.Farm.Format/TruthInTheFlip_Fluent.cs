@@ -1,6 +1,10 @@
+using System.Buffers;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.InteropServices.Marshalling;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using FluentCommandLine;
 using JWCFarm;
 using JWCFarm.Metrics;
@@ -510,6 +514,39 @@ public class TruthInTheFlip_Fluent
     }
 
     [FluentMethod]
+    [KV_FA(FluentAttribute.Help, "Format a process as streaming JSON Lines using the selected metric fields.")]
+    public static FarmCommand json(
+        [KV_FA(FluentAttribute.Help, "Process whose items will be written as JSON Lines.")]
+        FarmProcess process,
+        [KV_FA(FluentAttribute.Help, "Metric paths to include as JSON properties.")]
+        params string[] fields)
+    {
+        var catalogs = FluentEnvironment.Current.Context.Get<MetricCatalogs>();
+
+        if (!process.BindFields(catalogs, fields, out MetricBindError? bindError))
+        {
+            Console.Error.WriteLine(bindError!.FormatDiagnostic());
+            var env = FluentEnvironment.Current;
+            env.Status = 1;
+            env.WantExit = true;
+            return new FarmDelegateCommand(_ => { }); // never executed; WantExit stops the loop
+        }
+
+        process.Actions = new ProcessActions(
+            begin: context => { },
+
+            process: (context, stats) =>
+                WriteJsonRow(process.session_get(), context.Output, stats),
+
+            end: context =>
+                context.Output.Flush(),
+
+            abort: HandleAbort);
+
+        return new FarmDelegateCommand((ctx) => { process.Execute(ctx); });
+    }
+
+    [FluentMethod]
     [KV_FA(FluentAttribute.Help, "Format a process in human-readable format using the selected metric fields.")]
     public static FarmCommand pretty(
         [KV_FA(FluentAttribute.Help, "Process whose items will be written in pretty format.")]
@@ -652,6 +689,101 @@ public class TruthInTheFlip_Fluent
     public static void WriteRow(MetricProjection projection, TextWriter writer, object stats)
     {
         WriteRow(new MetricEvaluationSession(projection), writer, stats);
+    }
+
+    private static readonly JsonSerializerOptions JsonOutputOptions = CreateJsonOutputOptions();
+
+    private static JsonSerializerOptions CreateJsonOutputOptions()
+    {
+        var options = new JsonSerializerOptions
+        {
+            NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals
+        };
+        options.Converters.Add(new JsonUtcDateTimeConverter());
+        options.Converters.Add(new JsonUtcDateTimeOffsetConverter());
+        options.Converters.Add(new JsonTimeSpanConverter());
+        return options;
+    }
+
+    public static void WriteJsonRow(
+        MetricEvaluationSession session,
+        TextWriter writer,
+        object stats)
+    {
+        var buffer = new ArrayBufferWriter<byte>();
+        using var jsonWriter = new Utf8JsonWriter(buffer);
+        jsonWriter.WriteStartObject();
+
+        foreach (var field in session.Projection.Fields)
+        {
+            jsonWriter.WritePropertyName(field.ToString());
+            object? value = field.Get(session, stats);
+            JsonSerializer.Serialize(
+                jsonWriter,
+                value,
+                value?.GetType() ?? typeof(object),
+                JsonOutputOptions);
+        }
+
+        jsonWriter.WriteEndObject();
+        jsonWriter.Flush();
+
+        writer.WriteLine(Encoding.UTF8.GetString(buffer.WrittenSpan));
+    }
+
+    public static void WriteJsonRow(
+        MetricProjection projection,
+        TextWriter writer,
+        object stats)
+    {
+        WriteJsonRow(new MetricEvaluationSession(projection), writer, stats);
+    }
+
+    private sealed class JsonUtcDateTimeConverter : JsonConverter<DateTime>
+    {
+        public override DateTime Read(
+            ref Utf8JsonReader reader,
+            Type typeToConvert,
+            JsonSerializerOptions options)
+            => reader.GetDateTime();
+
+        public override void Write(
+            Utf8JsonWriter writer,
+            DateTime value,
+            JsonSerializerOptions options)
+            => writer.WriteStringValue(value.ToUniversalTime()
+                .ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture));
+    }
+
+    private sealed class JsonUtcDateTimeOffsetConverter : JsonConverter<DateTimeOffset>
+    {
+        public override DateTimeOffset Read(
+            ref Utf8JsonReader reader,
+            Type typeToConvert,
+            JsonSerializerOptions options)
+            => reader.GetDateTimeOffset();
+
+        public override void Write(
+            Utf8JsonWriter writer,
+            DateTimeOffset value,
+            JsonSerializerOptions options)
+            => writer.WriteStringValue(value.ToUniversalTime()
+                .ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture));
+    }
+
+    private sealed class JsonTimeSpanConverter : JsonConverter<TimeSpan>
+    {
+        public override TimeSpan Read(
+            ref Utf8JsonReader reader,
+            Type typeToConvert,
+            JsonSerializerOptions options)
+            => TimeSpan.Parse(reader.GetString()!, CultureInfo.InvariantCulture);
+
+        public override void Write(
+            Utf8JsonWriter writer,
+            TimeSpan value,
+            JsonSerializerOptions options)
+            => writer.WriteStringValue(value.ToString("c", CultureInfo.InvariantCulture));
     }
 
     public static void CSVOut(TextWriter writer, object? obj)
