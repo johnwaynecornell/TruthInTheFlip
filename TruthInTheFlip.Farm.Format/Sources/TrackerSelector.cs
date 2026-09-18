@@ -122,13 +122,9 @@ public class TrackerSelector
                 {
                     Tracker output;
 
-                    if (offset == null) output = raw;
-                    else
-                    {
-                        var n = store.Clone(raw);
-                        n.Merge(offset);
-                        output = n;
-                    }
+                    var n = store.Clone(raw);
+                    if (offset != null) n.Merge(offset);
+                    output = n;
 
                     final = output;
                     yield return output;
