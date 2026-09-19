@@ -4782,3 +4782,10 @@ No additional window search is planned before that comparison.
 
 After system maintenance the following will be run in tmux from a TruthInTheFlip clone seperate from my Dev clone:
 TruthInTheFlip -create -record -print Detailed -window WindowByTotal 10000000000 -rsource NET1 -anticipation BetSamePersistence2 AntiMetaGuess WindowByTotal 10000000000 BSP2_AntiMetaGuess_NET1.tkr
+
+___________________________________________________________________________
+╔═══════════════╗
+║20260919_141036║
+╚═══════════════╝
+
+BSP2_AntiMetaGuess_NET1.tkr started.
