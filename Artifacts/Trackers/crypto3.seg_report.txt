@@ -17,7 +17,7 @@ Values:
                 Selector for a tracker source:  window bounds source          //Apply a rolling window to a tracker source.
                 Values:
                     bounds=<TrackerWindow> {
-                        Definition of a rolling tracker window:  by_total length          //Creates a bounding function that defines a window based on a maximum number of total flips.
+                        Definition of a rolling tracker window:  by_total length          //Defines a rolling window by maximum absolute-source flip distance.
                         Values:         length=100B
                     }
                     source=<TrackerSelector> {
@@ -265,7 +265,7 @@ Values:
                 Selector for a tracker source:  window bounds source          //Apply a rolling window to a tracker source.
                 Values:
                     bounds=<TrackerWindow> {
-                        Definition of a rolling tracker window:  by_total length          //Creates a bounding function that defines a window based on a maximum number of total flips.
+                        Definition of a rolling tracker window:  by_total length          //Defines a rolling window by maximum absolute-source flip distance.
                         Values:         length=10B
                     }
                     source=<TrackerSelector> {

@@ -4691,3 +4691,94 @@ window gives the segment a meaningful sampling scale before the entire path is s
 </code></pre>
 
 <p>This effectively asks for one statistical view of the complete selected run at a 10B-flip observational scale.</p>
+
+___________________________________________________________________________
+╔═══════════════╗
+║20260919_101400║
+╚═══════════════╝
+
+2026-09-19 — BSP2_NET1 mature run archived and characterized
+
+The live BetSamePersistence2 / ClassicMetaGuess NET1 experiment has reached a
+mature horizon and the tracker has been committed to archive together with its
+primary segment report.
+
+Tracker:
+    BSP2_NET1.tkr
+
+Configuration:
+    source: NET1
+    outer anticipation: BetSamePersistence2
+    inner anticipation: ClassicMetaGuess
+    persistence window: 10B
+
+The run was intentionally left unchanged after activation. No parameter tuning
+was performed during accumulation.
+
+The mature report shows a result distinct from the earlier source-only
+SamePersistence run.
+
+At the 100B report scale, the ordinary anticipation path is essentially centered
+but slightly negative:
+
+    avgMeanA   = 50-6.84448e-06%
+    avgEndA    = 50-4.36507e-06%
+    endA >= 50 = 47.7778%
+
+The segment geometry remains dominated by excursion followed by unfavorable
+settlement:
+
+    Edge Excursion Score   = +0.586372
+    Edge Settlement Score  = -0.791785
+    Edge Persistence Index = -0.371699
+
+Retained summaries remain positive despite the slightly negative ordinary path:
+
+    Retained Anticipation            = 50+8.05588e-05%
+    Settlement Adjusted Anticipation = 50+8.55945e-05%
+
+Fine-grained analysis was then performed without changing the strategy.
+
+10B window / 10B segmentation:
+    segments               = 909
+    Edge Excursion Score   = +0.484600
+    Edge Settlement Score  = -0.791626
+    avgMeanA               = 50-1.03100e-05%
+    avgEndA                = 50-9.86275e-06%
+    Retained Anticipation  = 50+2.63068e-04%
+    Settlement Adjusted    = 50+3.65548e-04%
+
+100B window / 10B segmentation:
+    segments               = 900
+    Edge Excursion Score   = -0.380030
+    Edge Settlement Score  = -0.846997
+    avgMeanA               = 50-6.84448e-06%
+    avgEndA                = 50-6.63541e-06%
+    Retained Anticipation  = 50+1.22353e-04%
+    Settlement Adjusted    = 50+2.28436e-04%
+
+The longer 100B smoothing window therefore does not make BSP2 resemble the
+source-only SamePersistence result more closely. Instead it suppresses much of
+the positive local excursion geometry while leaving settlement negative.
+
+Heads/Tails behavior remains a weak explanatory candidate. At the 10B fine
+scale the anticipation/Heads correlations are small, while anticipation/TrueZ
+coupling remains strong.
+
+Interpretation:
+
+BetSamePersistence2 with ClassicMetaGuess appears to expose a different temporal
+geometry from direct SamePersistence. Its ordinary anticipation path is nearly
+balanced and slightly negative, while retained and settlement-adjusted summaries
+remain positive. This suggests that the result is not adequately described as a
+simple persistent directional edge or as a trivial sign inversion.
+
+Before the fine-grained inspection was completed, AntiMetaGuess was designated
+as the next exploratory inner strategy. That experiment will therefore serve as
+a clean sibling comparison of inner-strategy orientation rather than as a
+parameter chosen in response to one preferred fine-scale result.
+
+No additional window search is planned before that comparison.
+
+After system maintenance the following will be run in tmux from a TruthInTheFlip clone seperate from my Dev clone:
+TruthInTheFlip -create -record -print Detailed -window WindowByTotal 10000000000 -rsource NET1 -anticipation BetSamePersistence2 AntiMetaGuess WindowByTotal 10000000000 BSP2_AntiMetaGuess_NET1.tkr
