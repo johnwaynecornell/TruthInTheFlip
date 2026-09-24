@@ -4789,3 +4789,29 @@ ___________________________________________________________________________
 ╚═══════════════╝
 
 BSP2_AntiMetaGuess_NET1.tkr started.
+
+___________________________________________________________________________
+╔═══════════════╗
+║20260924_184045║
+╚═══════════════╝
+
+<p>BSP2_AntiMetaGuess_NET1,tkr reached maturity arround 11:05 AM today and has been committed to artifacts. with its
+primary segment report.</p>
+
+<h2><strong>Working null — the 50% ceiling</strong></h2>
+
+<p>The mature persistence experiments raise a more fundamental possibility: for a fair source, 50% may be the upper 
+causal limit of anticipation. Local structure, persistence, excursion, and regime geometry may remain observable 
+without providing usable information about the next unseen event.</p>
+
+<p>Under this interpretation, an anticipator built solely from prior observations has an expected success rate of 50%. 
+Individual strategies may wander above or below that level over finite intervals, and conditioning may expose 
+substantial local geometry, but no transformation of past information can create information about an independent future 
+event.</p>
+
+<p>The recurring combination observed here—large local excursions, unfavorable settlement, and mature anticipation paths
+ close to 50%—is compatible with this null. It does not establish the null, but it makes it an explicit hypothesis that 
+ future experiments must attempt to reject rather than implicitly assuming an exploitable edge exists.</p>
+ 
+<p>This distinction is important to the project: <strong>detectable structure need not imply anticipatable
+ structure.</strong></p>

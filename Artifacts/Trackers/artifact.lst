@@ -8,3 +8,4 @@ Quant2.tkr // -rsource Quantis PCI 0
 
 SamePersistence.NET1.tkr // -rsource NET1 -anticipation SamePersistence WindowByTotal 10000000000
 BSP2_NET1.tkr // -rsource NET1 -anticipation BetSamePersistence2 ClassicMetaGuess WindowByTotal 10000000000
+BSP2_AntiMetaGuess_NET1.tkr // -rsource NET1 -anticipation BetSamePersistence2 AntiMetaGuess WindowByTotal 10000000000
