@@ -4966,3 +4966,170 @@ The next step is to apply the same unchanged 10,000-trial conditional-null proce
 Classic BSP2 tracker records. No new strategy, window, metric set, or null model will be selected before those sibling 
 comparisons are complete.
 </p>
+
+___________________________________________________________________________
+╔═══════════════╗
+║20260925_175245║
+╚═══════════════╝
+
+<h2>Conditional Null Comparison — SamePersistence Separates</h2>
+
+<p>
+The frozen 10,000-trial conditional-null procedure has now been applied to the
+three mature live persistence experiments:
+</p>
+
+<ul>
+    <li><code>BSP2_AntiMetaGuess_NET1.tkr</code></li>
+    <li><code>BSP2_NET1.tkr</code></li>
+    <li><code>SamePersistence.NET1.tkr</code></li>
+</ul>
+
+<p>
+All three used the same frozen analysis configuration:
+</p>
+
+<pre><code>window:
+    10B
+
+segmentation:
+    10B
+
+trials:
+    10,000
+
+base seed:
+    897234
+
+null:
+    preserve historical per-snapshot predictor orientation
+    regenerate fair independent source outcomes
+</code></pre>
+
+<p>
+The two BetSamePersistence2 records remained comfortably inside their
+corresponding conditional-null populations.
+</p>
+
+<p>
+For the ClassicMetaGuess-conditioned BSP2 run:
+</p>
+
+<pre><code>EdgeExcursionScore
+    percentile: 60.3%
+
+EdgeSettlementScore
+    percentile: 55.5%
+
+EdgePersistenceIndex
+    percentile: 84.6%
+
+RetainedAnticipation
+    percentile: 41.4%
+
+SettlementAdjustedAnticipation
+    percentile: 26.2%
+</code></pre>
+
+<p>
+The AntiMetaGuess-conditioned sibling likewise showed no unusual displacement
+relative to its conditional null.
+</p>
+
+<p>
+SamePersistence, however, separated from this pattern.
+</p>
+
+<pre><code>EdgeExcursionScore
+    observed:    +0.566230
+    percentile:  98.0%
+    upper tail:  0.0197
+
+EdgeSettlementScore
+    observed:    -0.718744
+    percentile:  98.0%
+    upper tail:  0.0203
+
+RetainedAnticipation
+    observed:    50+3.04026e-04%
+    null median: 50+2.66181e-04%
+    percentile:  99.7%
+    upper tail:  0.0034
+
+AvgMeanA
+    observed:    50+4.31781e-05%
+    percentile:  99.6%
+    upper tail:  0.0043
+
+AvgEndA
+    observed:    50+4.34439e-05%
+    percentile:  99.6%
+    upper tail:  0.0040
+</code></pre>
+
+<p>
+This does not yet establish exploitable forward information.
+The current null is conditional on the historical decisions actually made by
+the strategy. It asks whether those realized decisions encountered unusually
+favorable outcomes under the report geometry.
+</p>
+
+<p>
+For SamePersistence, the answer is now materially different from the two BSP2
+siblings: several preselected statistics occupy unusually high positions in
+their corresponding conditional-null distributions.
+</p>
+
+<p>
+The result therefore identifies a seam rather than completing the test.
+</p>
+
+<blockquote>
+The next question is no longer whether the observed SamePersistence report
+looks unusual given its historical decisions. It does. The next question is
+whether that separation survives when SamePersistence itself is rerun on fresh
+fair histories and is allowed to generate a new decision path in every trial.
+</blockquote>
+
+<p>
+The next planned control is therefore a full algorithmic null:
+</p>
+
+<pre><code>fresh fair source
+    ↓
+same live SamePersistence implementation
+    ↓
+same ~200M merged-master update cadence
+    ↓
+same 10B rolling window
+    ↓
+same 10B segmentation
+    ↓
+same frozen report metrics
+</code></pre>
+
+<p>
+No new threshold, alternate window, nearby persistence rule, or strategy variant
+will be selected from the opened SamePersistence record before that control is
+defined.
+</p>
+
+<p>
+A useful semantic observation also emerged during review:
+</p>
+
+<pre><code>SamePercentage &lt; DiffPercentage
+</code></pre>
+
+<p>
+is mathematically equivalent to:
+</p>
+
+<pre><code>SamePercentage &lt; 50%
+</code></pre>
+
+<p>
+and therefore describes the existing SamePersistence decision rule exactly.
+The strategy is already choosing the transition type that dominated the
+completed source window.
+</p>
