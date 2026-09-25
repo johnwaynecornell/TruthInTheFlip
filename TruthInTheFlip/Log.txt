@@ -4823,3 +4823,146 @@ ___________________________________________________________________________
 
 <p>No new anticipation strategy or window size will be selected until the current mature strategies have been evaluated 
 against the frozen 50% null pipeline.</p>
+
+___________________________________________________________________________
+╔═══════════════╗
+║20260925_091413║
+╚═══════════════╝
+
+<h2>Conditional Null Pipeline Completed</h2>
+
+<p>
+The conditional-null experiment infrastructure is now implemented, tested, and merged into the main TruthInTheFlip 
+development line.
+</p>
+
+<p>
+The new experimental Farm path preserves the historical per-snapshot predictor orientation from a mature tracker, 
+replaces realized outcomes with a fair independent source, and replays the resulting synthetic tracker through the same 
+rolling-window, segmentation, and aggregate-report machinery used for the observed record.
+</p>
+
+<p>
+The implementation now includes:
+</p>
+
+<ul>
+    <li>a reusable conditional-null schedule materialized from the historical tracker,</li>
+    <li>deterministic seeded single-trial replay,</li>
+    <li>a typed multi-trial <code>FarmProcess</code>,</li>
+    <li>machine-readable <code>csv</code>, <code>json</code>, and <code>pretty</code> trial output,</li>
+    <li>and a curated <code>null_report</code> comparing observed statistics with an empirical null population.</li>
+</ul>
+
+<p>
+The primary experiment was frozen before the main run:
+</p>
+
+<pre><code>source:
+    BSP2_AntiMetaGuess_NET1.tkr
+
+conditional null:
+    preserve historical per-snapshot predictor orientation
+    regenerate fair independent source outcomes
+
+window:
+    10B
+
+segmentation:
+    10B
+
+trials:
+    10,000
+
+base seed:
+    897234
+</code></pre>
+
+<p>
+The completed run was:
+</p>
+
+<pre><code>TruthInTheFlip_Farm_Experimental \
+    null_report 10000 897234 \
+    conditioned file ../Artifacts/Trackers/BSP2_AntiMetaGuess_NET1.tkr \
+    by_total 10B \
+    by_total 10B
+</code></pre>
+
+<p>
+The observed mature AntiMetaGuess BSP2 statistics all fell comfortably inside their corresponding empirical 
+conditional-null distributions.
+</p>
+
+<pre><code>EdgeExcursionScore
+    observed percentile: 88.0%
+    upper tail:          0.1201
+
+EdgeSettlementScore
+    observed percentile: 30.5%
+
+EdgePersistenceIndex
+    observed percentile: 15.3%
+
+RetainedAnticipation
+    observed percentile: 40.9%
+
+SettlementAdjustedAnticipation
+    observed percentile: 14.2%
+</code></pre>
+
+<p>
+Two previously interesting-looking positive anticipation measures were especially informative:
+</p>
+
+<pre><code>RetainedAnticipation
+    observed:    50+2.62866e-04%
+    null median: 50+2.66143e-04%
+
+SettlementAdjustedAnticipation
+    observed:    50+3.51503e-04%
+    null median: 50+3.86300e-04%
+</code></pre>
+
+<p>
+In both cases, positive offsets of the observed magnitude arose naturally under the conditional fair-source null. The 
+settlement-adjusted value was actually below most of the null population.
+</p>
+
+<p>
+The null population also reproduced the broader report geometry that had repeatedly appeared across mature tracker 
+reports:
+</p>
+
+<pre><code>positive excursion
+negative settlement
+negative persistence index
+positive retained anticipation
+positive settlement-adjusted anticipation
+</code></pre>
+
+<p>
+This is an important methodological result. It indicates that much of the recurring excursion/settlement structure can 
+arise from the analysis construction and preserved predictor-orientation schedule itself, without requiring unusual 
+forward predictive information in the realized source.
+</p>
+
+<blockquote>
+Detectable structure need not imply anticipatable structure.
+</blockquote>
+
+<p>
+This experiment does not establish a universal 50% upper bound on anticipation. It answers the narrower frozen question: 
+given the historical decisions made by this mature strategy, were the realized report statistics unusually favorable 
+relative to a fair independent source?
+</p>
+
+<p>
+For this record and this frozen analysis, the answer is no.
+</p>
+
+<p>
+The next step is to apply the same unchanged 10,000-trial conditional-null procedure to the mature SamePersistence and 
+Classic BSP2 tracker records. No new strategy, window, metric set, or null model will be selected before those sibling 
+comparisons are complete.
+</p>
