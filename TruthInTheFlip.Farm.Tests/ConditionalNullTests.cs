@@ -495,4 +495,343 @@ public sealed class ConditionalNullTests
         // Mean should easily fall within 5 standard errors
         Assert.InRange(mean, expectedMean - 5 * seOfMean, expectedMean + 5 * seOfMean);
     }
+
+    [Fact]
+    public void NullTrialProcess_EmitsExactOrderedDeterministicTrials()
+    {
+        string path = CreateTestTrackerFile(recordCount: 20, stepTotal: 100);
+        try
+        {
+            var source = TruthInTheFlip_Fluent.Tracker(path);
+            var spec = new ConditionalNullSpec(source);
+            var window = TrackerWindows.TrackerWindow.ByTotal(new Count(500));
+            var seg = TruthInTheFlip_Fluent.by_total(new Count(1000));
+
+            int trialCount = 5;
+            ulong baseSeed = 20260925UL;
+
+            var process1 = new NullTrialProcess(trialCount, baseSeed, spec, window, seg);
+            using var output1 = new StringWriter();
+            var ctx1 = new FarmContext { Output = output1, ErrorOutput = output1 };
+
+            List<NullTrialStats> items1 = new();
+            process1.Actions.Process = (c, item) => items1.Add((NullTrialStats)item);
+            process1.Execute(ctx1);
+
+            Assert.Equal(trialCount, items1.Count);
+            for (int i = 0; i < trialCount; i++)
+            {
+                Assert.Equal(i, items1[i].TrialIndex);
+                if (i == 0)
+                    Assert.Equal(baseSeed, items1[i].Seed);
+                else
+                    Assert.Equal(NullTrialProcess.DeriveTrialSeed(baseSeed, i), items1[i].Seed);
+            }
+
+            // Determinism check: second execution produces identical metrics
+            var process2 = new NullTrialProcess(trialCount, baseSeed, spec, window, seg);
+            List<NullTrialStats> items2 = new();
+            process2.Actions.Process = (c, item) => items2.Add((NullTrialStats)item);
+            process2.Execute(ctx1);
+
+            Assert.Equal(items1.Count, items2.Count);
+            for (int i = 0; i < trialCount; i++)
+            {
+                Assert.Equal(items1[i].Seed, items2[i].Seed);
+                Assert.Equal(items1[i].EdgeExcursionScore, items2[i].EdgeExcursionScore);
+                Assert.Equal(items1[i].EdgeSettlementScore, items2[i].EdgeSettlementScore);
+                Assert.Equal(items1[i].EdgePersistenceIndex, items2[i].EdgePersistenceIndex);
+                Assert.Equal(items1[i].RetainedAnticipation, items2[i].RetainedAnticipation);
+                Assert.Equal(items1[i].SettlementAdjustedAnticipation, items2[i].SettlementAdjustedAnticipation);
+            }
+
+            // Variation check: different baseSeed produces different population
+            var process3 = new NullTrialProcess(trialCount, 99999999UL, spec, window, seg);
+            List<NullTrialStats> items3 = new();
+            process3.Actions.Process = (c, item) => items3.Add((NullTrialStats)item);
+            process3.Execute(ctx1);
+
+            Assert.NotEqual(items1[0].Seed, items3[0].Seed);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void NullTrial_MatchesFirstTrialOfNullTrials_ForSameSeed()
+    {
+        string path = CreateTestTrackerFile(recordCount: 20, stepTotal: 100);
+        try
+        {
+            var source = TruthInTheFlip_Fluent.Tracker(path);
+            var spec = new ConditionalNullSpec(source);
+            var window = TrackerWindows.TrackerWindow.ByTotal(new Count(500));
+            var seg = TruthInTheFlip_Fluent.by_total(new Count(1000));
+            ulong seed = 20260925UL;
+
+            // Single trial run
+            var schedule = spec.MaterializeSchedule();
+            using var sw = new StringWriter();
+            var ctx = new FarmContext { Output = sw, ErrorOutput = sw };
+
+            var (aggSingle, segCountSingle, _) = NullTrialCommand.RunTrial(
+                schedule, seed, window, seg, ctx);
+
+            // NullTrialProcess run
+            var process = new NullTrialProcess(3, seed, spec, window, seg);
+            List<NullTrialStats> trials = new();
+            process.Actions.Process = (c, item) => trials.Add((NullTrialStats)item);
+            process.Execute(ctx);
+
+            var trial0 = trials[0];
+
+            Assert.Equal(seed, trial0.Seed);
+            Assert.Equal(segCountSingle, trial0.SegmentCount);
+            Assert.Equal(aggSingle.EdgeExcursionScore, trial0.EdgeExcursionScore);
+            Assert.Equal(aggSingle.EdgeSettlementScore, trial0.EdgeSettlementScore);
+            Assert.Equal(aggSingle.EdgePersistenceIndex, trial0.EdgePersistenceIndex);
+            Assert.Equal(aggSingle.AvgMeanA, trial0.AvgMeanA);
+            Assert.Equal(aggSingle.AvgEndA, trial0.AvgEndA);
+            Assert.Equal(aggSingle.AvgMeanZHeads, trial0.AvgMeanZHeads);
+            Assert.Equal(aggSingle.AvgEndZHeads, trial0.AvgEndZHeads);
+            Assert.Equal(aggSingle.RetainedAnticipation, trial0.RetainedAnticipation);
+            Assert.Equal(aggSingle.SettlementAdjustedAnticipation, trial0.SettlementAdjustedAnticipation);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void Schedule_IsMaterializedOnce_AcrossMultipleTrials()
+    {
+        string path = CreateTestTrackerFile(recordCount: 15, stepTotal: 100);
+        try
+        {
+            int streamOpenCount = 0;
+            var rawSource = TruthInTheFlip_Fluent.Tracker(path);
+
+            var countingSource = new TrackerSelector(() =>
+            {
+                streamOpenCount++;
+                return rawSource.Source();
+            }, isAccumulated: true);
+
+            var spec = new ConditionalNullSpec(countingSource);
+            var window = TrackerWindows.TrackerWindow.ByTotal(new Count(500));
+            var seg = TruthInTheFlip_Fluent.by_total(new Count(1000));
+
+            var process = new NullTrialProcess(10, 20260925UL, spec, window, seg);
+            using var sw = new StringWriter();
+            var ctx = new FarmContext { Output = sw, ErrorOutput = sw };
+
+            List<NullTrialStats> trials = new();
+            process.Actions.Process = (c, item) => trials.Add((NullTrialStats)item);
+            process.Execute(ctx);
+
+            Assert.Equal(10, trials.Count);
+            // Must open underlying stream exactly once to materialize the schedule
+            Assert.Equal(1, streamOpenCount);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void EmpiricalMetricSummary_CalculatesPercentileAndCorrectedTailsCorrectly()
+    {
+        List<double> nullPop = [10.0, 20.0, 30.0, 40.0, 50.0];
+
+        // Case 1: Median observed value (30.0)
+        var sMid = EmpiricalMetricSummary.Compute("TestMetric", 30.0, nullPop);
+        Assert.Equal(30.0, sMid.NullMean, precision: 6);
+        Assert.Equal(30.0, sMid.NullMedian, precision: 6);
+        Assert.Equal(15.811388, sMid.NullStdDev, precision: 4);
+        Assert.Equal(60.0, sMid.Percentile, precision: 6); // 3 of 5 <= 30
+        Assert.Equal(4.0 / 6.0, sMid.LowerTail, precision: 6); // (3 + 1) / (5 + 1) = 4/6
+        Assert.Equal(4.0 / 6.0, sMid.UpperTail, precision: 6); // (3 + 1) / (5 + 1) = 4/6
+
+        // Case 2: Observed strictly lower than all null values (5.0)
+        var sLow = EmpiricalMetricSummary.Compute("TestMetric", 5.0, nullPop);
+        Assert.Equal(0.0, sLow.Percentile, precision: 6); // 0 of 5 <= 5
+        Assert.Equal(1.0 / 6.0, sLow.LowerTail, precision: 6); // (0 + 1) / (5 + 1) = 1/6 (> 0)
+        Assert.Equal(6.0 / 6.0, sLow.UpperTail, precision: 6); // (5 + 1) / (5 + 1) = 6/6
+
+        // Case 3: Observed strictly higher than all null values (55.0)
+        var sHigh = EmpiricalMetricSummary.Compute("TestMetric", 55.0, nullPop);
+        Assert.Equal(100.0, sHigh.Percentile, precision: 6); // 5 of 5 <= 55
+        Assert.Equal(6.0 / 6.0, sHigh.LowerTail, precision: 6); // (5 + 1) / (5 + 1) = 6/6
+        Assert.Equal(1.0 / 6.0, sHigh.UpperTail, precision: 6); // (0 + 1) / (5 + 1) = 1/6 (> 0)
+
+        // Percentiles linear interpolation check
+        Assert.Equal(12.0, sMid.NullP05, precision: 6); // 10 + 0.05 * 4 * 10 = 12
+        Assert.Equal(48.0, sMid.NullP95, precision: 6); // 50 - 0.05 * 4 * 10 = 48
+    }
+
+    [Fact]
+    public void FluentCommandLine_ParsesNullTrialsAndNullReport_InExperimentalEnvironment()
+    {
+        string path = CreateTestTrackerFile(recordCount: 20, stepTotal: 100);
+        try
+        {
+            var env = new FluentEnvironment();
+            env.AddModule<TruthInTheFlip_Fluent>();
+            env.AddModule<ConditionalNullSpec>();
+            env.AddModule<NullTrialCommand>();
+            env.AddModule<NullTrialProcess>();
+            env.AddModule<NullReportCommand>();
+            env.ServeTypes = new[] { typeof(FarmCommand) };
+
+            // 1. null_report command
+            List<string> reportArgs = new()
+            {
+                "null_report",
+                "3",
+                "20260925",
+                "conditioned",
+                "file",
+                path,
+                "by_total",
+                "500",
+                "by_total",
+                "1000"
+            };
+
+            int cursor1 = 0;
+            var resReport = env.ParseOne(reportArgs, ref cursor1);
+
+            Assert.NotNull(resReport);
+            Assert.IsAssignableFrom<FarmCommand>(resReport.Result);
+            Assert.Equal(reportArgs.Count, cursor1);
+
+            var cmdReport = (FarmCommand)resReport.Result!;
+            using var swReport = new StringWriter(CultureInfo.InvariantCulture);
+            var ctxReport = new FarmContext { Output = swReport, ErrorOutput = swReport };
+            cmdReport.Execute(ctxReport);
+
+            string reportText = swReport.ToString();
+            Assert.Contains("=== Null Distribution Report ===", reportText);
+            Assert.Contains("Trials                : 3", reportText);
+            Assert.Contains("EdgeExcursionScore", reportText);
+            Assert.Contains("EdgeSettlementScore", reportText);
+            Assert.Contains("RetainedAnticipation", reportText);
+            Assert.Contains("SettlementAdjustedAnticipation", reportText);
+
+            // 2. csv null_trials command
+            List<string> csvArgs = new()
+            {
+                "csv",
+                "null_trials",
+                "3",
+                "20260925",
+                "conditioned",
+                "file",
+                path,
+                "by_total",
+                "500",
+                "by_total",
+                "1000",
+                "TrialIndex",
+                "Seed",
+                "EdgeExcursionScore",
+                "SettlementAdjustedAnticipation"
+            };
+
+            int cursor2 = 0;
+            var resCsv = env.ParseOne(csvArgs, ref cursor2);
+
+            Assert.NotNull(resCsv);
+            Assert.IsAssignableFrom<FarmCommand>(resCsv.Result);
+            Assert.Equal(csvArgs.Count, cursor2);
+
+            var cmdCsv = (FarmCommand)resCsv.Result!;
+            using var swCsv = new StringWriter(CultureInfo.InvariantCulture);
+            var ctxCsv = new FarmContext { Output = swCsv, ErrorOutput = swCsv };
+            cmdCsv.Execute(ctxCsv);
+
+            string csvText = swCsv.ToString();
+            string[] lines = csvText.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+            Assert.Equal(4, lines.Length); // 1 header + 3 rows
+            Assert.Contains("TrialIndex,Seed,EdgeExcursionScore,SettlementAdjustedAnticipation", lines[0]);
+            Assert.StartsWith("0,20260925,", lines[1]);
+
+            // 3. json null_trials command
+            List<string> jsonArgs = new()
+            {
+                "json",
+                "null_trials",
+                "2",
+                "20260925",
+                "conditioned",
+                "file",
+                path,
+                "by_total",
+                "500",
+                "by_total",
+                "1000",
+                "TrialIndex",
+                "Seed",
+                "EdgeExcursionScore"
+            };
+
+            int cursor3 = 0;
+            var resJson = env.ParseOne(jsonArgs, ref cursor3);
+
+            Assert.NotNull(resJson);
+            var cmdJson = (FarmCommand)resJson.Result!;
+            using var swJson = new StringWriter(CultureInfo.InvariantCulture);
+            var ctxJson = new FarmContext { Output = swJson, ErrorOutput = swJson };
+            cmdJson.Execute(ctxJson);
+
+            string jsonText = swJson.ToString();
+            string[] jsonLines = jsonText.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+            Assert.Equal(2, jsonLines.Length);
+            Assert.Contains("\"TrialIndex\":0", jsonLines[0]);
+            Assert.Contains("\"Seed\":20260925", jsonLines[0]);
+            Assert.Contains("\"EdgeExcursionScore\":", jsonLines[0]);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void StableFarmEnvironment_DoesNotExposeNullTrialsOrNullReport()
+    {
+        string path = CreateTestTrackerFile(recordCount: 10, stepTotal: 100);
+        try
+        {
+            var env = new FluentEnvironment();
+            env.AddModule<TruthInTheFlip_Fluent>();
+            env.ServeTypes = new[] { typeof(FarmCommand) };
+
+            List<string> args1 = new()
+            {
+                "null_report", "5", "20260925", "conditioned", "file", path, "by_total", "500", "by_total", "1000"
+            };
+            int cursor1 = 0;
+            var res1 = env.ParseOne(args1, ref cursor1);
+            Assert.Null(res1);
+            Assert.Equal(0, cursor1);
+
+            List<string> args2 = new()
+            {
+                "csv", "null_trials", "5", "20260925", "conditioned", "file", path, "by_total", "500", "by_total", "1000", "TrialIndex"
+            };
+            int cursor2 = 0;
+            var res2 = env.ParseOne(args2, ref cursor2);
+            Assert.Null(res2);
+            Assert.Equal(0, cursor2);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
 }

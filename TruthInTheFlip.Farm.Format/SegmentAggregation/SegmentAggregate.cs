@@ -122,8 +122,14 @@ public class SegmentAggregate : StatsBase<SegmentStats>
     [StringHelp("The percent of best TrueZ >= 1.96 from the SegmentStats.")]
     public double PctBestAtLeast_1_96 => PctBestAtLeast(1.96);
     [IsMetric("TruthInTheFlip.v1.1.0")]
+    [StringHelp("The percent of end TrueZ >= 0.00 from the SegmentStats.")]
+    public double PctEndAtLeast_0 => PctEndAtLeast(0.0);
+    [IsMetric("TruthInTheFlip.v1.1.0")]
     [StringHelp("The percent of end TrueZ >= 1.96 from the SegmentStats.")]
     public double PctEndAtLeast_1_96 => PctEndAtLeast(1.96);
+    [IsMetric("TruthInTheFlip.v1.1.0")]
+    [StringHelp("The percent of mean TrueZ >= 0.00 from the SegmentStats.")]
+    public double PctMeanAtLeast_0 => PctMeanAtLeast(0.0);
     [IsMetric("TruthInTheFlip.v1.1.0")]
     [StringHelp("The percent of mean TrueZ >= 1.96 from the SegmentStats.")]
     public double PctMeanAtLeast_1_96 => PctMeanAtLeast(1.96);

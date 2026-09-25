@@ -50,6 +50,8 @@ public class Experimental
     {   
         env.AddModule<ConditionalNullSpec>();
         env.AddModule<NullTrialCommand>();
+        env.AddModule<NullTrialProcess>();
+        env.AddModule<NullReportCommand>();
 
         env.Context.Get<MetricCatalogs>().TryGet(typeof(Tracker), out var tracker_catalog);
         
