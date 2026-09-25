@@ -63,9 +63,9 @@ public class SegmentStatsReport
         message();
         message("=== Segment Report ===");
         
-        double edgeExcursionScore = agg.MedianBestTrueZ;
-        double edgeSettlementScore = agg.AvgEndTrueZ;
-        double edgePersistenceIndex = agg.AvgEndTrueZ * (agg.AvgPctAbove50 / 100.0);
+        double edgeExcursionScore = agg.EdgeExcursionScore;
+        double edgeSettlementScore = agg.EdgeSettlementScore;
+        double edgePersistenceIndex = agg.EdgePersistenceIndex;
 
         if (grade >= Grade.Low)
         {
@@ -167,31 +167,10 @@ public class SegmentStatsReport
 
         if (grade >= Grade.All)
         {
-            //RetainedAnticipation = Σ(segmentMeanA * pctAbove50Fraction) / Σ(pctAbove50Fraction)
-            //SettlementAdjustedAnticipation = mean(segmentMeanA * clampPositive(segmentEndTrueZ))
-            double sumPctAbove50Fraction = 0;
-            double sumRetainedAnticipation = 0;
-
-            double sumSegmentEndTrueZ = 0;
-            double sumSettlementAdjustedAnticipation = 0;
-
-            foreach (SegmentStats s in segments)
-            {
-                sumPctAbove50Fraction += s.PctAbove50;
-                sumRetainedAnticipation += s.MeanA * s.PctAbove50;
-
-                double segmentEndTrueZ = double.Max(0, s.EndTrueZ);
-                sumSegmentEndTrueZ += segmentEndTrueZ;
-                sumSettlementAdjustedAnticipation += s.MeanA * segmentEndTrueZ;
-            }
-
-            double retainedAnticipation =
-                sumPctAbove50Fraction == 0 ? double.NaN : sumRetainedAnticipation / sumPctAbove50Fraction;
+            double retainedAnticipation = agg.RetainedAnticipation;
             message($"Retained Anticipation: {Tracker.FormatOffset(retainedAnticipation, "0.00000e+00")}");
 
-            double settlementAdjustedAnticipation = sumSegmentEndTrueZ == 0
-                ? double.NaN
-                : sumSettlementAdjustedAnticipation / sumSegmentEndTrueZ;
+            double settlementAdjustedAnticipation = agg.SettlementAdjustedAnticipation;
             message(
                 $"Settlement Adjusted Anticipation: {Tracker.FormatOffset(settlementAdjustedAnticipation, "0.00000e+00")}");
 

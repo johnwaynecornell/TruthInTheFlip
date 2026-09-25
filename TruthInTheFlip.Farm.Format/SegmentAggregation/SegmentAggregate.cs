@@ -26,11 +26,58 @@ public class SegmentAggregate : StatsBase<SegmentStats>
     public double MedianBestTrueZ => Median(_best);
 
     [IsMetric("TruthInTheFlip.v1.1.0")]
+    [StringHelp("Median of best TrueZ across segments.")]
+    public double EdgeExcursionScore => MedianBestTrueZ;
+
+    [IsMetric("TruthInTheFlip.v1.1.0")]
     [StringHelp("The average end TrueZ from the SegmentStats.")]
     public double AvgEndTrueZ => _segments.Average(s => s.EndTrueZ);
     [IsMetric("TruthInTheFlip.v1.1.0")]
     [StringHelp("The median end TrueZ from the SegmentStats.")]
     public double MedianEndTrueZ => Median(_end);
+
+    [IsMetric("TruthInTheFlip.v1.1.0")]
+    [StringHelp("Mean of end TrueZ across segments.")]
+    public double EdgeSettlementScore => AvgEndTrueZ;
+
+    [IsMetric("TruthInTheFlip.v1.1.0")]
+    [StringHelp("Settlement score scaled by fraction of time above 50%.")]
+    public double EdgePersistenceIndex => AvgEndTrueZ * (AvgPctAbove50 / 100.0);
+
+    [IsMetric("TruthInTheFlip.v1.1.0")]
+    [StringHelp("Weighted anticipation mean weighted by fraction of time above 50%.")]
+    public double RetainedAnticipation
+    {
+        get
+        {
+            double sumPctAbove50Fraction = 0;
+            double sumRetainedAnticipation = 0;
+            foreach (var s in _segments)
+            {
+                sumPctAbove50Fraction += s.PctAbove50;
+                sumRetainedAnticipation += s.MeanA * s.PctAbove50;
+            }
+            return sumPctAbove50Fraction == 0 ? double.NaN : sumRetainedAnticipation / sumPctAbove50Fraction;
+        }
+    }
+
+    [IsMetric("TruthInTheFlip.v1.1.0")]
+    [StringHelp("Anticipation mean weighted by positive settlement.")]
+    public double SettlementAdjustedAnticipation
+    {
+        get
+        {
+            double sumSegmentEndTrueZ = 0;
+            double sumSettlementAdjustedAnticipation = 0;
+            foreach (var s in _segments)
+            {
+                double segmentEndTrueZ = double.Max(0, s.EndTrueZ);
+                sumSegmentEndTrueZ += segmentEndTrueZ;
+                sumSettlementAdjustedAnticipation += s.MeanA * segmentEndTrueZ;
+            }
+            return sumSegmentEndTrueZ == 0 ? double.NaN : sumSettlementAdjustedAnticipation / sumSegmentEndTrueZ;
+        }
+    }
 
     [IsMetric("TruthInTheFlip.v1.1.0")]
     [StringHelp("The average mean TrueZ from the SegmentStats.")]
