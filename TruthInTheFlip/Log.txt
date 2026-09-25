@@ -4815,3 +4815,11 @@ event.</p>
  
 <p>This distinction is important to the project: <strong>detectable structure need not imply anticipatable
  structure.</strong></p>
+
+___________________________________________________________________________
+╔═══════════════╗
+║20260925_091413║
+╚═══════════════╝
+
+<p>No new anticipation strategy or window size will be selected until the current mature strategies have been evaluated 
+against the frozen 50% null pipeline.</p>
