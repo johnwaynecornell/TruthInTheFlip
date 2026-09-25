@@ -23,8 +23,6 @@ public class TruthInTheFlip_Fluent
         env.AddModule<TrackerWindows.TrackerWindow>();
         env.AddModule<TrackerBoundarys>();
         env.AddModule<SegmentStatsReport>();
-        env.AddModule<ConditionalNullSpec>();
-        env.AddModule<NullTrialCommand>();
 
         if (!env.Context.TryGet<MetricCatalogs>(out var catalogs))
         {

@@ -48,6 +48,9 @@ public class Experimental
     
     public static void AddToEnv(FluentEnvironment env)
     {   
+        env.AddModule<ConditionalNullSpec>();
+        env.AddModule<NullTrialCommand>();
+
         env.Context.Get<MetricCatalogs>().TryGet(typeof(Tracker), out var tracker_catalog);
         
         tracker_catalog.Add(TruthInTheFlip_Fluent.MetricLoadStaticFromMethod(typeof(Experimental).GetMethod("standardizedDirectionTail"), true));

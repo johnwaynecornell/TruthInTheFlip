@@ -336,13 +336,79 @@ public sealed class ConditionalNullTests
     }
 
     [Fact]
+    public void Conditioned_ThrowsFarmInputException_WhenSourceNotAccumulated()
+    {
+        string path = CreateTestTrackerFile(recordCount: 10, stepTotal: 100);
+        try
+        {
+            var rawSource = TruthInTheFlip_Fluent.Tracker(path);
+            var windowedSource = TrackerWindows.Window(
+                TrackerWindows.TrackerWindow.ByTotal(new Count(500)),
+                rawSource);
+
+            Assert.False(windowedSource.IsAccumulated);
+
+            FarmInputException ex = Assert.Throws<FarmInputException>(() =>
+            {
+                ConditionalNullSpec.Conditioned(windowedSource);
+            });
+
+            Assert.Contains("accumulated historical tracker source", ex.Message);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void StableFarmEnvironment_DoesNotExposeNullTrialOrConditioned()
+    {
+        string path = CreateTestTrackerFile(recordCount: 10, stepTotal: 100);
+        try
+        {
+            // Stable environment registers only TruthInTheFlip_Fluent
+            var env = new FluentEnvironment();
+            env.AddModule<TruthInTheFlip_Fluent>();
+            env.ServeTypes = new[] { typeof(FarmCommand) };
+
+            List<string> args = new()
+            {
+                "null_trial",
+                "20260925",
+                "conditioned",
+                "file",
+                path,
+                "by_total",
+                "500",
+                "by_total",
+                "1000"
+            };
+
+            int cursor = 0;
+            var res = env.ParseOne(args, ref cursor);
+
+            // In stable environment, null_trial is unrecognized
+            Assert.Null(res);
+            Assert.Equal(0, cursor);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
     public void FluentCommandLine_ParsesNullTrialCommandCorrectly()
     {
         string path = CreateTestTrackerFile(recordCount: 20, stepTotal: 100);
         try
         {
+            // Experimental environment registers TruthInTheFlip_Fluent + experimental modules
             var env = new FluentEnvironment();
             env.AddModule<TruthInTheFlip_Fluent>();
+            env.AddModule<ConditionalNullSpec>();
+            env.AddModule<NullTrialCommand>();
             env.ServeTypes = new[] { typeof(FarmCommand) };
 
             List<string> args = new()
@@ -387,5 +453,46 @@ public sealed class ConditionalNullTests
         {
             File.Delete(path);
         }
+    }
+
+    [Fact]
+    public void FastBinomialSampler_SanityAndBoundsTest()
+    {
+        var sampler1 = new FastBinomialSampler(12345UL);
+        var sampler2 = new FastBinomialSampler(12345UL);
+
+        long[] testN = [1, 10, 64, 100, 256, 1_000, 200_000_000L];
+
+        foreach (long n in testN)
+        {
+            // Determinism on same seed
+            long s1 = sampler1.Sample(n, 0.5);
+            long s2 = sampler2.Sample(n, 0.5);
+            Assert.Equal(s1, s2);
+
+            // Bounded in [0, n]
+            Assert.InRange(s1, 0, n);
+        }
+
+        // Statistical sanity for large batch size (M = 200,000,000) over 1000 samples
+        long batchSize = 200_000_000L;
+        int trials = 1000;
+        double sum = 0;
+        var sampler = new FastBinomialSampler(987654321UL);
+
+        for (int i = 0; i < trials; i++)
+        {
+            long sample = sampler.Sample(batchSize, 0.5);
+            Assert.InRange(sample, 0, batchSize);
+            sum += sample;
+        }
+
+        double mean = sum / trials;
+        double expectedMean = batchSize * 0.5; // 100,000,000
+        double stdDev = 0.5 * Math.Sqrt(batchSize); // ~7071.0678
+        double seOfMean = stdDev / Math.Sqrt(trials); // ~223.6
+
+        // Mean should easily fall within 5 standard errors
+        Assert.InRange(mean, expectedMean - 5 * seOfMean, expectedMean + 5 * seOfMean);
     }
 }

@@ -2,15 +2,58 @@ namespace TruthInTheFlip.Farm.Format;
 
 /// <summary>
 /// Abstraction for generating binomial random variates under a given probability.
+/// Serves as the replacement seam for alternative exact or specialized large-n sampling algorithms.
 /// </summary>
 public interface IBinomialSampler
 {
+    /// <summary>
+    /// Samples a single binomial variate ~ Binomial(n, p).
+    /// </summary>
+    /// <param name="n">Number of independent Bernoulli trials (must be non-negative).</param>
+    /// <param name="p">Probability of success in each trial (default: 0.5 for fair null).</param>
+    /// <returns>Number of successes k in [0, n].</returns>
     long Sample(long n, double p = 0.5);
 }
 
 /// <summary>
 /// Fast, deterministic pseudo-random binomial sampler using Xoshiro256** and hybrid exact/Gaussian methods.
 /// </summary>
+/// <remarks>
+/// <para>
+/// <b>Random Number Generation:</b>
+/// Initialized with a 64-bit seed, expanded via SplitMix64 into a 256-bit internal state for the Xoshiro256** generator.
+/// </para>
+/// <para>
+/// <b>Sampling Regimes for p = 0.5 (Fair Coin Null):</b>
+/// <list type="bullet">
+/// <item>
+/// <description>
+/// <b>Small n (n &lt;= 64):</b> Exact sampling using hardware bit popcount (<see cref="System.Numerics.BitOperations.PopCount"/>)
+/// over a single uniform 64-bit integer.
+/// </description>
+/// </item>
+/// <item>
+/// <description>
+/// <b>Medium n (65 &lt;= n &lt;= 256):</b> Exact sampling via chunked 64-bit popcount loops (up to 4 iterations).
+/// </description>
+/// </item>
+/// <item>
+/// <description>
+/// <b>Large n (n &gt; 256):</b> Gaussian diffusion approximation with Box-Muller transform:
+/// <c>k = round(0.5 * n + 0.5 * sqrt(n) * Z)</c>, where <c>Z ~ N(0, 1)</c>, strictly clamped to <c>[0, n]</c>.
+/// </description>
+/// </item>
+/// </list>
+/// </para>
+/// <para>
+/// <b>Mature Tracker Scale:</b>
+/// In real mature tracker files, snapshot increments are typically M = 200,000,000 flips per batch.
+/// Under this regime (n &gt;&gt; 256), the Gaussian diffusion approximation is used, providing high performance
+/// and asymptotic convergence under the Central Limit Theorem.
+/// The <see cref="IBinomialSampler"/> interface remains available as the extension seam should an exact large-n
+/// sampler (such as BTPE or rejection sampling) be required in future work.
+/// </para>
+/// </remarks>
 public sealed class FastBinomialSampler : IBinomialSampler
 {
     private ulong _s0;

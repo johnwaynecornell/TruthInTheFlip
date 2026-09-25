@@ -1,5 +1,6 @@
 using FluentCommandLine;
 using JWCEssentials.Metadata;
+using JWCFarm;
 using TruthInTheFlip.Format;
 
 namespace TruthInTheFlip.Farm.Format;
@@ -8,6 +9,37 @@ namespace TruthInTheFlip.Farm.Format;
 /// Specification for a conditional-null simulation preserving historical predictor decisions
 /// while replacing outcomes with an independent fair source.
 /// </summary>
+/// <remarks>
+/// <para>
+/// <b>Conditional Null Semantics:</b>
+/// Given the exact historical predictor decisions (<c>betHeads</c> and <c>betTails = total - betHeads</c>)
+/// recorded by the strategy at each snapshot step, this generator samples the joint distribution of source
+/// outcomes (<c>heads</c>, <c>tails</c>) and anticipation correctness (<c>anticipated</c>, <c>anticipatedHeads</c>,
+/// <c>anticipatedTails</c>) under the null hypothesis that the source bits are i.i.d. fair (<c>p = 0.5</c>).
+/// </para>
+/// <para>
+/// <b>Joint Heads / Anticipation Reconstruction:</b>
+/// For each step increment:
+/// <list type="bullet">
+/// <item><description><c>correctHeads ~ Binomial(deltaBetHeads, 0.5)</c></description></item>
+/// <item><description><c>correctTails ~ Binomial(deltaBetTails, 0.5)</c></description></item>
+/// <item><description><c>deltaAnticipated = correctHeads + correctTails</c></description></item>
+/// <item><description><c>deltaHeads = correctHeads + (deltaBetTails - correctTails)</c></description></item>
+/// </list>
+/// This rigorously preserves the exact covariance structure between <c>ZScoreHeads</c> and <c>ZScore</c> across all
+/// windowing, segmentation, and summary metrics (<c>TrueZ</c>, <c>EdgeExcursionScore</c>, <c>EdgeSettlementScore</c>, etc.).
+/// </para>
+/// <para>
+/// <b>Same/Different Limitations:</b>
+/// The synthetic tracker reproduces only the Heads/Tails and Anticipation contingency table.
+/// Relational Same/Different state (<c>S_t = 1[F_t == F_{t-1}]</c>) is NOT synthesized under this batch model:
+/// <c>betSame</c> is copied strictly as historical provenance / orientation record, while <c>anticipatedSame</c>
+/// is fixed at 0. Consequently, Same/Different-derived metrics (<c>same</c>, <c>diff</c>, <c>anticipatedSame</c>,
+/// <c>anticipatedDiff</c>, <c>BetSameWinRate</c>, <c>BetDiffWinRate</c>, <c>ZScoreSame</c>, <c>ZScoreDiff</c>)
+/// on synthetic records are NOT statistically meaningful and must not be consumed for null inference.
+/// Core <c>null_trial</c> and segment aggregate metrics do not consume these fields.
+/// </para>
+/// </remarks>
 [KV_FA(FluentAttribute.Help, "Specification for a conditional-null simulation preserving historical predictor decisions.")]
 public class ConditionalNullSpec
 {
@@ -17,12 +49,20 @@ public class ConditionalNullSpec
     public ConditionalNullSpec(TrackerSelector historicalSource)
     {
         HistoricalSource = historicalSource ?? throw new ArgumentNullException(nameof(historicalSource));
+
+        if (!HistoricalSource.IsAccumulated)
+        {
+            throw new FarmInputException(
+                "conditioned requires an accumulated historical tracker source. " +
+                "Condition the null simulation on the accumulated source before applying window; " +
+                "an already-windowed or interval-relative source cannot be used as the conditioning source.");
+        }
     }
 
     [FluentMethod("conditioned")]
-    [KV_FA(FluentAttribute.Help, "Condition null simulation on historical predictor decisions from a tracker source.")]
+    [KV_FA(FluentAttribute.Help, "Condition null simulation on historical predictor decisions from an accumulated tracker source.")]
     public static ConditionalNullSpec Conditioned(
-        [KV_FA(FluentAttribute.Help, "Historical tracker source.")]
+        [KV_FA(FluentAttribute.Help, "Historical accumulated tracker source.")]
         TrackerSelector source)
     {
         return new ConditionalNullSpec(source);
@@ -118,8 +158,13 @@ public class ConditionalNullSpec
                 synthetic.anticipatedHeads = cumulativeAnticipatedHeads;
                 synthetic.anticipatedTails = cumulativeAnticipatedTails;
                 synthetic.betHeads = hist.betHeads;
+                
+                // Explicit Same/Different limitation:
+                // betSame is retained purely for historical provenance/orientation.
+                // anticipatedSame is NOT synthesized (fixed to 0) as relational transitions are not modeled.
                 synthetic.betSame = hist.betSame;
                 synthetic.anticipatedSame = 0;
+                
                 synthetic.Source = synthetic;
                 synthetic.From = null;
                 synthetic.IsComplete = hist.IsComplete;
