@@ -152,7 +152,7 @@ public class TrackerRunner : ITrackerRunner
 
         if (anticipate_delegate != null)
         {
-            lifecycle.Begin(master);
+            if (lifecycle != null && lifecycle.Begin != null) lifecycle.Begin(master);
             
             Parallel.For(
                 0, threads,
