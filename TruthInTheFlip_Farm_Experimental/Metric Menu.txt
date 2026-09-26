@@ -1,0 +1,280 @@
+Metrics:
+
+    TruthInTheFlip.Format.Tracker
+        total                      <Int64>    Total number of flips processed.                                                 
+        heads                      <Int64>    Total number of heads observed.                                                  
+        tails                      <Int64>    Total number of tails observed.                                                  
+        anticipated                <Int64>    Total number of correct anticipations (wins).                                    
+        baseAnticipated            <Int64>    Total number of correct anticipations from the base strategy.                    
+        anticipatedHeads           <Int64>    Total number of correct anticipations when the result was heads.                 
+        anticipatedTails           <Int64>    Total number of correct anticipations when the result was tails.                 
+        cumulativeTicks            <Int64>    Cumulative processing time in stopwatch ticks.                                   
+        batchTotal                 <Int64>    Number of flips processed in the current batch.                                  
+        wallclockTimeNs            <Int64>    Total wall-clock time in nanoseconds.                                            
+        batchWallclockTimeNs       <Int64>    Wall-clock time for the current batch in nanoseconds.                            
+        utcBeginTimeMs             <Int64>    UTC start time in milliseconds.                                                  
+        utcEndTimeMs               <Int64>    UTC end time in milliseconds.                                                    
+        betHeads                   <Int64>    Total number of times 'heads' was anticipated.                                   
+        betSame                    <Int64>    Total number of times 'same as prior' was anticipated.                           
+        anticipatedSame            <Int64>    Total number of correct 'same as prior' anticipations.                           
+        ZScore                     <Double>   Z-Score for the overall anticipation accuracy.                                   
+        ZScoreHeads                <Double>   Z-Score for the underlying source balance (heads vs tails).                      
+        ZScoreTails                <Double>   Z-Score for the underlying source balance (tails vs heads).                      
+        ZScoreBaseAnticipated      <Double>   Z-Score for the base strategy anticipation accuracy.                             
+        ZScoreAnticipatedHeads     <Double>   Z-Score for anticipation accuracy specifically when the outcome is heads.        
+        ZScoreAnticipatedTails     <Double>   Z-Score for anticipation accuracy specifically when the outcome is tails.        
+        ZScoreBetHeads             <Double>   Z-Score for the frequency of 'heads' bets relative to chance.                    
+        ZScoreBetTails             <Double>   Z-Score for the frequency of 'tails' bets relative to chance.                    
+        ZScoreBetSame              <Double>   Z-Score for the frequency of 'same' bets relative to chance.                     
+        ZScoreBetDiff              <Double>   Z-Score for the frequency of 'different' bets relative to chance.                
+        ZScoreAnticipatedSame      <Double>   Z-Score for accuracy when betting that the next flip will be the 'same'.         
+        ZScoreAnticipatedDiff      <Double>   Z-Score for accuracy when betting that the next flip will be 'different'.        
+        absTotal                   <Int64>    The absolute Total even on window                                                
+        absWallclockTimeNs         <Int64>    The absolute wallclock time in nano seconds even on window                       
+        absWallclockTime           <TimeSpan> The absolute wallclock time in nano seconds even on window                       
+        same                       <Int64>    Total number of transitions whose result was the same as the prior result.       
+        diff                       <Int64>    Total number of transitions whose result was different from the prior result.    
+        SamePercentage             <Double>   Percentage of transitions whose result was the same as the prior result.         
+        DiffPercentage             <Double>   Percentage of transitions whose result was different from the prior result.      
+        ZScoreSame                 <Double>   Z-Score for an always-guess-same strategy relative to chance.                    
+        ZScoreDiff                 <Double>   Z-Score for an always-guess-different strategy relative to chance.               
+        HeadsPercentage            <Double>   Percentage of flips that resulted in heads.                                      
+        TailsPercentage            <Double>   Percentage of flips that resulted in tails.                                      
+        AnticipatedPercentage      <Double>   Overall win rate percentage.                                                     
+        BaseAnticipatedPercentage  <Double>   Base strategy win rate percentage.                                               
+        AnticipatedHeadsPercentage <Double>   Win rate percentage specifically when heads occurred.                            
+        AnticipatedTailsPercentage <Double>   Win rate percentage specifically when tails occurred.                            
+        BiasDelta                  <Double>   Difference between the current strategy win rate and the base strategy win rate. 
+        InversionGain              <Double>   The edge or gain over the 50% chance baseline.                                   
+        BetHeadsPercentage         <Double>   Percentage of total flips where 'heads' was bet.                                 
+        BetTailsPercentage         <Double>   Percentage of total flips where 'tails' was bet.                                 
+        BetSamePercentage          <Double>   Percentage of total flips where 'same as prior' was bet.                         
+        BetDiffPercentage          <Double>   Percentage of total flips where 'different from prior' was bet.                  
+        BetHeadsWinRate            <Double>   Win rate percentage when 'heads' was bet.                                        
+        BetTailsWinRate            <Double>   Win rate percentage when 'tails' was bet.                                        
+        BetSameWinRate             <Double>   Win rate percentage when 'same as prior' was bet.                                
+        BetDiffWinRate             <Double>   Win rate percentage when 'different from prior' was bet.                         
+        WinDistributionHeads       <Double>   Percentage of all wins that occurred on heads.                                   
+        WinDistributionTails       <Double>   Percentage of all wins that occurred on tails.                                   
+        WinDistributionSame        <Double>   Percentage of all wins that occurred on 'same as prior' bets.                    
+        WinDistributionDiff        <Double>   Percentage of all wins that occurred on 'different from prior' bets.             
+        AnticipatedSamePercentage  <Double>   Win rate specifically for 'same as prior' bets.                                  
+        AnticipatedDiffPercentage  <Double>   Win rate specifically for 'different from prior' bets.                           
+        UtcBeginTime               <DateTime> The UTC start time of the tracking period.                                       
+        UtcEndTime                 <DateTime> The UTC end time of the tracking period.                                         
+        WallclockTime              <TimeSpan> Total wall-clock duration of the tracking period.                                
+        BatchWallclockTime         <TimeSpan> Wall-clock duration of the last batch processed.                                 
+        Source                     <Tracker>  Source of the tracker                                                            
+        standardizedDirectionTail  <Double>   show a standardized dirtional score                                              
+    functions scalar and aggregate where expr is one sample from the current process and child_expr samples from child process
+        abs#value                   <Double> Get the absolute value of an input.                       
+        negate#value                <Double> Negate an input value.                                    
+        square#value                <Double> Square an input value.                                    
+        sqrt#value                  <Double> Get the square root of an input.                          
+        ln#value                    <Double> Get the natural logarithm of an input.                    
+        add#a,b                     <Double> Add two values together.                                  
+        sub#a,b                     <Double> Subtract one value from another.                          
+        mul#a,b                     <Double> Multiply two values together.                             
+        div#a,b                     <Double> Divide one value by another.                              
+        root#value,n                <Double> Calculate the nth root of a value using reciprocal power. 
+        pow#value,exponent          <Double> Raise a value to a power.                                 
+        log#value,baseValue         <Double> Take the logarithm of a value at a base.                  
+        offset#value,amount         <Double> Add an offset to an input value.                          
+        offset50#value              <Double> Measure an input relative to the 50 percent baseline.     
+        scale#value,factor          <Double> Multiply an input by a scale factor.                      
+        ratio#numerator,denominator <Double> Divide one input by another.                              
+        smaller#a,b                 <Double> Take the minimum of two values.                           
+        larger#a,b                  <Double> Take the maximum of two values.                           
+        clamp#value,min,max         <Double> Limit an input to the inclusive minimum and maximum.      
+        lerp#a,b,amount             <Double> Linearly interpolate between two values.                  
+
+    TruthInTheFlip.Farm.Format.SegmentStats
+        MeanTrueZ                <Double>   Average True Z-Score across the segment.                                                     
+        MeanA                    <Double>   Average anticipation percentage across the segment.                                          
+        EndA                     <Double>   Anticipation percentage at the end of the segment.                                           
+        EndTrueZ                 <Double>   True Z-Score at the end of the segment.                                                      
+        PctAbove50               <Double>   Percentage of records where anticipation was better than chance.                             
+        PctAAtLeast50            <Double>   Percentage of records with anticipation percentage at least 50%.                             
+        MeanZHeads               <Double>   Average Z-Score for heads across the segment.                                                
+        EndZHeads                <Double>   Z-Score for heads at the end of the segment.                                                 
+        PctZHeadsAbove0          <Double>   Percentage of records where Z-Score for heads was at least zero.                             
+        AnticipatedSameSignCount <Int64>    Count of records where anticipated percentage was the same sign as the true percentage.      
+        PctAnticipatedSameSign   <Double>   Percentage of records where anticipated percentage was the same sign as the true percentage. 
+        Z                        <Tracker>  The best TrueZ from the Segment.                                                             
+        Count                    <Int64>    Number of tracker records in the segment.                                                    
+        Good                     <Int64>    Number of records where anticipation was better than chance.                                 
+        AAtLeast50               <Int64>    Number of records with anticipation percentage at least 50%.                                 
+        MinA                     <Double>   Minimum anticipation percentage in the segment.                                              
+        MaxA                     <Double>   Maximum anticipation percentage in the segment.                                              
+        MinZHeads                <Double>   Minimum Z-Score for heads in the segment.                                                    
+        MaxZHeads                <Double>   Maximum Z-Score for heads in the segment.                                                    
+        ZHeadsAboveZero          <Int64>    Count of records where Z-Score for heads was at least zero.                                  
+        BestTrueZ                <Double>   Highest True Z-Score achieved in the segment.                                                
+        Index                    <Int64>    Sequential index of the segment.                                                             
+        BeginTotal               <Int64>    Total flips at the start of the segment.                                                     
+        EndTotal                 <Int64>    Total flips at the end of the segment.                                                       
+        BeginWallclock           <TimeSpan> Wallclock time at the start of the segment.                                                  
+        EndWallclock             <TimeSpan> Wallclock time at the end of the segment.                                                    
+        Begin                    <Tracker>  Beginning record of the segment.                                                             
+        End                      <Tracker>  Ending record of the segment.                                                                
+    functions scalar and aggregate where expr is one sample from the current process and child_expr samples from child process
+        count#values                            <Double> Find the number of values in an input population.                       
+        sum#values                              <Double> Find the sum of an input population.                                    
+        mean#values                             <Double> Find the arithmetic mean of an input population.                        
+        min#values                              <Double> Find the minimum value in an input population.                          
+        max#values                              <Double> Find the maximum value in an input population.                          
+        median#values                           <Double> Find the median of an input population.                                 
+        variance_population#values              <Double> Find the population variance of an input population.                    
+        variance_sample#values                  <Double> Find the sample variance of an input population.                        
+        stddev_population#values                <Double> Find the population standard deviation of an input population.          
+        stddev_sample#values                    <Double> Find the sample standard deviation of an input population.              
+        rms#values                              <Double> Find the root mean square of an input population.                       
+        mean_abs#values                         <Double> Find the mean absolute value of an input population.                    
+        covariance_population#x_values,y_values <Double> Find the population covariance between two input populations.           
+        covariance_sample#x_values,y_values     <Double> Find the sample covariance between two input populations.               
+        pearson#x_values,y_values               <Double> Find the Pearson correlation coefficient between two input populations. 
+        abs#value                               <Double> Get the absolute value of an input.                                     
+        negate#value                            <Double> Negate an input value.                                                  
+        square#value                            <Double> Square an input value.                                                  
+        sqrt#value                              <Double> Get the square root of an input.                                        
+        ln#value                                <Double> Get the natural logarithm of an input.                                  
+        add#a,b                                 <Double> Add two values together.                                                
+        sub#a,b                                 <Double> Subtract one value from another.                                        
+        mul#a,b                                 <Double> Multiply two values together.                                           
+        div#a,b                                 <Double> Divide one value by another.                                            
+        root#value,n                            <Double> Calculate the nth root of a value using reciprocal power.               
+        pow#value,exponent                      <Double> Raise a value to a power.                                               
+        log#value,baseValue                     <Double> Take the logarithm of a value at a base.                                
+        offset#value,amount                     <Double> Add an offset to an input value.                                        
+        offset50#value                          <Double> Measure an input relative to the 50 percent baseline.                   
+        scale#value,factor                      <Double> Multiply an input by a scale factor.                                    
+        ratio#numerator,denominator             <Double> Divide one input by another.                                            
+        smaller#a,b                             <Double> Take the minimum of two values.                                         
+        larger#a,b                              <Double> Take the maximum of two values.                                         
+        clamp#value,min,max                     <Double> Limit an input to the inclusive minimum and maximum.                    
+        lerp#a,b,amount                         <Double> Linearly interpolate between two values.                                
+        BetSameGapTrend#window                  <Double> Gap versus the prior rolling mean over the requested history window.    
+
+    TruthInTheFlip.Farm.Format.SegmentAggregate
+        Z                              <SegmentStats> The best TrueZ from the SegmentStats.                                        
+        AvgBestTrueZ                   <Double>       The average best TrueZ from the SegmentStats.                                
+        MedianBestTrueZ                <Double>       The median best TrueZ from the SegmentStats.                                 
+        EdgeExcursionScore             <Double>       Median of best TrueZ across segments.                                        
+        AvgEndTrueZ                    <Double>       The average end TrueZ from the SegmentStats.                                 
+        MedianEndTrueZ                 <Double>       The median end TrueZ from the SegmentStats.                                  
+        EdgeSettlementScore            <Double>       Mean of end TrueZ across segments.                                           
+        EdgePersistenceIndex           <Double>       Settlement score scaled by fraction of time above 50%.                       
+        RetainedAnticipation           <Double>       Weighted anticipation mean weighted by fraction of time above 50%.           
+        SettlementAdjustedAnticipation <Double>       Anticipation mean weighted by positive settlement.                           
+        AvgMeanTrueZ                   <Double>       The average mean TrueZ from the SegmentStats.                                
+        AvgPctAbove50                  <Double>       the average Percentage of records where anticipation was better than chance. 
+        AvgMeanA                       <Double>       The average mean anticipation from the SegmentStats.                         
+        AvgEndA                        <Double>       The average end anticipation from the SegmentStats.                          
+        MedianEndA                     <Double>       The median end anticipation from the SegmentStats.                           
+        AvgPctAAtLeast50               <Double>       The average percentage of anticipation above 50% from the SegmentStats.      
+        AvgMeanZHeads                  <Double>       The average mean ZHeads from the SegmentStats.                               
+        AvgEndZHeads                   <Double>       The average end ZHeads from the SegmentStats.                                
+        MedianEndZHeads                <Double>       The median end ZHeads from the SegmentStats.                                 
+        AvgPctZHeadsAbove0             <Double>       The average percentage of ZHeads above zero from the SegmentStats.           
+        PctEndAAtLeast_50              <Double>       The percent of end anticipation >= 50% from the SegmentStats.                
+        PctBestAtLeast_1_96            <Double>       The percent of best TrueZ >= 1.96 from the SegmentStats.                     
+        PctEndAtLeast_0                <Double>       The percent of end TrueZ >= 0.00 from the SegmentStats.                      
+        PctEndAtLeast_1_96             <Double>       The percent of end TrueZ >= 1.96 from the SegmentStats.                      
+        PctMeanAtLeast_0               <Double>       The percent of mean TrueZ >= 0.00 from the SegmentStats.                     
+        PctMeanAtLeast_1_96            <Double>       The percent of mean TrueZ >= 1.96 from the SegmentStats.                     
+        PctEndZHeadsAtLeast_1_96       <Double>       The percent of end ZHeads >= 1.96 from the SegmentStats.                     
+        PctAbsEndZHeadsAtLeast_1_96    <Double>       The percent of absolute end ZHeads >= 1.96 from the SegmentStats.            
+        PctBestAtLeast_3_00            <Double>       The percent of best TrueZ >= 3.00 from the SegmentStats.                     
+        PctEndAtLeast_3_00             <Double>       The percent of end TrueZ >= 3.00 from the SegmentStats.                      
+        PctMeanAtLeast_3_00            <Double>       The percent of mean TrueZ >= 3.00 from the SegmentStats.                     
+        PctEndZHeadsAtLeast_3_00       <Double>       The percent of end ZHeads >= 3.00 from the SegmentStats.                     
+        PctAbsEndZHeadsAtLeast_3_00    <Double>       The percent of absolute end ZHeads >= 3.00 from the SegmentStats.            
+        Index                          <Int64>        Sequential index of the segment.                                             
+        BeginTotal                     <Int64>        Total flips at the start of the segment.                                     
+        EndTotal                       <Int64>        Total flips at the end of the segment.                                       
+        BeginWallclock                 <TimeSpan>     Wallclock time at the start of the segment.                                  
+        EndWallclock                   <TimeSpan>     Wallclock time at the end of the segment.                                    
+        Begin                          <SegmentStats> Beginning record of the segment.                                             
+        End                            <SegmentStats> Ending record of the segment.                                                
+    functions scalar and aggregate where expr is one sample from the current process and child_expr samples from child process
+        count#values                            <Double> Find the number of values in an input population.                       
+        sum#values                              <Double> Find the sum of an input population.                                    
+        mean#values                             <Double> Find the arithmetic mean of an input population.                        
+        min#values                              <Double> Find the minimum value in an input population.                          
+        max#values                              <Double> Find the maximum value in an input population.                          
+        median#values                           <Double> Find the median of an input population.                                 
+        variance_population#values              <Double> Find the population variance of an input population.                    
+        variance_sample#values                  <Double> Find the sample variance of an input population.                        
+        stddev_population#values                <Double> Find the population standard deviation of an input population.          
+        stddev_sample#values                    <Double> Find the sample standard deviation of an input population.              
+        rms#values                              <Double> Find the root mean square of an input population.                       
+        mean_abs#values                         <Double> Find the mean absolute value of an input population.                    
+        covariance_population#x_values,y_values <Double> Find the population covariance between two input populations.           
+        covariance_sample#x_values,y_values     <Double> Find the sample covariance between two input populations.               
+        pearson#x_values,y_values               <Double> Find the Pearson correlation coefficient between two input populations. 
+        abs#value                               <Double> Get the absolute value of an input.                                     
+        negate#value                            <Double> Negate an input value.                                                  
+        square#value                            <Double> Square an input value.                                                  
+        sqrt#value                              <Double> Get the square root of an input.                                        
+        ln#value                                <Double> Get the natural logarithm of an input.                                  
+        add#a,b                                 <Double> Add two values together.                                                
+        sub#a,b                                 <Double> Subtract one value from another.                                        
+        mul#a,b                                 <Double> Multiply two values together.                                           
+        div#a,b                                 <Double> Divide one value by another.                                            
+        root#value,n                            <Double> Calculate the nth root of a value using reciprocal power.               
+        pow#value,exponent                      <Double> Raise a value to a power.                                               
+        log#value,baseValue                     <Double> Take the logarithm of a value at a base.                                
+        offset#value,amount                     <Double> Add an offset to an input value.                                        
+        offset50#value                          <Double> Measure an input relative to the 50 percent baseline.                   
+        scale#value,factor                      <Double> Multiply an input by a scale factor.                                    
+        ratio#numerator,denominator             <Double> Divide one input by another.                                            
+        smaller#a,b                             <Double> Take the minimum of two values.                                         
+        larger#a,b                              <Double> Take the maximum of two values.                                         
+        clamp#value,min,max                     <Double> Limit an input to the inclusive minimum and maximum.                    
+        lerp#a,b,amount                         <Double> Linearly interpolate between two values.                                
+
+    TruthInTheFlip.Farm.Format.NullTrialStats
+        TrialIndex                     <Int32>  0-based index of this trial in the population.                                       
+        Seed                           <UInt64> Deterministic 64-bit random seed used for this trial.                                
+        SegmentCount                   <Int32>  Total number of segments evaluated in this trial.                                    
+        EdgeExcursionScore             <Double> Edge Excursion Score: median of best TrueZ per segment.                              
+        EdgeSettlementScore            <Double> Edge Settlement Score: mean of end TrueZ per segment.                                
+        EdgePersistenceIndex           <Double> Edge Persistence Index: settlement * fraction positive.                              
+        AvgBestTrueZ                   <Double> Average of best TrueZ across segments.                                               
+        MedianBestTrueZ                <Double> Median of best TrueZ across segments.                                                
+        AvgEndTrueZ                    <Double> Average of end TrueZ across segments.                                                
+        MedianEndTrueZ                 <Double> Median of end TrueZ across segments.                                                 
+        AvgMeanTrueZ                   <Double> Average of mean TrueZ across segments.                                               
+        AvgMeanA                       <Double> Average of mean anticipation percentage across segments.                             
+        AvgEndA                        <Double> Average of end anticipation percentage across segments.                              
+        AvgPctAAtLeast50               <Double> Average percentage of records where anticipation >= 50%.                             
+        AvgMeanZHeads                  <Double> Average of mean ZHeads across segments.                                              
+        AvgEndZHeads                   <Double> Average of end ZHeads across segments.                                               
+        RetainedAnticipation           <Double> Retained Anticipation: weighted anticipation mean by fraction of time above 50%.     
+        SettlementAdjustedAnticipation <Double> Settlement Adjusted Anticipation: anticipation mean weighted by positive settlement. 
+        PctBestAtLeast_1_96            <Double> Percent of segments with best TrueZ >= 1.96.                                         
+        PctBestAtLeast_3_00            <Double> Percent of segments with best TrueZ >= 3.00.                                         
+        PctEndAtLeast_0                <Double> Percent of segments with end TrueZ >= 0.00.                                          
+        PctEndAtLeast_1_96             <Double> Percent of segments with end TrueZ >= 1.96.                                          
+        PctMeanAtLeast_0               <Double> Percent of segments with mean TrueZ >= 0.00.                                         
+    functions scalar and aggregate where expr is one sample from the current process and child_expr samples from child process
+        abs#value                   <Double> Get the absolute value of an input.                       
+        negate#value                <Double> Negate an input value.                                    
+        square#value                <Double> Square an input value.                                    
+        sqrt#value                  <Double> Get the square root of an input.                          
+        ln#value                    <Double> Get the natural logarithm of an input.                    
+        add#a,b                     <Double> Add two values together.                                  
+        sub#a,b                     <Double> Subtract one value from another.                          
+        mul#a,b                     <Double> Multiply two values together.                             
+        div#a,b                     <Double> Divide one value by another.                              
+        root#value,n                <Double> Calculate the nth root of a value using reciprocal power. 
+        pow#value,exponent          <Double> Raise a value to a power.                                 
+        log#value,baseValue         <Double> Take the logarithm of a value at a base.                  
+        offset#value,amount         <Double> Add an offset to an input value.                          
+        offset50#value              <Double> Measure an input relative to the 50 percent baseline.     
+        scale#value,factor          <Double> Multiply an input by a scale factor.                      
+        ratio#numerator,denominator <Double> Divide one input by another.                              
+        smaller#a,b                 <Double> Take the minimum of two values.                           
+        larger#a,b                  <Double> Take the maximum of two values.                           
+        clamp#value,min,max         <Double> Limit an input to the inclusive minimum and maximum.      
+        lerp#a,b,amount             <Double> Linearly interpolate between two values.                  

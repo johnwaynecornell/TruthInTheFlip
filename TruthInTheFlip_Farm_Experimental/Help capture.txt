@@ -1,0 +1,291 @@
+Usage: TruthInTheFlip_Farm [arguments]
+
+TruthInTheFlip Farm is under active development.
+
+The command language and available reports may grow between releases.
+For this build, the generated help and metric listings are the authoritative reference.
+
+  list                List available commands to FarmCommand or request information or request help
+  <string> [params...] Configure specific command
+  <string> def        Use supported default arguments
+
+Available Commands
+
+    show argument
+        Show information about the selected topic.
+
+        argument              <ShowArgument>        Information topic to show.
+
+    csv process fields
+        Format a process as CSV using the selected metric fields.
+
+        process               <FarmProcess>         Process whose items will be written as CSV.
+        fields                <String[]>            Metric paths to include as CSV columns.
+
+    json process fields
+        Format a process as streaming JSON Lines using the selected metric fields.
+
+        process               <FarmProcess>         Process whose items will be written as JSON Lines.
+        fields                <String[]>            Metric paths to include as JSON properties.
+
+    pretty process fields
+        Format a process in human-readable format using the selected metric fields.
+
+        process               <FarmProcess>         Process whose items will be written in pretty format.
+        fields                <String[]>            Metric paths to include.
+
+    segment_report grade tracker segmentation
+        Report on tracker records as segments.
+
+        grade                 <GradeArgument>       The grade of the report.
+        tracker               <TrackerSelector>     Tracker source to process.
+        segmentation          <SegSelector>         Method used to divide tracker records into segments.
+
+    null_trial seed condition window segmentation
+        Run a single deterministic conditional or algorithmic null experiment trial.
+
+        seed                  <UInt64>              Deterministic random seed for the trial.
+        condition             <INullTrialSpec>      Null specification with historical tracker source.
+        window                <TrackerWindow>       Rolling window bounds.
+        segmentation          <SegSelector>         Segmentation definition.
+
+    null_report trialCount baseSeed condition window segmentation
+        Compare real observed tracker statistics against an empirical null trial population.
+
+        trialCount            <Int32>               Number of null trials to simulate.
+        baseSeed              <UInt64>              Base 64-bit random seed.
+        condition             <INullTrialSpec>      Null specification with historical tracker source.
+        window                <TrackerWindow>       Rolling window bounds.
+        segmentation          <SegSelector>         Segmentation definition.
+
+    -info outputPath
+        Request configuration information for command line
+
+        outputPath            <String>              Path to write information output to.    default: "#"
+
+    -help
+        Request this help
+
+Argument Types
+
+<ShowArgument> — Selectable information topic
+
+        metrics
+            Display the available metric fields.
+    
+    
+        now
+            Display the current time in Farm-compatible format.
+
+<FarmProcess> — A process that produces items for Farm operations.
+
+        segment tracker segmentation
+            Process tracker records as segments.
+    
+            tracker               <TrackerSelector>     Tracker source to process.
+            segmentation          <SegSelector>         Method used to divide tracker records into segments.
+    
+        segment_agg tracker segmentation aggregation
+            Process segment stats as segments.
+    
+            tracker               <TrackerSelector>     Tracker source to process.
+            segmentation          <SegSelector>         Method used to divide tracker records into segments.
+            aggregation           <AggSelector>         Method used to aggregate segments.
+    
+        tracker tracker
+            Process tracker records individually.
+    
+            tracker               <TrackerSelector>     Tracker source to process.
+    
+        null_trials trialCount baseSeed condition window segmentation
+            Execute a population of deterministic null trials.
+    
+            trialCount            <Int32>               Number of trials to execute.
+            baseSeed              <UInt64>              Base 64-bit random seed.
+            condition             <INullTrialSpec>      Null specification with historical tracker source.
+            window                <TrackerWindow>       Rolling window bounds.
+            segmentation          <SegSelector>         Segmentation definition.
+
+<AggSelector> — Definition for aggregating SegmentStats into larger segments
+
+        by_total length
+            Segment size in total flips
+    
+            length                <Count>               Maximum number of total flips in each segment.    default: "100B"
+    
+        by_elapsed length
+            Segment size in time elapsed
+    
+            length                <TimeSpan>            Maximum wall-clock duration of each segment.    default: "01:00:00"
+    
+        whole
+            Treat the entire selected stats source as one segment.
+    
+    
+        full source
+            Use only complete segments.
+    
+            source                <AggSelector>         The source selector.
+
+<GradeArgument> — Report detail level
+
+        None
+            Show only report metadata.
+    
+    
+        Low
+            Show edge statistics.
+    
+    
+        Med
+            Show Low plus anticipation and heads geometry.
+    
+    
+        High
+            Show Med plus segment details.
+    
+    
+        All
+            Show High plus Pearson correlations, additional segment statistics, and standout segments.
+
+<TrackerSelector> — Selector for a tracker source
+
+        file trackerPath
+            Read tracker records from a tracker file.
+    
+            trackerPath           <String>              Path to the tracker file.
+    
+        concat a b
+            Sequentially combine two tracker selectors.
+    
+            a                     <TrackerSelector>     
+            b                     <TrackerSelector>     
+    
+        rebase source
+            Express tracker records relative to the first record.
+    
+            source                <TrackerSelector>     The tracker source to rebase.
+    
+        files paths
+            Sequentially combine a list of tracker files.
+    
+            paths                 <String[]>            
+    
+        full source
+            Use only full trackers.
+    
+            source                <TrackerSelector>     The source tracker.
+    
+        window bounds source
+            Apply a rolling window to a tracker source.
+    
+            bounds                <TrackerWindow>       Window definition to apply.
+            source                <TrackerSelector>     Tracker source to window.
+    
+        from boundary source
+            Select records from the specified tracker position.
+    
+            boundary              <TrackerBoundary>     Boundary defining the starting position.
+            source                <TrackerSelector>     Tracker source to filter.
+    
+        to boundary source
+            Select records through the specified tracker position.
+    
+            boundary              <TrackerBoundary>     Boundary defining the ending position.
+            source                <TrackerSelector>     Tracker source to filter.
+
+<TrackerBoundary> — Boundary for selecting a position in a tracker stream
+
+        absTotal value
+            Define a boundary by absolute flip count.
+    
+            value                 <Count>               Absolute flip count used as the boundary.
+    
+        absWallclock value
+            Define a boundary by absolute wall-clock duration.
+    
+            value                 <TimeSpan>            Absolute wall-clock duration used as the boundary.
+    
+        absWallclockNs value
+            Define a boundary by absolute wall-clock nanoseconds.
+    
+            value                 <Int64>               Absolute wall-clock nanoseconds used as the boundary.
+    
+        utcEndTime value
+            Define a boundary by record UTC end time.
+    
+            value                 <DateTimeOffset>      UTC timestamp or offset timestamp used as the boundary.
+    
+        utcBeginTime value
+            Define a boundary by record UTC begin time.
+    
+            value                 <DateTimeOffset>      UTC timestamp or offset timestamp used as the boundary.
+
+<SegSelector> — Definition for dividing tracker records into segments
+
+        by_total length
+            Segment size in total flips
+    
+            length                <Count>               Maximum number of total flips in each segment.    default: "100B"
+    
+        by_elapsed length
+            Segment size in time elapsed
+    
+            length                <TimeSpan>            Maximum wall-clock duration of each segment.    default: "01:00:00"
+    
+        whole
+            Treat the entire selected tracker source as one segment.
+    
+    
+        full source
+            Use only complete segments.
+    
+            source                <SegSelector>         The source selector.
+
+<INullTrialSpec> — INullTrialSpec
+
+        conditioned source
+            Condition null simulation on historical predictor decisions from an accumulated tracker source.
+    
+            source                <TrackerSelector>     Historical accumulated tracker source.
+    
+        same_persistence_algorithmic source strategyWindow
+            Execute SamePersistence algorithmic null simulation with active strategy feedback matching historical experiment geometry.
+    
+            source                <TrackerSelector>     Historical tracker source defining experiment geometry and batch cadence.
+            strategyWindow        <Count>               Strategy decision window size (default 10B).    default: "10B"
+
+<TrackerWindow> — Definition of a rolling tracker window
+
+        by_total length
+            Defines a rolling window by maximum absolute-source flip distance.
+    
+            length                <Count>               Maximum source-total distance between the window endpoints.    default: "100B"
+    
+        by_heads length
+            Defines a rolling window by maximum absolute-source heads distance.
+    
+            length                <Count>               Maximum source-heads distance between the window endpoints.    default: "100B"
+    
+        by_tails length
+            Defines a rolling window by maximum absolute-source tails distance.
+    
+            length                <Count>               Maximum source-tails distance between the window endpoints.    default: "100B"
+    
+        by_anticipated length
+            Defines a rolling window by maximum absolute-source anticipated distance.
+    
+            length                <Count>               Maximum source-anticipated distance between the window endpoints.    default: "100B"
+    
+        by_wallclock_ns length
+            Defines a rolling window by absolute-source wallclock nanoseconds.
+    
+            length                <Int64>               Maximum source-wallclock nanosecond distance between the window endpoints.    default: "3600000000000"
+    
+        by_elapsed length
+            Defines a rolling window by absolute-source wallclock duration.
+    
+            length                <TimeSpan>            Maximum source-wallclock duration between the window endpoints.    default: "01:00:00"
+
+
+
