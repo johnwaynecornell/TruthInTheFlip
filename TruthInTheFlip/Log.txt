@@ -5357,3 +5357,249 @@ The consolidated result sharpens the working distinction:
 Detectable structure need not imply anticipatable structure — but the
 SamePersistence seam now deserves a stronger test.
 </blockquote>
+
+___________________________________________________________________________
+╔═══════════════╗
+║20260926_132303║
+╚═══════════════╝
+
+<h2>SamePersistence Survives the Full Algorithmic Null</h2>
+
+<p>
+The full algorithmic null for <code>SamePersistence</code> is now implemented,
+merged, smoke-tested, and complete at 10,000 trials.
+</p>
+
+<p>
+This control is stronger than the earlier conditional null.
+</p>
+
+<p>
+The conditional null preserved the historical predictor decision schedule and
+regenerated fair outcomes around those fixed decisions.
+</p>
+
+<p>
+The algorithmic null instead regenerates the entire SamePersistence experiment
+from fresh fair histories:
+</p>
+
+<pre><code>fresh fair source
+    ↓
+SamePersistence generates its own Same/Different decisions
+    ↓
+same merged-master update cadence
+    ↓
+same 10B strategy window
+    ↓
+same decision lag
+    ↓
+same experiment horizon
+    ↓
+same 10B report window
+    ↓
+same 10B segmentation
+    ↓
+same frozen report metrics
+</code></pre>
+
+<p>
+Each synthetic trial therefore produces its own independent SamePersistence
+decision path rather than inheriting the historical one.
+</p>
+
+<p>
+The experiment remained frozen at:
+</p>
+
+<pre><code>trials:
+    10,000
+
+base seed:
+    897234
+
+strategy:
+    SamePersistence
+
+strategy window:
+    10B
+
+report window:
+    10B
+
+segmentation:
+    10B
+
+historical geometry:
+    SamePersistence.NET1.tkr
+</code></pre>
+
+<p>
+The algorithmic-null generator preserves the recorded experiment cadence and
+reconstructs fresh fair-source batch histories with coherent Heads/Tails and
+Same/Different contingency structure.
+</p>
+
+<p>
+The finite-path combinatorial model is exact, while the mature large-batch
+sampling path uses the documented Gaussian approximations for the large-parameter
+binomial and conditional beta-binomial distributions.
+</p>
+
+<h3>Result</h3>
+
+<p>
+The SamePersistence separation observed under the earlier conditional null
+survived the full algorithmic null with almost no change in position.
+</p>
+
+<pre><code>Metric                         Conditional   Algorithmic
+
+EdgeExcursionScore                98.0%         98.1%
+EdgeSettlementScore               98.0%         97.9%
+EdgePersistenceIndex              87.9%         88.4%
+RetainedAnticipation              99.7%         99.7%
+SettlementAdjustedAnticipation    91.6%         91.9%
+AvgMeanA                          99.6%         99.5%
+AvgEndA                           99.6%         99.5%
+</code></pre>
+
+<p>
+The strongest retained-anticipation result was:
+</p>
+
+<pre><code>RetainedAnticipation
+
+observed:
+    50+3.04026e-04%
+
+algorithmic null mean:
+    50+2.66261e-04%
+
+algorithmic null median:
+    50+2.66312e-04%
+
+observed percentile:
+    99.7%
+
+sample-corrected upper tail:
+    0.0036
+</code></pre>
+
+<p>
+The ordinary anticipation averages also remained unusually high relative to the
+full algorithmic null:
+</p>
+
+<pre><code>AvgMeanA
+    observed percentile: 99.5%
+    upper tail:          0.0056
+
+AvgEndA
+    observed percentile: 99.5%
+    upper tail:          0.0053
+</code></pre>
+
+<p>
+The excursion and settlement geometry also remained elevated:
+</p>
+
+<pre><code>EdgeExcursionScore
+    observed percentile: 98.1%
+    upper tail:          0.0195
+
+EdgeSettlementScore
+    observed percentile: 97.9%
+    upper tail:          0.0210
+</code></pre>
+
+<h3>Interpretation</h3>
+
+<p>
+The earlier SamePersistence result can no longer be explained simply by the
+conditional-null decision schedule being fixed to the historical experiment.
+</p>
+
+<p>
+When SamePersistence is allowed to regenerate its own strategy state and
+decision path independently in every fresh fair-source trial, the observed
+record remains unusually favorable on several of the frozen metrics.
+</p>
+
+<blockquote>
+The SamePersistence seam survived the full algorithmic null.
+</blockquote>
+
+<p>
+This does not establish a universal violation of the 50% causal benchmark, nor
+does it by itself establish a generally exploitable anticipation rule.
+</p>
+
+<p>
+What it does establish is narrower and more concrete:
+</p>
+
+<blockquote>
+SamePersistence.NET1 is unusually favorable relative to 10,000 fresh fair
+histories processed through the SamePersistence algorithm itself.
+</blockquote>
+
+<p>
+This is especially notable because the more elaborate ClassicMetaGuess and
+AntiMetaGuess BSP2 experiments remained well inside their corresponding
+conditional-null populations, while the simpler source-only SamePersistence
+rule is the experiment that survives the stronger control.
+</p>
+
+<p>
+The research question therefore becomes more focused:
+</p>
+
+<blockquote>
+Is there persistent forward structure in the Same/Different transition stream
+itself?
+</blockquote>
+
+<p>
+No threshold, strategy variant, alternate window, or nearby persistence rule
+will be selected from this opened result before further controls are defined.
+</p>
+
+<p>
+The 50% ceiling hypothesis remains an important reference point. Under an iid
+fair source, 50% remains the expected causal benchmark. The new result does not
+discard that hypothesis; it identifies a record whose behavior is unusual
+relative to the full SamePersistence fair-source model constructed to test it.
+</p>
+
+<blockquote>
+Detectable structure need not imply anticipatable structure —
+but this seam survived the test designed to make that distinction harder.
+</blockquote>
+
+<pre><code>
+TruthInTheFlip_Farm_Experimental null_report 10000 897234 same_persistence_algorithmic file SamePersistence.NET1.tkr 10B by_total 10B by_total 10B
+=== Null Distribution Report ===
+Historical Source     : SamePersistence.NET1.tkr
+Trials                : 10,000
+Base Seed             : 897234
+Segments per Trial    : 896
+Records Evaluated     : 44,756
+
+Empirical Percentile  : 100 * count(null <= observed) / N
+Sample Corrected Tails: (count + 1) / (N + 1)
+
+----------------------------------------------------------------------------------------------------------------------------------
+Metric                         Observed          Null Mean         Null Median       Null [5%, 95%]                        Percentile   Lower Tail   Upper Tail
+----------------------------------------------------------------------------------------------------------------------------------
+EdgeExcursionScore             +0.566230         +0.472673         +0.473185         [+0.397250, +0.546701]                     98.1%       0.9806       0.0195
+EdgeSettlementScore            -0.718744         -0.797749         -0.797434         [-0.861341, -0.733193]                     97.9%       0.9791       0.0210
+EdgePersistenceIndex           -0.383699         -0.398424         -0.398580         [-0.418659, -0.377874]                     88.4%       0.8838       0.1163
+RetainedAnticipation           50+3.04026e-04%   50+2.66261e-04%   50+2.66312e-04%   [50+2.43854e-04%, 50+2.88422e-04%]         99.7%       0.9965       0.0036
+SettlementAdjustedAnticipation 50+4.30367e-04%   50+3.85481e-04%   50+3.85222e-04%   [50+3.32091e-04%, 50+4.38168e-04%]         91.9%       0.9192       0.0809
+AvgMeanA                       50+4.31781e-05%   50+1.14620e-07%   50+2.49714e-07%   [50-2.72118e-05%, 50+2.72174e-05%]         99.5%       0.9945       0.0056
+AvgEndA                        50+4.34439e-05%   50+1.06310e-07%   50+2.21674e-07%   [50-2.72981e-05%, 50+2.71054e-05%]         99.5%       0.9948       0.0053
+AvgMeanZHeads                  +0.042543         +0.000277         +0.000351         [-0.055230, +0.055135]                     89.4%       0.8941       0.1060
+AvgEndZHeads                   +0.043828         +0.000282         +0.000248         [-0.055036, +0.055286]                     90.1%       0.9007       0.0994
+================================
+</code></pre>
