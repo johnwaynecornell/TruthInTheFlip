@@ -6,20 +6,20 @@ using TruthInTheFlip.Format;
 namespace TruthInTheFlip.Farm.Format;
 
 /// <summary>
-/// FarmProcess generating a multi-trial population of deterministic conditional-null trial results.
+/// FarmProcess generating a multi-trial population of deterministic null trial results.
 /// </summary>
 public sealed class NullTrialProcess : FarmProcess
 {
     public int TrialCount { get; }
     public ulong BaseSeed { get; }
-    public ConditionalNullSpec Condition { get; }
+    public INullTrialSpec Condition { get; }
     public TrackerWindows.TrackerWindow Window { get; }
     public SegSelector Segmentation { get; }
 
     public NullTrialProcess(
         int trialCount,
         ulong baseSeed,
-        ConditionalNullSpec condition,
+        INullTrialSpec condition,
         TrackerWindows.TrackerWindow window,
         SegSelector segmentation)
     {
@@ -32,14 +32,14 @@ public sealed class NullTrialProcess : FarmProcess
     }
 
     [FluentMethod("null_trials")]
-    [KV_FA(FluentAttribute.Help, "Execute a population of deterministic conditional-null trials.")]
+    [KV_FA(FluentAttribute.Help, "Execute a population of deterministic null trials.")]
     public static FarmProcess NullTrials(
         [KV_FA(FluentAttribute.Help, "Number of trials to execute.")]
         int trialCount,
         [KV_FA(FluentAttribute.Help, "Base 64-bit random seed.")]
         ulong baseSeed,
-        [KV_FA(FluentAttribute.Help, "Conditional null specification with historical tracker source.")]
-        ConditionalNullSpec condition,
+        [KV_FA(FluentAttribute.Help, "Null specification with historical tracker source.")]
+        INullTrialSpec condition,
         [KV_FA(FluentAttribute.Help, "Rolling window bounds.")]
         TrackerWindows.TrackerWindow window,
         [KV_FA(FluentAttribute.Help, "Segmentation definition.")]

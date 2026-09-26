@@ -13,6 +13,11 @@ public interface IBinomialSampler
     /// <param name="p">Probability of success in each trial (default: 0.5 for fair null).</param>
     /// <returns>Number of successes k in [0, n].</returns>
     long Sample(long n, double p = 0.5);
+
+    /// <summary>
+    /// Generates a standard normal random variate ~ N(0, 1).
+    /// </summary>
+    double NextGaussian();
 }
 
 /// <summary>
@@ -104,6 +109,13 @@ public sealed class FastBinomialSampler : IBinomialSampler
         return (NextUInt64() >> 11) * (1.0 / (1UL << 53)) + (1.0 / (1UL << 54));
     }
 
+    public double NextGaussian()
+    {
+        double u1 = NextDouble();
+        double u2 = NextDouble();
+        return Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Cos(2.0 * Math.PI * u2);
+    }
+
     public long Sample(long n, double p = 0.5)
     {
         if (n <= 0) return 0;
@@ -133,9 +145,7 @@ public sealed class FastBinomialSampler : IBinomialSampler
             }
 
             // Normal approximation for large n with continuity correction
-            double u1 = NextDouble();
-            double u2 = NextDouble();
-            double z = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Cos(2.0 * Math.PI * u2);
+            double z = NextGaussian();
 
             double mean = n * 0.5;
             double stdDev = 0.5 * Math.Sqrt(n);
@@ -147,9 +157,7 @@ public sealed class FastBinomialSampler : IBinomialSampler
         // Generic fallback for arbitrary p
         double meanGeneric = n * p;
         double stdDevGeneric = Math.Sqrt(n * p * (1.0 - p));
-        double u1G = NextDouble();
-        double u2G = NextDouble();
-        double zG = Math.Sqrt(-2.0 * Math.Log(u1G)) * Math.Cos(2.0 * Math.PI * u2G);
+        double zG = NextGaussian();
         long kG = (long)Math.Round(meanGeneric + stdDevGeneric * zG);
         return Math.Clamp(kG, 0L, n);
     }

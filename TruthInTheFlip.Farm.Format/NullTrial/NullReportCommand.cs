@@ -7,20 +7,20 @@ using TruthInTheFlip.Format;
 namespace TruthInTheFlip.Farm.Format;
 
 /// <summary>
-/// Fluent command for executing a multi-trial conditional-null experiment and generating
+/// Fluent command for executing a multi-trial null experiment and generating
 /// an empirical distribution comparison report against the real observed tracker metrics.
 /// </summary>
 public class NullReportCommand
 {
     [FluentMethod("null_report")]
-    [KV_FA(FluentAttribute.Help, "Compare real observed tracker statistics against an empirical conditional-null trial population.")]
+    [KV_FA(FluentAttribute.Help, "Compare real observed tracker statistics against an empirical null trial population.")]
     public static FarmCommand NullReport(
         [KV_FA(FluentAttribute.Help, "Number of null trials to simulate.")]
         int trialCount,
         [KV_FA(FluentAttribute.Help, "Base 64-bit random seed.")]
         ulong baseSeed,
-        [KV_FA(FluentAttribute.Help, "Conditional null specification with historical tracker source.")]
-        ConditionalNullSpec condition,
+        [KV_FA(FluentAttribute.Help, "Null specification with historical tracker source.")]
+        INullTrialSpec condition,
         [KV_FA(FluentAttribute.Help, "Rolling window bounds.")]
         TrackerWindows.TrackerWindow window,
         [KV_FA(FluentAttribute.Help, "Segmentation definition.")]

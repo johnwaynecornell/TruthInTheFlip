@@ -36,7 +36,7 @@ namespace TruthInTheFlip.Farm.Format;
 /// </para>
 /// </remarks>
 [KV_FA(FluentAttribute.Help, "Specification for a conditional-null simulation preserving historical predictor decisions.")]
-public class ConditionalNullSpec
+public class ConditionalNullSpec : INullTrialSpec
 {
     public TrackerSelector HistoricalSource { get; }
     public Func<ulong, IBinomialSampler>? SamplerFactory { get; init; }
@@ -56,7 +56,7 @@ public class ConditionalNullSpec
 
     [FluentMethod("conditioned")]
     [KV_FA(FluentAttribute.Help, "Condition null simulation on historical predictor decisions from an accumulated tracker source.")]
-    public static ConditionalNullSpec Conditioned(
+    public static INullTrialSpec Conditioned(
         [KV_FA(FluentAttribute.Help, "Historical accumulated tracker source.")]
         TrackerSelector source)
     {
@@ -69,7 +69,7 @@ public class ConditionalNullSpec
     /// <summary>
     /// Materializes and caches the historical predictor schedule in memory for zero-disk-IO trial replays.
     /// </summary>
-    public ConditionalNullSchedule MaterializeSchedule()
+    public INullSchedule MaterializeSchedule()
     {
         if (_cachedSchedule != null)
             return _cachedSchedule;
