@@ -1,18 +1,12 @@
-TruthInTheFlip_Farm_Experimental \
-    null_report 10000 897234 \
-    conditioned file ../Artifacts/Trackers/BSP2_AntiMetaGuess_NET1.tkr \
-    by_total 10B \
-    by_total 10B
-
 === Null Distribution Report ===
-Historical Source     : ../Artifacts/Trackers/BSP2_AntiMetaGuess_NET1.tkr
+Historical Source     : BSP2_AntiMetaGuess_NET1.tkr
 Trials                : 10,000
 Base Seed             : 897234
 Segments per Trial    : 891
 Records Evaluated     : 44,517
 
-Empirical Percentile  : {100 * count(null <= observed) / N}
-Sample Corrected Tails: {(count + 1) / (N + 1)}
+Empirical Percentile  : 100 * count(null <= observed) / N
+Sample Corrected Tails: (count + 1) / (N + 1)
 
 ----------------------------------------------------------------------------------------------------------------------------------
 Metric                         Observed          Null Mean         Null Median       Null [5%, 95%]                        Percentile   Lower Tail   Upper Tail

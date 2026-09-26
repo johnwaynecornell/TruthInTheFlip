@@ -5133,3 +5133,227 @@ and therefore describes the existing SamePersistence decision rule exactly.
 The strategy is already choosing the transition type that dominated the
 completed source window.
 </p>
+
+___________________________________________________________________________
+╔═══════════════╗
+║20260926_085917║
+╚═══════════════╝
+
+<h2>Consolidated Conditional Null Results</h2>
+
+<p>
+The frozen 10,000-trial conditional-null procedure has now been completed across
+the current tracker family and consolidated into:
+</p>
+
+<pre><code>nulls_consolidated.txt</code></pre>
+
+<p>
+All reports used the same analysis configuration:
+</p>
+
+<pre><code>trials:
+    10,000
+
+base seed:
+    897234
+
+window:
+    10B
+
+segmentation:
+    10B
+
+null:
+    preserve the historical per-snapshot predictor orientation
+    regenerate outcomes from a fair independent source
+</code></pre>
+
+<p>
+The combined results reveal a highly stable conditional-null geometry across
+the mature records.
+</p>
+
+<p>
+For trackers near the common ~8.9T scale, the null population repeatedly centers
+near:
+</p>
+
+<pre><code>EdgeExcursionScore
+    ~ +0.473
+
+EdgeSettlementScore
+    ~ -0.798
+
+EdgePersistenceIndex
+    ~ -0.399
+
+RetainedAnticipation
+    ~ 50+2.66e-04%
+
+SettlementAdjustedAnticipation
+    ~ 50+3.86e-04%
+</code></pre>
+
+<p>
+This stability is important. It indicates that much of the recurring
+excursion/settlement structure seen in historical segment reports can be produced
+by the report geometry itself under a fair conditioned null.
+</p>
+
+<blockquote>
+A statistic can develop a strong-looking shape without carrying unusual forward information.
+</blockquote>
+
+<p>
+Most of the historical trackers fall comfortably within this conditional-null
+family.
+</p>
+
+<h3>Classic BSP2</h3>
+
+<pre><code>EdgeExcursionScore             60.3%
+EdgeSettlementScore            55.5%
+EdgePersistenceIndex           84.6%
+RetainedAnticipation           41.4%
+SettlementAdjustedAnticipation 26.2%
+</code></pre>
+
+<p>
+The ClassicMetaGuess-conditioned BSP2 run is broadly ordinary under its null.
+</p>
+
+<h3>AntiMetaGuess BSP2</h3>
+
+<pre><code>EdgeExcursionScore             88.0%
+EdgeSettlementScore            30.5%
+EdgePersistenceIndex           15.3%
+RetainedAnticipation           40.9%
+SettlementAdjustedAnticipation 14.2%
+</code></pre>
+
+<p>
+The AntiMetaGuess-conditioned sibling likewise remains well inside its
+corresponding null distributions.
+</p>
+
+<h3>Other historical trackers</h3>
+
+<p>
+<code>crypto_RandomSD</code>, <code>Quant2</code>, <code>Quant</code>, and
+<code>Quant_IDQE</code> are also largely compatible with the frozen conditional
+null on the anticipation geometry.
+</p>
+
+<p>
+<code>crypto3</code> shows a high EdgeExcursionScore near the 98th percentile,
+but its anticipation-related aggregate metrics are substantially less unusual
+than the SamePersistence result.
+</p>
+
+<p>
+<code>Quant_IDQE</code> shows unusually low Heads Z behavior in this comparison,
+but that is a source-balance observation rather than evidence of anticipation.
+</p>
+
+<h3>SamePersistence separates</h3>
+
+<p>
+The clear exception is <code>SamePersistence.NET1.tkr</code>.
+</p>
+
+<pre><code>EdgeExcursionScore
+    observed percentile: 98.0%
+    upper tail:          0.0197
+
+EdgeSettlementScore
+    observed percentile: 98.0%
+    upper tail:          0.0203
+
+EdgePersistenceIndex
+    observed percentile: 87.9%
+
+RetainedAnticipation
+    observed:             50+3.04026e-04%
+    null median:          50+2.66181e-04%
+    observed percentile:  99.7%
+    upper tail:           0.0034
+
+AvgMeanA
+    observed percentile:  99.6%
+    upper tail:           0.0043
+
+AvgEndA
+    observed percentile:  99.6%
+    upper tail:           0.0040
+</code></pre>
+
+<p>
+The important feature is not one isolated small empirical tail. Several
+preselected anticipation-related statistics move together in the same direction,
+while the two mature BSP2 siblings do not.
+</p>
+
+<p>
+This makes SamePersistence the natural seam for the next control.
+</p>
+
+<h3>Interpretation</h3>
+
+<p>
+The conditional null asks:
+</p>
+
+<blockquote>
+Given the historical decisions actually made by this predictor, were the
+realized outcomes and report geometry unusually favorable relative to a fair
+source?
+</blockquote>
+
+<p>
+For most of the tracker family, the answer is no.
+</p>
+
+<p>
+For SamePersistence, several frozen statistics are unusually high under that
+conditional comparison.
+</p>
+
+<p>
+This still does not establish exploitable forward information, because the
+historical decision path remains fixed by the observed record.
+</p>
+
+<p>
+The next required control is therefore a full algorithmic null:
+</p>
+
+<pre><code>fresh fair source
+    ↓
+SamePersistence generates its own decisions
+    ↓
+same merged-master update cadence
+    ↓
+same 10B warmup and rolling window
+    ↓
+same horizon
+    ↓
+same 10B segmentation
+    ↓
+same frozen report metrics
+</code></pre>
+
+<p>
+No new threshold, window size, strategy variant, or nearby persistence rule will
+be selected from the opened SamePersistence record before that control is
+completed.
+</p>
+
+<p>
+The consolidated result sharpens the working distinction:
+</p>
+
+<blockquote>
+Detectable structure need not imply anticipatable structure — but the
+SamePersistence seam now deserves a stronger test.
+</blockquote>
