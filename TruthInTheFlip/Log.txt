@@ -5603,3 +5603,14 @@ AvgMeanZHeads                  +0.042543         +0.000277         +0.000351    
 AvgEndZHeads                   +0.043828         +0.000282         +0.000248         [-0.055036, +0.055286]                     90.1%       0.9007       0.0994
 ================================
 </code></pre>
+
+___________________________________________________________________________
+╔═══════════════╗
+║20260926_181102║
+╚═══════════════╝
+<h2>SamePersistence.NET1.rep2.tkr/h2>
+<p>ran:</p>
+<pre><code>TruthInTheFlip -create -record -print Detailed -rsource NET1 -window WindowByTotal 10000000000 -anticipation SamePersistence WindowByTotal 10000000000 SamePersistence.NET1.rep2.tkr                                                                                                                                  
+</code></pre>
+
+<p>At aproximately 20260926_181102 SamePersistence Anticipation actived and ZHeads was sane.</p>
