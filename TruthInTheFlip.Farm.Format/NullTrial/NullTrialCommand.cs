@@ -6,17 +6,17 @@ using TruthInTheFlip.Format;
 namespace TruthInTheFlip.Farm.Format;
 
 /// <summary>
-/// Fluent command for executing a single deterministic conditional-null trial.
+/// Fluent command for executing a single deterministic conditional or algorithmic null trial.
 /// </summary>
 public class NullTrialCommand
 {
     [FluentMethod("null_trial")]
-    [KV_FA(FluentAttribute.Help, "Run a single deterministic conditional-null experiment trial.")]
+    [KV_FA(FluentAttribute.Help, "Run a single deterministic conditional or algorithmic null experiment trial.")]
     public static FarmCommand NullTrial(
         [KV_FA(FluentAttribute.Help, "Deterministic random seed for the trial.")]
         ulong seed,
-        [KV_FA(FluentAttribute.Help, "Conditional null specification with historical tracker source.")]
-        ConditionalNullSpec condition,
+        [KV_FA(FluentAttribute.Help, "Null specification with historical tracker source.")]
+        INullTrialSpec condition,
         [KV_FA(FluentAttribute.Help, "Rolling window bounds.")]
         TrackerWindows.TrackerWindow window,
         [KV_FA(FluentAttribute.Help, "Segmentation definition.")]
@@ -66,7 +66,7 @@ public class NullTrialCommand
     /// Executes one deterministic trial from a materialized schedule through window and segmentation, returning the aggregated result.
     /// </summary>
     public static (SegmentAggregate Aggregate, int SegmentCount, long RecordCount) RunTrial(
-        ConditionalNullSchedule schedule,
+        INullSchedule schedule,
         ulong seed,
         TrackerWindows.TrackerWindow window,
         SegSelector segmentation,

@@ -25,7 +25,7 @@ public readonly record struct ConditionalNullStep(
 /// In-memory materialized schedule of historical predictor orientation and snapshot cadence.
 /// Enables deterministic, zero-disk-IO replay of synthetic conditional null trials across arbitrary seeds.
 /// </summary>
-public sealed class ConditionalNullSchedule
+public sealed class ConditionalNullSchedule : INullSchedule
 {
     public TrackerStore Store { get; }
     public IReadOnlyList<ConditionalNullStep> Steps { get; }

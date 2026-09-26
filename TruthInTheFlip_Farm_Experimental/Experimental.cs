@@ -49,6 +49,7 @@ public class Experimental
     public static void AddToEnv(FluentEnvironment env)
     {   
         env.AddModule<ConditionalNullSpec>();
+        env.AddModule<SamePersistenceAlgorithmicNullSpec>();
         env.AddModule<NullTrialCommand>();
         env.AddModule<NullTrialProcess>();
         env.AddModule<NullReportCommand>();
