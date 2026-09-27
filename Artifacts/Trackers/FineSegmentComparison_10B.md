@@ -8,7 +8,7 @@ The source reports were generated from `Artifacts/Trackers` with:
 
 ```bash
 ls *.tkr | xargs -I {} sh -c \
-'TruthInTheFlip_Farm_Experimental segment_report All full window by_total 10B file {} full by_total 10B > ~/TrackerTemp/{}.seg_report_fine.txt'
+'TruthInTheFlip_Farm segment_report All full window by_total 10B file {} full by_total 10B > ~/TrackerTemp/{}.seg_report_fine.txt'
 ```
 
 The complete generated reports are intentionally treated as analysis/archive artifacts rather than normal repository content because of their size. This file preserves the compact comparison.

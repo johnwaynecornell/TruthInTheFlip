@@ -4,11 +4,11 @@
 
 The command language is intentionally compositional. A command determines:
 
-1. where tracker state comes from;
+1. where tracker state comes from (source or null-model specification);
 2. the coordinate system and origin in which it is expressed;
 3. the observational scale of each tracker state;
-4. the population or grouping over which statistics are computed;
-5. the output representation.
+4. the population or grouping over which statistics are computed (segments, aggregates, wrapped populations);
+5. the output representation (`csv`, `json`, `pretty`, or curated reports like `segment_report` and `null_report`).
 
 > **The order of the pipeline is part of the analysis.**
 
@@ -129,10 +129,11 @@ TruthInTheFlip_Farm json tracker file "Quant.tkr" total ZScore | jq -c 'select(.
 ```
 
 Use `csv` for tabular machine interchange, `json` for structured streaming
-machine interchange, `pretty` for human inspection, and `segment_report` for a
-curated analytical report. Non-finite floating-point results are represented
-as the strings `"NaN"`, `"Infinity"`, or `"-Infinity"`; ordinary numerics retain
-their JSON numeric type, and null remains JSON null.
+machine interchange, `pretty` for human inspection, and curated commands such
+as `segment_report` and `null_report` for specialized analytical summaries.
+Non-finite floating-point results are represented as the strings `"NaN"`,
+`"Infinity"`, or `"-Infinity"`; ordinary numerics retain their JSON numeric type,
+and null remains JSON null.
 
 ### Export segment statistics
 
@@ -273,6 +274,89 @@ TruthInTheFlip_Farm \
 
 The first `by_total` is the `SegSelector` that divides tracker records into segments. The second `by_total` is the `AggSelector` that groups those segments into aggregates.
 
+### Higher-order process wrapping (`wrap`)
+
+`wrap` is a generic higher-order process adapter that wraps any existing `FarmProcess`, consumes the items emitted by that child process as a single population, and exposes one outer item against which existing Farm aggregate metric expressions can operate.
+
+```text
+child FarmProcess
+    -> population of child items
+    -> wrap
+    -> one outer analytical item
+    -> standard Farm metric projection
+```
+
+`wrap` does not create a second aggregation language. Existing aggregate expressions (`mean#...`, `max#...`, `min#...`, `median#...`, `stddev_sample#...`, `pearson#...`, etc.) perform the computation over the wrapped population.
+
+For example, wrapping a windowed tracker:
+
+```bash
+TruthInTheFlip_Farm pretty wrap \
+    tracker window by_total 10B file "Quant.tkr" \
+    mean#ZScore
+```
+
+Example output:
+
+```text
+[1/1]
+    mean#ZScore = -0.044488260455580866
+```
+
+The `[1/1]` indicator reflects that `wrap` yields exactly one outer record representing the entire wrapped child population.
+
+`wrap` composes generically with any output adapter (`pretty`, `csv`, `json`) and any child process (`tracker`, `segment`, `segment_agg`, `null_trials`).
+
+### Conditional-null experiments and null reports
+
+TruthInTheFlip Farm includes standard commands for conditional-null hypothesis testing:
+
+1. `same_persistence_algorithmic`: defines the conditional-null model matching historical source length, segment structure, and transition persistence.
+2. `null_trials`: a `FarmProcess` that executes a population of deterministic, seeded null trials and emits one `NullTrialStats` item per trial.
+3. `null_report`: a curated analytical command comparing real observed tracker metrics against an empirical null trial distribution.
+4. `null_trial`: a single-trial command for rapid inspection of a specific seed.
+
+#### Running a curated null report (`null_report`)
+
+```bash
+TruthInTheFlip_Farm null_report 100 897234 \
+    same_persistence_algorithmic \
+    file "SamePersistence.NET1.tkr" \
+    10B \
+    by_total 10B \
+    by_total 10B
+```
+
+`null_report` runs 100 deterministic trials derived from base seed `897234`, evaluates empirical percentiles and tail probabilities for key metrics (`EdgeExcursionScore`, `EdgeSettlementScore`, `EdgePersistenceIndex`, anticipation averages), and formats a curated comparison table.
+
+#### Compositional null-trial analysis (`wrap null_trials`)
+
+While `null_report` provides curated reporting, `wrap null_trials` provides the generic compositional surface:
+
+```bash
+TruthInTheFlip_Farm pretty wrap \
+    null_trials 10 897234 \
+        same_persistence_algorithmic \
+        file "SamePersistence.NET1.tkr" \
+        10B \
+        by_total 10B \
+        by_total 10B \
+    max#TrialIndex \
+    max#AvgMeanA \
+    mean#AvgPctAAtLeast50
+```
+
+Observed result:
+
+```text
+[1/1]
+    max#TrialIndex = 9
+    max#AvgMeanA = 50.00002019384653
+    mean#AvgPctAAtLeast50 = 49.61480654761905
+```
+
+Neither replaces the other: `null_report` is a curated analytical summary; `pretty/csv/json wrap null_trials ...` allows arbitrary metric expressions over the simulated trial population.
+
 ### Run a segment report
 
 `segment_report` is a curated analytical report rather than a metric projection. It decides which statistics to present; its grade controls the level of detail:
@@ -356,13 +440,18 @@ Aggregate parameters (List<double>)
     collect one value per item from the child process population
 ```
 
-In `csv segment`, the child process is the stream of Tracker records within each segment. In `csv segment_agg`, the child process is the stream of `SegmentStats` items within each aggregate.
+The child process population is determined by the enclosing process hierarchy:
+
+- In `csv segment`, the child process is the stream of Tracker records within each segment.
+- In `csv segment_agg`, the child process is the stream of `SegmentStats` items within each aggregate.
+- In `csv wrap tracker`, the child process is the stream of all Tracker records emitted by the tracker source.
+- In `csv wrap null_trials`, the child process is the stream of `NullTrialStats` records emitted by the null trials.
 
 Nested function calls descend through process levels accordingly:
 
 ```text
 mean#anticipatedTails
-    → mean of anticipatedTails across all Tracker records in each segment
+    → mean of anticipatedTails across all Tracker records in each segment (at segment level)
 
 pearson#ZScoreHeads,ZScoreTails
     → Pearson correlation of ZScoreHeads and ZScoreTails across Tracker records
@@ -469,10 +558,11 @@ The Farm is being kept in the TruthInTheFlip solution as a small set of delibera
 
 - **FluentCommandLine** — typed command grammar, registries, parsing, help, module initialization, and environment-local context.
 - **JWCFarm** — general Farm processes, lifecycle actions, metric catalogs, paths, binders, and projections.
-- **TruthInTheFlip.Farm.Format** — TruthInTheFlip-specific sources, windows, boundaries, segmentation, metric reflection, and Farm process adapters.
-- **TruthInTheFlip_Farm** — the application entry point, top-level commands, help/info integration, and final composition.
+- **TruthInTheFlip.Farm.Format** — TruthInTheFlip-specific sources, windows, boundaries, segmentation, metric reflection, conditional-null models, null trials, and Farm process adapters.
+- **TruthInTheFlip_Farm** — the standard application entry point, top-level commands, help/info integration, and final composition.
+- **TruthInTheFlip_Farm_Experimental** — experimental entry point providing the standard Farm surface plus in-development metric extensions (such as `standardizedDirectionTail` and `BetSameGapTrend`).
 
-The split is intentional: reusable machinery is separated from TruthInTheFlip-specific semantics while the repository remains available as one coherent solution.
+The split is intentional: reusable machinery is separated from TruthInTheFlip-specific semantics while the repository remains available as one coherent solution. Stable analytical workflows and conditional-null experiments run directly in `TruthInTheFlip_Farm`.
 
 ## Extensibility
 

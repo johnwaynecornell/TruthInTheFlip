@@ -105,6 +105,11 @@ Argument Types
             condition             <INullTrialSpec>      Null specification with historical tracker source.
             window                <TrackerWindow>       Rolling window bounds.
             segmentation          <SegSelector>         Segmentation definition.
+    
+        wrap process
+            Wrap a child FarmProcess to expose its items as a population for outer metric aggregation.
+    
+            process               <FarmProcess>         Child FarmProcess to wrap.
 
 <AggSelector> — Definition for aggregating SegmentStats into larger segments
 

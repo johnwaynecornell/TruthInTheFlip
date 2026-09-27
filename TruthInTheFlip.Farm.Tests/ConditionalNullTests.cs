@@ -362,12 +362,12 @@ public sealed class ConditionalNullTests
     }
 
     [Fact]
-    public void StableFarmEnvironment_DoesNotExposeNullTrialOrConditioned()
+    public void StandardFarmEnvironment_ExposesNullTrialAndConditioned()
     {
         string path = CreateTestTrackerFile(recordCount: 10, stepTotal: 100);
         try
         {
-            // Stable environment registers only TruthInTheFlip_Fluent
+            // Standard environment registers TruthInTheFlip_Fluent
             var env = new FluentEnvironment();
             env.AddModule<TruthInTheFlip_Fluent>();
             env.ServeTypes = new[] { typeof(FarmCommand) };
@@ -388,9 +388,10 @@ public sealed class ConditionalNullTests
             int cursor = 0;
             var res = env.ParseOne(args, ref cursor);
 
-            // In stable environment, null_trial is unrecognized
-            Assert.Null(res);
-            Assert.Equal(0, cursor);
+            // In standard environment, null_trial and conditioned are recognized
+            Assert.NotNull(res);
+            Assert.IsAssignableFrom<FarmCommand>(res.Result);
+            Assert.Equal(args.Count, cursor);
         }
         finally
         {
@@ -404,11 +405,8 @@ public sealed class ConditionalNullTests
         string path = CreateTestTrackerFile(recordCount: 20, stepTotal: 100);
         try
         {
-            // Experimental environment registers TruthInTheFlip_Fluent + experimental modules
             var env = new FluentEnvironment();
             env.AddModule<TruthInTheFlip_Fluent>();
-            env.AddModule<ConditionalNullSpec>();
-            env.AddModule<NullTrialCommand>();
             env.ServeTypes = new[] { typeof(FarmCommand) };
 
             List<string> args = new()
@@ -674,17 +672,13 @@ public sealed class ConditionalNullTests
     }
 
     [Fact]
-    public void FluentCommandLine_ParsesNullTrialsAndNullReport_InExperimentalEnvironment()
+    public void FluentCommandLine_ParsesNullTrialsAndNullReport_InStandardEnvironment()
     {
         string path = CreateTestTrackerFile(recordCount: 20, stepTotal: 100);
         try
         {
             var env = new FluentEnvironment();
             env.AddModule<TruthInTheFlip_Fluent>();
-            env.AddModule<ConditionalNullSpec>();
-            env.AddModule<NullTrialCommand>();
-            env.AddModule<NullTrialProcess>();
-            env.AddModule<NullReportCommand>();
             env.ServeTypes = new[] { typeof(FarmCommand) };
 
             // 1. null_report command
@@ -802,7 +796,7 @@ public sealed class ConditionalNullTests
     }
 
     [Fact]
-    public void StableFarmEnvironment_DoesNotExposeNullTrialsOrNullReport()
+    public void StandardFarmEnvironment_ExposesNullTrialsAndNullReport()
     {
         string path = CreateTestTrackerFile(recordCount: 10, stepTotal: 100);
         try
@@ -817,8 +811,8 @@ public sealed class ConditionalNullTests
             };
             int cursor1 = 0;
             var res1 = env.ParseOne(args1, ref cursor1);
-            Assert.Null(res1);
-            Assert.Equal(0, cursor1);
+            Assert.NotNull(res1);
+            Assert.Equal(args1.Count, cursor1);
 
             List<string> args2 = new()
             {
@@ -826,8 +820,8 @@ public sealed class ConditionalNullTests
             };
             int cursor2 = 0;
             var res2 = env.ParseOne(args2, ref cursor2);
-            Assert.Null(res2);
-            Assert.Equal(0, cursor2);
+            Assert.NotNull(res2);
+            Assert.Equal(args2.Count, cursor2);
         }
         finally
         {

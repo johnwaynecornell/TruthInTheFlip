@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-TruthInTheFlip Farm metrics are values selected through a metric projection. The same projection mechanism can be rendered as machine-oriented tabular `csv` or human-oriented `pretty` output.
+TruthInTheFlip Farm metrics are values selected through a metric projection. The same projection mechanism can be rendered as machine-oriented tabular `csv`, structured streaming `json`, or human-oriented `pretty` output.
 
 Examples:
 
@@ -44,14 +44,29 @@ csv segment ...
 
 produces `SegmentStats` records, so its first-level fields come from the SegmentStats catalog.
 
+```text
+csv null_trials ...
+```
+
+produces `NullTrialStats` records, so its first-level fields come from the NullTrialStats catalog.
+
+```text
+csv wrap <childProcess> ...
+```
+
+produces a single `WrapStats` record, exposing aggregate functions (`mean#...`, `max#...`, etc.) that operate over the entire population emitted by `<childProcess>`.
+
 Both projection renderers work with these processes because field binding is performed against the item type carried by the process.
 
 Conceptually:
 
 ```text
 metric projection
-    tracker  -> Tracker metrics
-    segment  -> SegmentStats metrics
+    tracker      -> Tracker metrics
+    segment      -> SegmentStats metrics
+    segment_agg  -> SegmentAggregate metrics
+    null_trials  -> NullTrialStats metrics
+    wrap         -> WrapStats aggregate functions (evaluating against child items)
 ```
 
 This is also an extensibility point. A future Farm process can participate in metric projection when its output type has a registered metric catalog.
@@ -566,7 +581,122 @@ Run `show metrics` to confirm exact names and descriptions in the current build.
 
 ---
 
-## 7. Observation scale, windows, and populations
+## 7. NullTrialStats metric families
+
+`null_trials` executes a deterministic conditional-null simulation and emits one `NullTrialStats` item per trial.
+
+Example:
+
+```bash
+TruthInTheFlip_Farm csv null_trials 100 897234 \
+    same_persistence_algorithmic \
+    file "SamePersistence.NET1.tkr" \
+    10B \
+    by_total 10B \
+    by_total 10B \
+    TrialIndex Seed SegmentCount EdgeExcursionScore EdgeSettlementScore EdgePersistenceIndex AvgMeanA AvgPctAAtLeast50
+```
+
+### 7.1 Trial identity
+
+```text
+TrialIndex     0-based index of this trial in the population. (Int32)
+Seed           Deterministic 64-bit random seed used for this trial. (UInt64)
+SegmentCount   Total number of segments evaluated in this trial. (Int32)
+```
+
+### 7.2 Edge and summary metrics
+
+```text
+EdgeExcursionScore              Median of best TrueZ per segment.
+EdgeSettlementScore             Mean of end TrueZ per segment.
+EdgePersistenceIndex            Settlement score multiplied by fraction of positive segments.
+AvgBestTrueZ                    Average of best TrueZ across segments.
+MedianBestTrueZ                 Median of best TrueZ across segments.
+AvgEndTrueZ                     Average of end TrueZ across segments.
+MedianEndTrueZ                  Median of end TrueZ across segments.
+AvgMeanTrueZ                    Average of mean TrueZ across segments.
+AvgMeanA                        Average of mean anticipation percentage across segments.
+AvgEndA                         Average of end anticipation percentage across segments.
+AvgPctAAtLeast50                Average percentage of records where anticipation >= 50%.
+AvgMeanZHeads                   Average of mean ZHeads across segments.
+AvgEndZHeads                    Average of end ZHeads across segments.
+RetainedAnticipation            Anticipation mean weighted by fraction of time above 50%.
+SettlementAdjustedAnticipation  Anticipation mean weighted by positive settlement.
+```
+
+### 7.3 Threshold percentages
+
+```text
+PctBestAtLeast_1_96             Percent of segments with best TrueZ >= 1.96.
+PctBestAtLeast_3_00             Percent of segments with best TrueZ >= 3.00.
+PctEndAtLeast_0                 Percent of segments with end TrueZ >= 0.00.
+PctEndAtLeast_1_96              Percent of segments with end TrueZ >= 1.96.
+PctMeanAtLeast_0                Percent of segments with mean TrueZ >= 0.00.
+```
+
+---
+
+## 8. WrapStats and the wrap process
+
+`wrap` turns any child `FarmProcess` into an aggregate population, emitting a single `WrapStats` record.
+
+```text
+child FarmProcess
+    -> population of child items
+    -> wrap
+    -> one outer analytical item
+    -> standard Farm metric projection
+```
+
+`WrapStats` inherits from `MetricFunctionsAggregate`, which exposes the complete vocabulary of aggregate metric functions (`mean#...`, `max#...`, `min#...`, `median#...`, `stddev_sample#...`, `pearson#...`, etc.) directly to outer formatters (`csv`, `json`, `pretty`). `wrap` does not introduce a second aggregation language; existing aggregate metric expressions continue to do the analytical work over the complete output population of the child process.
+
+Example 1: Wrapping a windowed tracker:
+
+```bash
+TruthInTheFlip_Farm pretty wrap \
+    tracker window by_total 10B file "Quant.tkr" \
+    mean#ZScore
+```
+
+Observed result:
+
+```text
+[1/1]
+    mean#ZScore = -0.044488260455580866
+```
+
+Example 2: Wrapping a conditional-null simulation:
+
+```bash
+TruthInTheFlip_Farm pretty wrap \
+    null_trials 10 897234 \
+        same_persistence_algorithmic \
+        file "SamePersistence.NET1.tkr" \
+        10B \
+        by_total 10B \
+        by_total 10B \
+    max#TrialIndex \
+    max#AvgMeanA \
+    mean#AvgPctAAtLeast50
+```
+
+Observed result:
+
+```text
+[1/1]
+    max#TrialIndex = 9
+    max#AvgMeanA = 50.00002019384653
+    mean#AvgPctAAtLeast50 = 49.61480654761905
+```
+
+The `[1/1]` indicator reflects that `wrap` yields exactly one outer record representing the entire wrapped child population.
+
+When evaluated against `WrapStats`, each aggregate function collects values from the wrapped child process items (`Tracker`, `SegmentStats`, `NullTrialStats`, etc.).
+
+---
+
+## 9. Observation scale, windows, and populations
 
 A source without a window exposes accumulated lifetime states:
 
@@ -619,7 +749,7 @@ When comparing windowed and non-windowed output, be explicit about which values 
 
 ---
 
-## 8. Useful metric sets
+## 10. Useful metric sets
 
 These are starting points rather than prescribed reports.
 
@@ -691,7 +821,7 @@ Index BeginWallclock EndWallclock Begin.absTotal End.absTotal
 
 ---
 
-## 9. Choosing direct SegmentStats metrics versus paths
+## 11. Choosing direct SegmentStats metrics versus paths
 
 Sometimes the same conceptual value can be reached through a direct segment summary or through a Tracker anchor.
 
@@ -729,7 +859,7 @@ The path system is intentionally broader than the set of hand-written segment co
 
 ---
 
-## 10. Types and downstream CSV consumers
+## 12. Types and downstream CSV consumers
 
 `show metrics` displays the CLR type associated with each field. Common types include:
 
@@ -749,7 +879,7 @@ The separate plotting guide develops this workflow in more detail.
 
 ---
 
-## 11. Metrics and extensibility
+## 13. Metrics and extensibility
 
 The metric system is intentionally not a single hard-coded switch inside the executable.
 
@@ -779,7 +909,7 @@ For a user, the important consequence is simple:
 
 ---
 
-## 11.1 Super-user metric extension
+## 13.1 Super-user metric extension
 
 Advanced callers can register metrics as `MetricDescriptor` instances directly on a `MetricCatalog`. This is the external/super-user extension path. It is distinct from the reflection-based catalog that the executable builds automatically from `[IsMetric]`-annotated members.
 
@@ -925,7 +1055,7 @@ User-defined metrics that require serial or evaluation-lifetime state should ret
 
 ---
 
-## 12. Metric naming and stability
+## 14. Metric naming and stability
 
 Metric names are part of the practical projection interface. Scripts, plots, and human inspection commands may depend on them, so changing an established metric name should be treated as an interface change rather than a cosmetic edit.
 
@@ -958,7 +1088,7 @@ if missing:
 
 ---
 
-## 13. Metric expression grammar
+## 15. Metric expression grammar
 
 Metric fields can do more than name a property. The expression language uses three operators.
 
@@ -1015,23 +1145,11 @@ Downstream tools parse this as two correctly named columns and address them by t
 
 ---
 
-## 14. Evaluation semantics
-
-### Scalar parameters
-
-A `double` parameter evaluates a single sub-expression in the context of the current process item.
-
-In `csv segment`, the current item is a `SegmentStats` record. A scalar expression such as `abs#EndTrueZ` evaluates `EndTrueZ` (a SegmentStats property) and applies `abs` to produce one double value per segment.
-
-### Aggregate parameters
-
-A `List<double>` parameter collects one value per item from the child process population.
-
-In `csv segment`, the child process provides Tracker records. An aggregate expression such as `mean#anticipatedTails` evaluates `anticipatedTails` for each Tracker record inside the segment and passes the resulting list to `mean`.
-
-In `csv segment_agg`, the child process provides SegmentStats records. An aggregate expression such as `mean#EndTrueZ` evaluates `EndTrueZ` for each SegmentStats inside the aggregate.
+## 16. Evaluation semantics
 
 ### Process hierarchy
+
+The process hierarchy is not a hard-coded set of statistical levels; it is determined compositionally by the pipeline:
 
 ```text
 csv tracker
@@ -1039,13 +1157,46 @@ csv tracker
 
 csv segment
     current: SegmentStats
-    child:   Tracker records within the segment
+    child:   Tracker records within each segment
 
 csv segment_agg
     current: SegmentAggregate
-    child:   SegmentStats items within the aggregate
+    child:   SegmentStats items within each aggregate
     child's child: Tracker records within each segment
+
+csv wrap tracker
+    current: WrapStats
+    child:   complete emitted population of Tracker records
+
+csv wrap segment
+    current: WrapStats
+    child:   complete emitted population of SegmentStats records
+    child's child: Tracker records within each segment
+
+csv wrap null_trials
+    current: WrapStats
+    child:   complete emitted population of NullTrialStats records
 ```
+
+### Scalar parameters
+
+A `double` parameter evaluates a single sub-expression in the context of the current process item.
+
+In `csv segment`, the current item is a `SegmentStats` record. A scalar expression such as `abs#EndTrueZ` evaluates `EndTrueZ` (a `SegmentStats` property) and applies `abs` to produce one double value per segment.
+
+### Aggregate parameters
+
+A `List<double>` parameter collects one value per item from the child process population:
+
+- In `csv segment`, the child process provides `Tracker` records. An aggregate expression such as `mean#anticipatedTails` evaluates `anticipatedTails` for each Tracker record inside the segment and passes the resulting list to `mean`.
+- In `csv segment_agg`, the child process provides `SegmentStats` records. An aggregate expression such as `mean#EndTrueZ` evaluates `EndTrueZ` for each `SegmentStats` inside the aggregate.
+- In `csv wrap <childProcess>`, the child process is the entire population emitted by `<childProcess>`. An expression such as `mean#ZScore` across `wrap tracker ...` collects `ZScore` over all emitted tracker states; `mean#AvgPctAAtLeast50` across `wrap null_trials ...` collects `AvgPctAAtLeast50` over all simulated trials.
+
+`wrap` does not introduce a second aggregation language: existing aggregate metric functions (`mean#...`, `max#...`, `min#...`, `median#...`, `stddev_sample#...`, `pearson#...`, etc.) continue to do all analytical work by descending into the child population.
+
+### Numeric widening in aggregate expressions
+
+When an aggregate function consumes a `List<double>` parameter, the metric evaluation session automatically supports numeric widening for integer source properties. For example, `max#TrialIndex` works directly over a `null_trials` population even though `TrialIndex` is an `Int32` property on `NullTrialStats`, widening `Int32 -> Double` transparently.
 
 ### Nested aggregate descent
 
@@ -1070,9 +1221,13 @@ clamp(value, -1, 0)
 - `stddev_sample` — aggregate, descends to Tracker records (child of SegmentStats)
 - `AnticipatedPercentage` — Tracker property
 
+The fundamental rule remains:
+
+> each aggregate parameter descends one child-process level.
+
 ---
 
-## 15. Scalar metric functions
+## 17. Scalar metric functions
 
 Scalar functions take `double` parameters; all arguments evaluate at the current process level.
 
@@ -1097,7 +1252,7 @@ The `offset50` function is equivalent to `offset#value,-50` and is convenient wh
 
 ---
 
-## 16. Aggregate metric functions
+## 18. Aggregate metric functions
 
 Aggregate functions take `List<double>` parameters; those arguments collect one value per item from the child process population.
 
@@ -1134,7 +1289,7 @@ Notes on `variance_sample` and `stddev_sample`:
 
 ---
 
-## 17. Worked expressions
+## 19. Worked expressions
 
 The following expressions have been verified against the current build. Process context is noted where the expression requires a specific level.
 
@@ -1209,17 +1364,23 @@ At `csv segment_agg`:
 
 Result: for each aggregate, clamp(mean over segments of abs(sample stddev of AnticipatedPercentage within segment), -1, 0).
 
-### Double-clamped version
+### Process population aggregation (wrap level)
 
 ```text
-clamp#clamp#mean#abs#stddev_sample#AnticipatedPercentage,-1,0,-1,-.5
+max#TrialIndex
+max#AvgMeanA
+mean#AvgPctAAtLeast50
 ```
 
-The outer `clamp` restricts the already-clamped result to `[-1, -0.5]`. All arguments at the outer clamp level are scalar.
+At `wrap null_trials ...`:
+
+- `max#TrialIndex` — aggregate; collects `TrialIndex` (`Int32`, widened to `Double`) across all null trials and returns the maximum.
+- `max#AvgMeanA` — aggregate; collects `AvgMeanA` across all null trials and returns the maximum.
+- `mean#AvgPctAAtLeast50` — aggregate; collects `AvgPctAAtLeast50` across all null trials and returns the mean.
 
 ---
 
-## 18. Where to go next
+## 20. Where to go next
 
 Use `FarmDocs/FarmGuide.md` for command composition, source/process semantics, and the full expression grammar in the context of the language architecture.
 

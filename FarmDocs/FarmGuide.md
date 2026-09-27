@@ -44,15 +44,23 @@ The public language can be understood as a small typed graph. Generated runtime 
 ```text
 projection output
     csv <FarmProcess> <metric fields...>
+    json <FarmProcess> <metric fields...>
     pretty <FarmProcess> <metric fields...>
 
 curated analysis
     segment_report <GradeArgument> <TrackerSelector> <SegSelector>
+    null_report <trialCount> <baseSeed> <INullTrialSpec> <TrackerWindow> <SegSelector>
+    null_trial <seed> <INullTrialSpec> <TrackerWindow> <SegSelector>
 
 process
     tracker <TrackerSelector>
     segment <TrackerSelector> <SegSelector>
     segment_agg <TrackerSelector> <SegSelector> <AggSelector>
+    null_trials <trialCount> <baseSeed> <INullTrialSpec> <TrackerWindow> <SegSelector>
+    wrap <FarmProcess>
+
+null condition (INullTrialSpec)
+    same_persistence_algorithmic
 
 tracker source / transformation
     file <path>
@@ -63,6 +71,7 @@ tracker source / transformation
     from <TrackerBoundary> <TrackerSelector>
     to <TrackerBoundary> <TrackerSelector>
     full <TrackerSelector>
+    conditioned <INullTrialSpec>
 
 segment selector (SegSelector)
     by_total <Count>
@@ -235,6 +244,30 @@ Displays all registered metric catalogs. The output includes:
 - metric help text.
 
 Use this command when choosing fields for `csv`, `json`, or `pretty`.
+
+### `segment_report`
+
+```text
+segment_report <GradeArgument> <TrackerSelector> <SegSelector>
+```
+
+Runs a curated analytical report on tracker segments with progressive detail levels. See Section 9.
+
+### `null_report`
+
+```text
+null_report <trialCount> <baseSeed> <INullTrialSpec> <TrackerWindow> <SegSelector>
+```
+
+Runs a curated observed-versus-null report evaluating empirical percentiles and tail probabilities over a deterministic population of conditional-null trials. See Section 9.
+
+### `null_trial`
+
+```text
+null_trial <seed> <INullTrialSpec> <TrackerWindow> <SegSelector>
+```
+
+Runs a single deterministic conditional-null trial and prints its summary metrics. See Section 9.
 
 ### `-help`
 
@@ -572,7 +605,7 @@ whole
 
 A segment exposes its own aggregate metrics as well as selected tracker records such as `Begin`, `End`, and the tracker associated with its best True Z excursion.
 
-The process hierarchy used by metric expressions descends as follows:
+The process hierarchy is not hard-coded to statistical segment levels; it is determined compositionally by the process pipeline:
 
 ```text
 Tracker records
@@ -580,9 +613,15 @@ Tracker records
         → SegmentStats
             → segment_agg <AggSelector>
                 → SegmentAggregate
+
+wrap tracker ...
+    → WrapStats (aggregating over complete emitted population of Tracker records)
+
+wrap null_trials ...
+    → WrapStats (aggregating over complete emitted population of NullTrialStats records)
 ```
 
-Each level is the child process of the one above it. This hierarchy determines how aggregate metric parameters collect their populations (see section 10).
+Each level is the child process of the one above it. This hierarchy determines how aggregate metric parameters collect their populations (each aggregate parameter descends one child level; see section 10).
 
 ### `whole`
 
@@ -613,21 +652,106 @@ Current aggregate selectors are the same `by_total` and `by_elapsed` forms avail
 
 `SegmentAggregate` exposes its own metric catalog, including averages, medians, and threshold percentages computed across its contained segments.
 
+### `null_trials`
+
+```text
+null_trials <trialCount> <baseSeed> <INullTrialSpec> <TrackerWindow> <SegSelector>
+```
+
+Executes a population of deterministic, pseudo-random conditional-null simulation trials and emits one `NullTrialStats` item per trial.
+
+- `trialCount`: number of independent trials to simulate.
+- `baseSeed`: deterministic 64-bit base random seed (all trials are strictly reproducible from this seed).
+- `INullTrialSpec`: null hypothesis specification (e.g., `same_persistence_algorithmic file "Quant.tkr" 10B`).
+- `TrackerWindow`: observation scale applied to the generated tracker.
+- `SegSelector`: segmentation strategy applied to each trial.
+
+Each emitted `NullTrialStats` contains summary statistics across the segments evaluated in that trial, including `TrialIndex`, `Seed`, `SegmentCount`, `EdgeExcursionScore`, `EdgeSettlementScore`, `EdgePersistenceIndex`, `AvgBestTrueZ`, `AvgEndTrueZ`, `AvgMeanTrueZ`, `AvgMeanA`, `AvgPctAAtLeast50`, and threshold percentages.
+
+### `wrap`
+
+```text
+wrap <FarmProcess>
+```
+
+`wrap` is a generic higher-order process adapter. It wraps any existing `FarmProcess`, consumes the items emitted by that child process as a single population, and exposes one outer item (`WrapStats`) against which standard Farm metric aggregation functions operate.
+
+```text
+child FarmProcess
+    -> population of child items
+    -> wrap
+    -> one outer analytical item
+    -> standard Farm metric projection
+```
+
+`wrap` does not introduce a second aggregation language. The existing aggregate functions (`mean#...`, `max#...`, `min#...`, `median#...`, `stddev_sample#...`, `pearson#...`, etc.) perform the evaluation across the wrapped items.
+
+For example, to compute the mean Z-Score across all windowed observations of a tracker:
+
+```bash
+TruthInTheFlip_Farm pretty wrap \
+    tracker window by_total 10B file "Quant.tkr" \
+    mean#ZScore
+```
+
+Example output:
+
+```text
+[1/1]
+    mean#ZScore = -0.044488260455580866
+```
+
+Or to aggregate across a simulated population of conditional-null trials:
+
+```bash
+TruthInTheFlip_Farm pretty wrap \
+    null_trials 10 897234 \
+        same_persistence_algorithmic \
+        file "SamePersistence.NET1.tkr" \
+        10B \
+        by_total 10B \
+        by_total 10B \
+    max#TrialIndex \
+    max#AvgMeanA \
+    mean#AvgPctAAtLeast50
+```
+
+Example output:
+
+```text
+[1/1]
+    max#TrialIndex = 9
+    max#AvgMeanA = 50.00002019384653
+    mean#AvgPctAAtLeast50 = 49.61480654761905
+```
+
+The `[1/1]` output header signifies that `wrap` yields exactly one outer record representing the entire wrapped child population.
+
+`wrap` composes with any child process and any output adapter:
+
+- `csv wrap tracker ...`
+- `json wrap segment ...`
+- `pretty wrap null_trials ...`
+
 ---
 
-## 9. `segment_report`
+## 9. Curated analysis: `segment_report` and `null_report`
+
+Curated analysis commands are specialized analytical surfaces rather than metric projection renderers. They decide which statistics to compute and format tailored domain reports.
+
+### `segment_report`
 
 ```text
 segment_report <GradeArgument> <TrackerSelector> <SegSelector>
 ```
 
-`segment_report` is curated analysis rather than a projection renderer. It collects `SegmentStats` items and decides which statistics to present in a formatted summary whose depth is controlled by the `GradeArgument`.
+`segment_report` collects `SegmentStats` items and decides which statistics to present in a formatted summary whose depth is controlled by the `GradeArgument`.
 
 ```text
 segment_report Med file "crypto3.tkr" by_total 100B
 ```
 
-### Report grades
+#### Report grades
 
 Grades are progressive: each includes everything from the level below it.
 
@@ -659,7 +783,7 @@ All     High plus:
 
 The report always ends with file compute time.
 
-### Empty segment behavior
+#### Empty segment behavior
 
 If no segments match the configuration, `segment_report` writes an error to standard error:
 
@@ -669,9 +793,48 @@ There are no segments matching this report configuration.
 
 No statistics are attempted when the segment list is empty.
 
-### When to use `segment_report` versus `csv segment`
+### `null_report`
 
-`segment_report` is a curated summary intended for human reading. `csv`, `json`, and `pretty` are renderings of the common metric projection mechanism: `csv` is machine-oriented/tabular, `json` is machine-oriented/structured streaming, and `pretty` is human-oriented. Each can project tracker, segment, or segment-aggregate processes.
+```text
+null_report <trialCount> <baseSeed> <INullTrialSpec> <TrackerWindow> <SegSelector>
+```
+
+`null_report` generates a comprehensive observed-versus-null report by comparing historical tracker statistics against an empirical distribution produced from `trialCount` deterministic conditional-null trials.
+
+Example:
+
+```bash
+TruthInTheFlip_Farm null_report 100 897234 \
+    same_persistence_algorithmic \
+    file "SamePersistence.NET1.tkr" \
+    10B \
+    by_total 10B \
+    by_total 10B
+```
+
+The output report displays:
+
+1. **Observed statistics**: Metrics computed from the real historical tracker under the specified window and segmentation.
+2. **Empirical null distribution**: Mean, standard deviation, minimum, and maximum across the simulated trials for each metric.
+3. **Empirical percentiles**: Exact percentile of the observed metric within the simulated null distribution ($P(\text{Null} \le \text{Observed})$).
+4. **Tail probabilities**: Two-sided or one-sided tail probabilities indicating statistical significance under the conditional null model.
+
+### `null_trial`
+
+```text
+null_trial <seed> <INullTrialSpec> <TrackerWindow> <SegSelector>
+```
+
+Executes a single deterministic trial for the specified 64-bit seed and prints the resulting trial summary metrics to standard output. Useful for inspecting or debugging individual seed trajectories.
+
+### Curated reporting versus compositional analysis
+
+It is important to distinguish the two analytical surfaces:
+
+- **Curated reporting** (`segment_report`, `null_report`): Domain-tailored, multi-metric analytical summaries formatted for human consumption and hypothesis testing.
+- **Compositional analysis** (`pretty/csv/json wrap ...`, `csv segment ...`): General-purpose projection pipeline allowing arbitrary metric paths, mathematical expressions, and aggregation over child populations.
+
+Neither replaces the other; they provide complementary views into tracker data.
 
 ---
 
@@ -776,6 +939,10 @@ For `csv segment_agg`:
 - The child process is the stream of `SegmentStats` items within each aggregate.
 - An aggregate parameter collects one value per `SegmentStats`.
 
+For `csv wrap <child>`:
+- The child process is the complete population emitted by `<child>` (`Tracker`, `SegmentStats`, `NullTrialStats`, etc.).
+- An aggregate parameter collects one value per item emitted by `<child>`.
+
 Nested aggregate calls descend one additional process level per aggregate parameter:
 
 ```text
@@ -790,6 +957,10 @@ At `csv segment_agg`:
 - `AnticipatedPercentage` — Tracker property
 
 Result: for each aggregate, clamp(mean across segments of abs(stddev of AnticipatedPercentage within each segment), -1, 0).
+
+#### Numeric widening in aggregate expressions
+
+When an aggregate function expects a `List<double>` parameter, the metric evaluation engine automatically supports numeric widening for integer source properties. For example, `max#TrialIndex` correctly evaluates the maximum trial index across a `null_trials` population even though `TrialIndex` is an `Int32` property on `NullTrialStats`. No manual type casts or workarounds are required.
 
 ### Multi-parameter aggregate functions
 
@@ -986,19 +1157,15 @@ Owns the TruthInTheFlip-specific adaptation:
 - rolling windows,
 - absolute and UTC boundaries,
 - segment selectors,
-- tracker and segment processes,
+- tracker, segment, wrap, and null-trial processes,
+- conditional-null models (`same_persistence_algorithmic`),
 - TruthInTheFlip metric reflection and additions,
 - TruthInTheFlip-specific type parsers and fluent modules.
 
-### TruthInTheFlip_Farm
+### TruthInTheFlip_Farm and TruthInTheFlip_Farm_Experimental
 
-Owns the executable application experience:
-
-- the top-level environment,
-- application command registration,
-- help and info commands,
-- information displays such as `show metrics`,
-- execution of the final Farm command.
+- **`TruthInTheFlip_Farm`**: the standard application entry point providing stable top-level commands (`csv`, `json`, `pretty`, `segment_report`, `null_report`, `null_trial`), processes (`tracker`, `segment`, `segment_agg`, `null_trials`, `wrap`), help/info integration, and execution.
+- **`TruthInTheFlip_Farm_Experimental`**: the experimental entry point providing the full standard Farm surface plus in-development experimental metric extensions (e.g. `standardizedDirectionTail`, `BetSameGapTrend`).
 
 The exact physical placement may continue to evolve, but the responsibility boundary is intentional: reusable processing should not be coupled to one command-line application, while TruthInTheFlip-specific behavior should not be pushed into the general Farm layer.
 
@@ -1150,6 +1317,56 @@ TruthInTheFlip_Farm \
         to absWallclock 02:00:00 \
             file "/data/trackers/crypto3.tkr" \
     absTotal WallclockTime ZScore UtcEndTime
+```
+
+### Wrapped tracker aggregate
+
+```bash
+TruthInTheFlip_Farm pretty wrap \
+    tracker window by_total 10B file "Quant.tkr" \
+    mean#ZScore
+```
+
+Example output:
+
+```text
+[1/1]
+    mean#ZScore = -0.044488260455580866
+```
+
+### Wrapped conditional-null trials
+
+```bash
+TruthInTheFlip_Farm pretty wrap \
+    null_trials 10 897234 \
+        same_persistence_algorithmic \
+        file "SamePersistence.NET1.tkr" \
+        10B \
+        by_total 10B \
+        by_total 10B \
+    max#TrialIndex \
+    max#AvgMeanA \
+    mean#AvgPctAAtLeast50
+```
+
+Example output:
+
+```text
+[1/1]
+    max#TrialIndex = 9
+    max#AvgMeanA = 50.00002019384653
+    mean#AvgPctAAtLeast50 = 49.61480654761905
+```
+
+### Curated conditional-null report
+
+```bash
+TruthInTheFlip_Farm null_report 100 897234 \
+    same_persistence_algorithmic \
+    file "SamePersistence.NET1.tkr" \
+    10B \
+    by_total 10B \
+    by_total 10B
 ```
 
 ### Inspect the metric vocabulary first

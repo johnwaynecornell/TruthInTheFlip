@@ -139,6 +139,8 @@ public class Commands
         catalogs.TryGet(typeof(Tracker), out var trackerMetrics);
         catalogs.TryGet(typeof(SegmentStats), out var segmentMetrics);
         catalogs.TryGet(typeof(SegmentAggregate), out var aggMetrics);
+        catalogs.TryGet(typeof(NullTrialStats), out var nullTrialMetrics);
+        catalogs.TryGet(typeof(WrapStats), out var wrapMetrics);
         
         return new FarmDelegateCommand((ctx) =>
         {

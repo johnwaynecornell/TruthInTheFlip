@@ -435,51 +435,13 @@ public sealed class SamePersistenceAlgorithmicNullTests
     }
 
     [Fact]
-    public void StableFarmEnvironment_DoesNotExposeAlgorithmic()
+    public void StandardFarmEnvironment_ExposesAlgorithmic()
     {
         string path = CreateTestTrackerFile(recordCount: 10, stepTotal: 200_000_000L);
         try
         {
             var env = new FluentEnvironment();
             env.AddModule<TruthInTheFlip_Fluent>();
-            env.ServeTypes = new[] { typeof(FarmCommand) };
-
-            List<string> args = new()
-            {
-                "null_trial",
-                "20260925",
-                "same_persistence_algorithmic",
-                "file",
-                path,
-                "10B",
-                "by_total",
-                "10B",
-                "by_total",
-                "10B"
-            };
-
-            int cursor = 0;
-            var res = env.ParseOne(args, ref cursor);
-
-            Assert.Null(res);
-            Assert.Equal(0, cursor);
-        }
-        finally
-        {
-            File.Delete(path);
-        }
-    }
-
-    [Fact]
-    public void ExperimentalFarmEnvironment_ExposesAlgorithmic()
-    {
-        string path = CreateTestTrackerFile(recordCount: 10, stepTotal: 200_000_000L);
-        try
-        {
-            var env = new FluentEnvironment();
-            env.AddModule<TruthInTheFlip_Fluent>();
-            env.AddModule<SamePersistenceAlgorithmicNullSpec>();
-            env.AddModule<NullTrialCommand>();
             env.ServeTypes = new[] { typeof(FarmCommand) };
 
             List<string> args = new()
