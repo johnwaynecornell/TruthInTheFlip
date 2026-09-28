@@ -308,13 +308,61 @@ public class MetricBinder
             return true;
         }
 
-        if (type != null && process != null && process.TryGetDynamicMetric(type, name, out metric))
+        var processCatalog = type != null ? process?.GetDynamicMetricCatalog(type) : null;
+        if (processCatalog != null && processCatalog.Metrics.TryGetValue(name, out metric))
         {
             return true;
         }
 
         metric = null;
         return false;
+    }
+
+    private static bool HasMetricSchema(
+        FarmProcess? process,
+        MetricCatalogs catalogs,
+        Type? type)
+    {
+        if (type == null) return false;
+        if (catalogs.TryGet(type, out var catalog) && catalog != null)
+            return true;
+        if (process?.GetDynamicMetricCatalog(type) != null)
+            return true;
+        return false;
+    }
+
+    private static List<MetricDescriptor> EnumerateEffectiveMetrics(
+        FarmProcess? process,
+        MetricCatalogs catalogs,
+        Type type)
+    {
+        var result = new List<MetricDescriptor>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+
+        if (catalogs.TryGet(type, out var catalog) && catalog != null)
+        {
+            foreach (var descriptor in catalog.Metrics.Values)
+            {
+                if (seen.Add(descriptor.Name))
+                {
+                    result.Add(descriptor);
+                }
+            }
+        }
+
+        var processCatalog = process?.GetDynamicMetricCatalog(type);
+        if (processCatalog != null)
+        {
+            foreach (var descriptor in processCatalog.Metrics.Values)
+            {
+                if (seen.Add(descriptor.Name))
+                {
+                    result.Add(descriptor);
+                }
+            }
+        }
+
+        return result;
     }
 
     // ── SourceExpressions binding ─────────────────────────────────────────────
@@ -458,7 +506,7 @@ public class MetricBinder
                     scopeType = GetPathReturnType(prefixPath);
                 }
 
-                if (!catalogs.TryGet(scopeType, out var catalog) || catalog == null)
+                if (!HasMetricSchema(process, catalogs, scopeType))
                 {
                     int errOffset = field.Length - 4;
                     bindError = new MetricBindError(field, errOffset, 4,
@@ -467,14 +515,15 @@ public class MetricBinder
                     return false;
                 }
 
-                foreach (var descriptor in catalog.Metrics.Values)
+                var descriptors = EnumerateEffectiveMetrics(process, catalogs, scopeType);
+
+                foreach (var descriptor in descriptors)
                 {
                     if (descriptor.Type != MetricDescriptor.EType.Property)
                         continue;
 
                     if (descriptor.ValueType != null &&
-                        catalogs.TryGet(descriptor.ValueType, out var nestedCatalog) &&
-                        nestedCatalog != null)
+                        HasMetricSchema(process, catalogs, descriptor.ValueType))
                     {
                         // Exclude intermediate metric-bearing object scopes
                         continue;

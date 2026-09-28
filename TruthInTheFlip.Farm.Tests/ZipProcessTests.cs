@@ -264,24 +264,46 @@ public class ZipProcessTests
         var childB = new MockChildProcess<RecordB>(Array.Empty<RecordB>());
         var zip = new ZipProcess(childA, childB);
 
-        Assert.True(zip.TryGetDynamicMetric(typeof(ProcessArrayStats), "item_0", out var metric0));
+        var catalog = zip.GetDynamicMetricCatalog(typeof(ProcessArrayStats));
+        Assert.NotNull(catalog);
+
+        Assert.True(catalog!.Metrics.TryGetValue("item_0", out var metric0));
         Assert.NotNull(metric0);
         Assert.Equal(typeof(RecordA), metric0!.ValueType);
         Assert.Equal(MetricDescriptor.EType.Property, metric0.Type);
 
-        Assert.True(zip.TryGetDynamicMetric(typeof(ProcessArrayStats), "item_1", out var metric1));
+        Assert.True(catalog.Metrics.TryGetValue("item_1", out var metric1));
         Assert.NotNull(metric1);
         Assert.Equal(typeof(RecordB), metric1!.ValueType);
         Assert.Equal(MetricDescriptor.EType.Property, metric1.Type);
 
         // Out of bounds
-        Assert.False(zip.TryGetDynamicMetric(typeof(ProcessArrayStats), "item_2", out _));
-        Assert.False(zip.TryGetDynamicMetric(typeof(ProcessArrayStats), "item_-1", out _));
-        Assert.False(zip.TryGetDynamicMetric(typeof(ProcessArrayStats), "item_abc", out _));
-        Assert.False(zip.TryGetDynamicMetric(typeof(ProcessArrayStats), "other", out _));
+        Assert.False(catalog.Metrics.ContainsKey("item_2"));
+        Assert.False(catalog.Metrics.ContainsKey("item_-1"));
+        Assert.False(catalog.Metrics.ContainsKey("item_abc"));
+        Assert.False(catalog.Metrics.ContainsKey("other"));
 
         // Wrong type
-        Assert.False(zip.TryGetDynamicMetric(typeof(RecordA), "item_0", out _));
+        Assert.Null(zip.GetDynamicMetricCatalog(typeof(RecordA)));
+    }
+
+    // ── 6b. Zip dynamic catalog stability ─────────────────────────────────────
+
+    [Fact]
+    public void ZipProcess_DynamicCatalog_IsStableAndDeterministic()
+    {
+        var childA = new MockChildProcess<RecordA>(Array.Empty<RecordA>());
+        var childB = new MockChildProcess<RecordB>(Array.Empty<RecordB>());
+        var zip = new ZipProcess(childA, childB);
+
+        var catalog1 = zip.GetDynamicMetricCatalog(typeof(ProcessArrayStats));
+        var catalog2 = zip.GetDynamicMetricCatalog(typeof(ProcessArrayStats));
+
+        Assert.NotNull(catalog1);
+        Assert.Same(catalog1, catalog2);
+
+        // Keys preserved in child ordinal order
+        Assert.Equal(new[] { "item_0", "item_1" }, catalog1!.Metrics.Keys);
     }
 
     // ── 7. Nested metric continuation ─────────────────────────────────────────
@@ -641,5 +663,118 @@ public class ZipProcessTests
 
         Assert.False(double.IsNaN(z0));
         Assert.False(double.IsNaN(z1));
+    }
+
+    // ── 16. Zip item_0.#ALL ───────────────────────────────────────────────────
+
+    [Fact]
+    public void ZipProcess_Item0All_ExpandsChild0CatalogLeaves()
+    {
+        var childA = new MockChildProcess<RecordA>(new RecordA[]
+        {
+            new() { ZScore = 1.25, Id = 10 },
+            new() { ZScore = 2.50, Id = 20 }
+        });
+
+        var childB = new MockChildProcess<RecordB>(new RecordB[]
+        {
+            new() { EndTrueZ = 100.0, Label = "row1" },
+            new() { EndTrueZ = 200.0, Label = "row2" }
+        });
+
+        var zip = new ZipProcess(childA, childB);
+        var catalogs = CreateCatalogs();
+
+        bool ok = zip.BindFields(catalogs, new[] { "item_0.#ALL" }, out var error);
+        Assert.True(ok, error?.ToString());
+        Assert.NotNull(zip.Projection);
+
+        Assert.Equal(2, zip.Projection!.Fields.Count);
+        Assert.Equal(new[] { "item_0.ZScore", "item_0.Id" }, zip.Projection.Fields.Select(f => f.ToString()));
+
+        var produced = new List<ProcessArrayStats>();
+        zip.Actions = new ProcessActions(process: (_, item) => produced.Add((ProcessArrayStats)item));
+        zip.Execute(new FarmContext());
+
+        Assert.Equal(2, produced.Count);
+        var session = zip.Session!;
+        var proj = zip.Projection!;
+
+        Assert.Equal(1.25, proj.Fields[0].Get(session, produced[0]));
+        Assert.Equal(10, proj.Fields[1].Get(session, produced[0]));
+
+        Assert.Equal(2.50, proj.Fields[0].Get(session, produced[1]));
+        Assert.Equal(20, proj.Fields[1].Get(session, produced[1]));
+    }
+
+    // ── 17. Zip item_0.#ALL and item_1.#ALL coexist ───────────────────────────
+
+    [Fact]
+    public void ZipProcess_Item0All_And_Item1All_CoexistInRequestedOrder()
+    {
+        var childA = new MockChildProcess<RecordA>(new RecordA[]
+        {
+            new() { ZScore = 3.5, Id = 99 }
+        });
+
+        var childB = new MockChildProcess<RecordB>(new RecordB[]
+        {
+            new() { EndTrueZ = 45.6, Label = "tagB" }
+        });
+
+        var zip = new ZipProcess(childA, childB);
+        var catalogs = CreateCatalogs();
+
+        bool ok = zip.BindFields(catalogs, new[] { "item_0.#ALL", "item_1.#ALL" }, out var error);
+        Assert.True(ok, error?.ToString());
+        Assert.NotNull(zip.Projection);
+
+        Assert.Equal(4, zip.Projection!.Fields.Count);
+        Assert.Equal(new[]
+        {
+            "item_0.ZScore", "item_0.Id",
+            "item_1.EndTrueZ", "item_1.Label"
+        }, zip.Projection.Fields.Select(f => f.ToString()));
+
+        var produced = new List<ProcessArrayStats>();
+        zip.Actions = new ProcessActions(process: (_, item) => produced.Add((ProcessArrayStats)item));
+        zip.Execute(new FarmContext());
+
+        Assert.Single(produced);
+        var session = zip.Session!;
+        var proj = zip.Projection!;
+
+        Assert.Equal(3.5, proj.Fields[0].Get(session, produced[0]));
+        Assert.Equal(99, proj.Fields[1].Get(session, produced[0]));
+        Assert.Equal(45.6, proj.Fields[2].Get(session, produced[0]));
+        Assert.Equal("tagB", proj.Fields[3].Get(session, produced[0]));
+    }
+
+    // ── 18. Root #ALL on zip filters intermediate child scopes ────────────────
+
+    [Fact]
+    public void ZipProcess_RootAll_FiltersIntermediateChildScopes()
+    {
+        var childA = new MockChildProcess<RecordA>(new RecordA[]
+        {
+            new() { ZScore = 1.0, Id = 1 }
+        });
+
+        var childB = new MockChildProcess<RecordB>(new RecordB[]
+        {
+            new() { EndTrueZ = 2.0, Label = "b" }
+        });
+
+        var zip = new ZipProcess(childA, childB);
+        var catalogs = CreateCatalogs();
+
+        // Root "#ALL" evaluates ProcessArrayStats dynamic schema: item_0 (RecordA) and item_1 (RecordB).
+        // Both are metric-bearing types (intermediate scopes), so they are excluded from leaf projection.
+        bool ok = zip.BindFields(catalogs, new[] { "#ALL" }, out var error);
+        Assert.True(ok, error?.ToString());
+        Assert.NotNull(zip.Projection);
+
+        // 0 leaf fields remain
+        Assert.Empty(zip.Projection!.Fields);
     }
 }

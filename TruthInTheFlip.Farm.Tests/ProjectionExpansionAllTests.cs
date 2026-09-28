@@ -49,7 +49,7 @@ public class ProjectionExpansionAllTests
         private readonly Type _statType;
         private readonly Type _inputType;
         private readonly FarmProcess? _inputProcess;
-        private readonly Dictionary<(Type, string), MetricDescriptor> _dynamicMetrics = new();
+        private readonly Dictionary<Type, MetricCatalog> _dynamicCatalogs = new();
 
         public DynamicTestProcess(
             Type statType,
@@ -63,12 +63,17 @@ public class ProjectionExpansionAllTests
 
         public void AddDynamicMetric(Type type, MetricDescriptor descriptor)
         {
-            _dynamicMetrics[(type, descriptor.Name)] = descriptor;
+            if (!_dynamicCatalogs.TryGetValue(type, out var catalog))
+            {
+                catalog = new MetricCatalog();
+                _dynamicCatalogs[type] = catalog;
+            }
+            catalog.Add(descriptor);
         }
 
-        public override bool TryGetDynamicMetric(Type type, string name, out MetricDescriptor? metric)
+        public override MetricCatalog? GetDynamicMetricCatalog(Type type)
         {
-            return _dynamicMetrics.TryGetValue((type, name), out metric);
+            return _dynamicCatalogs.TryGetValue(type, out var catalog) ? catalog : null;
         }
 
         public override Type StatType => _statType;
@@ -570,9 +575,10 @@ public class ProjectionExpansionAllTests
         Assert.Null(error);
         Assert.NotNull(projection);
 
-        // 1 dynamic field + 6 expanded fields = 7
-        Assert.Equal(7, projection!.Fields.Count);
+        // 1 explicit dynamic field + 7 expanded fields (6 catalog + 1 dynamic) = 8
+        Assert.Equal(8, projection!.Fields.Count);
         Assert.Equal("DynamicField", projection.Fields[0].ToString());
+        Assert.Equal("DynamicField", projection.Fields[7].ToString());
 
         var item = new ComplexLeafContainer { DoubleVal = 5.0 };
         var session = new MetricEvaluationSession(projection);
@@ -673,5 +679,391 @@ public class ProjectionExpansionAllTests
             "ChildScope.Description",
             "ChildScope.DeepChild.DeepValue"
         }, projection.Fields.Select(f => f.ToString()));
+    }
+
+    // ── 13. Dynamic metric catalog: default process ───────────────────────────
+
+    private sealed class PlainDefaultProcess : FarmProcess
+    {
+        public override Type StatType => typeof(ComplexLeafContainer);
+        public override Type InputType => typeof(object);
+        protected override IEnumerable<object> EnumerateItems(FarmContext context) => Array.Empty<object>();
+    }
+
+    [Fact]
+    public void DefaultProcess_HasNoDynamicMetricCatalog()
+    {
+        var process = new PlainDefaultProcess();
+        var dynamicCatalog = process.GetDynamicMetricCatalog(typeof(ComplexLeafContainer));
+        Assert.Null(dynamicCatalog);
+    }
+
+    // ── 14. Dynamic-only root #ALL ────────────────────────────────────────────
+
+    [Fact]
+    public void DynamicOnlyRoot_All_ExpandsDynamicScalarProperties()
+    {
+        var catalogs = CreateTestCatalogs(); // UnregisteredType has no catalog
+        var process = new DynamicTestProcess(typeof(UnregisteredType));
+
+        process.AddDynamicMetric(typeof(UnregisteredType), new MetricDescriptor
+        {
+            Type = MetricDescriptor.EType.Property,
+            Name = "DynamicNum",
+            ValueType = typeof(double),
+            Help = "Dynamic scalar metric",
+            Getter = (ctx, o) => ((UnregisteredType)o).SomeValue * 2.0
+        });
+
+        process.AddDynamicMetric(typeof(UnregisteredType), new MetricDescriptor
+        {
+            Type = MetricDescriptor.EType.Property,
+            Name = "DynamicTag",
+            ValueType = typeof(string),
+            Help = "Dynamic text metric",
+            Getter = (ctx, o) => "tag_" + ((UnregisteredType)o).SomeValue
+        });
+
+        bool ok = MetricBinder.Bind(process, catalogs, typeof(UnregisteredType), null,
+            out var projection, out var error, "#ALL");
+
+        Assert.True(ok, error?.ToString());
+        Assert.NotNull(projection);
+        Assert.Equal(2, projection!.Fields.Count);
+        Assert.Equal(new[] { "DynamicNum", "DynamicTag" }, projection.Fields.Select(f => f.ToString()));
+
+        var item = new UnregisteredType { SomeValue = 21.0 };
+        var session = new MetricEvaluationSession(projection);
+        Assert.Equal(42.0, projection.Fields[0].Get(session, item));
+        Assert.Equal("tag_21", projection.Fields[1].Get(session, item));
+    }
+
+    // ── 15. Catalog and dynamic merge ─────────────────────────────────────────
+
+    [Fact]
+    public void CatalogAndDynamicMerge_All_ProducesBoth()
+    {
+        var catalogs = CreateTestCatalogs();
+        var process = new DynamicTestProcess(typeof(ComplexLeafContainer));
+
+        process.AddDynamicMetric(typeof(ComplexLeafContainer), new MetricDescriptor
+        {
+            Type = MetricDescriptor.EType.Property,
+            Name = "ExtraDyn1",
+            ValueType = typeof(double),
+            Help = "Extra dynamic 1",
+            Getter = (ctx, o) => 111.0
+        });
+
+        process.AddDynamicMetric(typeof(ComplexLeafContainer), new MetricDescriptor
+        {
+            Type = MetricDescriptor.EType.Property,
+            Name = "ExtraDyn2",
+            ValueType = typeof(string),
+            Help = "Extra dynamic 2",
+            Getter = (ctx, o) => "extra"
+        });
+
+        bool ok = MetricBinder.Bind(process, catalogs, typeof(ComplexLeafContainer), null,
+            out var projection, out var error, "#ALL");
+
+        Assert.True(ok, error?.ToString());
+        Assert.NotNull(projection);
+
+        // 6 catalog properties + 2 dynamic properties = 8
+        Assert.Equal(8, projection!.Fields.Count);
+        var names = projection.Fields.Select(f => f.ToString()).ToList();
+        Assert.Equal(new[]
+        {
+            "DoubleVal", "IntVal", "StringVal", "BoolVal", "TimeSpanVal", "DateTimeVal",
+            "ExtraDyn1", "ExtraDyn2"
+        }, names);
+
+        var item = new ComplexLeafContainer();
+        var session = new MetricEvaluationSession(projection);
+        Assert.Equal(111.0, projection.Fields[6].Get(session, item));
+        Assert.Equal("extra", projection.Fields[7].Get(session, item));
+    }
+
+    // ── 16. Catalog precedence on duplicate ───────────────────────────────────
+
+    [Fact]
+    public void CatalogPrecedenceOnDuplicate_All_CatalogWins()
+    {
+        var catalogs = CreateTestCatalogs();
+        var process = new DynamicTestProcess(typeof(ComplexLeafContainer));
+
+        // Attempt to shadow DoubleVal dynamically
+        process.AddDynamicMetric(typeof(ComplexLeafContainer), new MetricDescriptor
+        {
+            Type = MetricDescriptor.EType.Property,
+            Name = "DoubleVal",
+            ValueType = typeof(double),
+            Help = "Shadow attempt",
+            Getter = (ctx, o) => 99999.0
+        });
+
+        bool ok = MetricBinder.Bind(process, catalogs, typeof(ComplexLeafContainer), null,
+            out var projection, out var error, "#ALL");
+
+        Assert.True(ok, error?.ToString());
+        Assert.NotNull(projection);
+
+        // Still exactly 6 fields (no duplicate DoubleVal)
+        Assert.Equal(6, projection!.Fields.Count);
+        Assert.Single(projection.Fields.Where(f => f.ToString() == "DoubleVal"));
+
+        // Catalog getter evaluates, NOT dynamic getter
+        var item = new ComplexLeafContainer { DoubleVal = 12.34 };
+        var session = new MetricEvaluationSession(projection);
+        Assert.Equal(12.34, projection.Fields[0].Get(session, item));
+    }
+
+    // ── 17. Deterministic dynamic ordering ─────────────────���──────────────────
+
+    [Fact]
+    public void DeterministicDynamicOrdering_PreservesOrdinalOrder()
+    {
+        var catalogs = CreateTestCatalogs();
+        var process = new DynamicTestProcess(typeof(ComplexLeafContainer));
+
+        process.AddDynamicMetric(typeof(ComplexLeafContainer), new MetricDescriptor
+        {
+            Type = MetricDescriptor.EType.Property,
+            Name = "item_0",
+            ValueType = typeof(int),
+            Getter = (ctx, o) => 0
+        });
+
+        process.AddDynamicMetric(typeof(ComplexLeafContainer), new MetricDescriptor
+        {
+            Type = MetricDescriptor.EType.Property,
+            Name = "item_1",
+            ValueType = typeof(int),
+            Getter = (ctx, o) => 1
+        });
+
+        process.AddDynamicMetric(typeof(ComplexLeafContainer), new MetricDescriptor
+        {
+            Type = MetricDescriptor.EType.Property,
+            Name = "item_2",
+            ValueType = typeof(int),
+            Getter = (ctx, o) => 2
+        });
+
+        bool ok = MetricBinder.Bind(process, catalogs, typeof(ComplexLeafContainer), null,
+            out var projection, out var error, "#ALL");
+
+        Assert.True(ok, error?.ToString());
+        Assert.NotNull(projection);
+
+        var names = projection!.Fields.Select(f => f.ToString()).ToList();
+        int idx0 = names.IndexOf("item_0");
+        int idx1 = names.IndexOf("item_1");
+        int idx2 = names.IndexOf("item_2");
+
+        Assert.True(idx0 >= 6);
+        Assert.Equal(idx0 + 1, idx1);
+        Assert.Equal(idx1 + 1, idx2);
+    }
+
+    // ── 18. Dynamic method exclusion ──────────────────────────────────────────
+
+    [Fact]
+    public void DynamicMethodExclusion_ExcludesDynamicMethodsFromAll()
+    {
+        var catalogs = CreateTestCatalogs();
+        var process = new DynamicTestProcess(typeof(ComplexLeafContainer));
+
+        process.AddDynamicMetric(typeof(ComplexLeafContainer), new MetricDescriptor
+        {
+            Type = MetricDescriptor.EType.Method,
+            Name = "dynamicFunc",
+            ValueType = typeof(double),
+            Help = "Dynamic function",
+            Parameters = new List<MetricParameterDescriptor>
+            {
+                new() { Name = "arg", Type = MetricParameterType.Scalar, ReflectedType = typeof(double) }
+            },
+            Invoke = (ctx, o, args) => ((ComplexLeafContainer)o).DoubleVal * (double)args[0]!
+        });
+
+        bool ok = MetricBinder.Bind(process, catalogs, typeof(ComplexLeafContainer), null,
+            out var projection, out var error, "#ALL");
+
+        Assert.True(ok, error?.ToString());
+        Assert.NotNull(projection);
+        Assert.DoesNotContain(projection!.Fields, f => f.ToString().Contains("dynamicFunc"));
+
+        // Exact invocation still works
+        bool okExact = MetricBinder.Bind(process, catalogs, typeof(ComplexLeafContainer), null,
+            out var projExact, out var errExact, "dynamicFunc#3.0");
+        Assert.True(okExact, errExact?.ToString());
+    }
+
+    // ── 19. Dynamic intermediate type filtering ───────────────────────────────
+
+    [Fact]
+    public void DynamicIntermediateTypeFiltering_ExcludesMetricBearingObjects()
+    {
+        var catalogs = CreateTestCatalogs();
+        var process = new DynamicTestProcess(typeof(UnregisteredType));
+
+        // Add a dynamic property whose ValueType is NestedObject (which has a catalog)
+        process.AddDynamicMetric(typeof(UnregisteredType), new MetricDescriptor
+        {
+            Type = MetricDescriptor.EType.Property,
+            Name = "item_0",
+            ValueType = typeof(NestedObject),
+            Help = "Child scope item",
+            Getter = (ctx, o) => new NestedObject { ScoreA = 50.0 }
+        });
+
+        // Add a scalar dynamic property
+        process.AddDynamicMetric(typeof(UnregisteredType), new MetricDescriptor
+        {
+            Type = MetricDescriptor.EType.Property,
+            Name = "ScalarProp",
+            ValueType = typeof(double),
+            Help = "Scalar prop",
+            Getter = (ctx, o) => 123.0
+        });
+
+        bool ok = MetricBinder.Bind(process, catalogs, typeof(UnregisteredType), null,
+            out var projection, out var error, "#ALL");
+
+        Assert.True(ok, error?.ToString());
+        Assert.NotNull(projection);
+
+        // item_0 is intermediate metric-bearing type, so only ScalarProp is in root #ALL
+        Assert.Single(projection!.Fields);
+        Assert.Equal("ScalarProp", projection.Fields[0].ToString());
+    }
+
+    // ── 20. Dynamic-only intermediate type filtering ──────────────────────────
+
+    private sealed class DynamicOnlyScopeType
+    {
+        public double HiddenVal { get; set; }
+    }
+
+    [Fact]
+    public void DynamicOnlyIntermediateTypeFiltering_ExcludesDynamicScopeObjects()
+    {
+        var catalogs = CreateTestCatalogs();
+        var process = new DynamicTestProcess(typeof(UnregisteredType));
+
+        // DynamicOnlyScopeType has NO catalog, BUT process exposes dynamic metrics for it
+        process.AddDynamicMetric(typeof(DynamicOnlyScopeType), new MetricDescriptor
+        {
+            Type = MetricDescriptor.EType.Property,
+            Name = "DynamicScopeVal",
+            ValueType = typeof(double),
+            Getter = (ctx, o) => ((DynamicOnlyScopeType)o).HiddenVal
+        });
+
+        // Property on UnregisteredType returning DynamicOnlyScopeType
+        process.AddDynamicMetric(typeof(UnregisteredType), new MetricDescriptor
+        {
+            Type = MetricDescriptor.EType.Property,
+            Name = "dynamicScopeItem",
+            ValueType = typeof(DynamicOnlyScopeType),
+            Getter = (ctx, o) => new DynamicOnlyScopeType { HiddenVal = 77.0 }
+        });
+
+        // Scalar property on UnregisteredType
+        process.AddDynamicMetric(typeof(UnregisteredType), new MetricDescriptor
+        {
+            Type = MetricDescriptor.EType.Property,
+            Name = "RootScalar",
+            ValueType = typeof(double),
+            Getter = (ctx, o) => 88.0
+        });
+
+        bool ok = MetricBinder.Bind(process, catalogs, typeof(UnregisteredType), null,
+            out var projection, out var error, "#ALL");
+
+        Assert.True(ok, error?.ToString());
+        Assert.NotNull(projection);
+
+        // dynamicScopeItem is recognized as metric-bearing and excluded; RootScalar is included
+        Assert.Single(projection!.Fields);
+        Assert.Equal("RootScalar", projection.Fields[0].ToString());
+    }
+
+    // ── 21. Nested dynamic path followed by #ALL ──────────────────────────────
+
+    [Fact]
+    public void NestedDynamicPath_FollowedByAll_ExpandsChildCatalogLeaves()
+    {
+        var catalogs = CreateTestCatalogs();
+        var process = new DynamicTestProcess(typeof(UnregisteredType));
+
+        // dynamic item_0 returns NestedObject (which has catalog with ScoreA, ScoreB, Description)
+        process.AddDynamicMetric(typeof(UnregisteredType), new MetricDescriptor
+        {
+            Type = MetricDescriptor.EType.Property,
+            Name = "item_0",
+            ValueType = typeof(NestedObject),
+            Getter = (ctx, o) => new NestedObject
+            {
+                ScoreA = 3.14,
+                ScoreB = 42,
+                Description = "from_item_0"
+            }
+        });
+
+        bool ok = MetricBinder.Bind(process, catalogs, typeof(UnregisteredType), null,
+            out var projection, out var error, "item_0.#ALL");
+
+        Assert.True(ok, error?.ToString());
+        Assert.NotNull(projection);
+
+        // item_0.ScoreA, item_0.ScoreB, item_0.Description
+        Assert.Equal(3, projection!.Fields.Count);
+        Assert.Equal(new[] { "item_0.ScoreA", "item_0.ScoreB", "item_0.Description" },
+            projection.Fields.Select(f => f.ToString()));
+
+        var item = new UnregisteredType();
+        var session = new MetricEvaluationSession(projection);
+        Assert.Equal(3.14, projection.Fields[0].Get(session, item));
+        Assert.Equal(42, projection.Fields[1].Get(session, item));
+        Assert.Equal("from_item_0", projection.Fields[2].Get(session, item));
+    }
+
+    // ── 22. Dynamic leaf with SourceExpressions ───────────────────────────────
+
+    [Fact]
+    public void SourceExpressions_DynamicLeaf_BindsDependenciesNormally()
+    {
+        var catalogs = CreateTestCatalogs();
+        var process = new DynamicTestProcess(typeof(ComplexLeafContainer));
+
+        process.AddDynamicMetric(typeof(ComplexLeafContainer), new MetricDescriptor
+        {
+            Type = MetricDescriptor.EType.Property,
+            Name = "DynWithDep",
+            ValueType = typeof(double),
+            Help = "Dynamic with dependency",
+            SourceExpressions = new List<string> { "DoubleVal" },
+            Getter = (ctx, o) =>
+            {
+                // Access dependency from projection
+                return ((ComplexLeafContainer)o).DoubleVal * 3.0;
+            }
+        });
+
+        bool ok = MetricBinder.Bind(process, catalogs, typeof(ComplexLeafContainer), null,
+            out var projection, out var error, "#ALL");
+
+        Assert.True(ok, error?.ToString());
+        Assert.NotNull(projection);
+
+        Assert.True(projection!.ContainsDependency("DoubleVal"));
+        var field = projection.Fields.First(f => f.ToString() == "DynWithDep");
+
+        var item = new ComplexLeafContainer { DoubleVal = 10.0 };
+        var session = new MetricEvaluationSession(projection);
+        Assert.Equal(30.0, field.Get(session, item));
     }
 }

@@ -42,7 +42,7 @@ public class DynamicProcessMetricsTests
         private readonly Type _statType;
         private readonly Type _inputType;
         private readonly FarmProcess? _inputProcess;
-        private readonly Dictionary<(Type, string), MetricDescriptor> _dynamicMetrics = new();
+        private readonly Dictionary<Type, MetricCatalog> _dynamicCatalogs = new();
         private readonly IEnumerable<object>? _items;
 
         public DynamicMockProcess(
@@ -59,12 +59,17 @@ public class DynamicProcessMetricsTests
 
         public void AddDynamicMetric(Type type, MetricDescriptor descriptor)
         {
-            _dynamicMetrics[(type, descriptor.Name)] = descriptor;
+            if (!_dynamicCatalogs.TryGetValue(type, out var catalog))
+            {
+                catalog = new MetricCatalog();
+                _dynamicCatalogs[type] = catalog;
+            }
+            catalog.Add(descriptor);
         }
 
-        public override bool TryGetDynamicMetric(Type type, string name, out MetricDescriptor? metric)
+        public override MetricCatalog? GetDynamicMetricCatalog(Type type)
         {
-            return _dynamicMetrics.TryGetValue((type, name), out metric);
+            return _dynamicCatalogs.TryGetValue(type, out var catalog) ? catalog : null;
         }
 
         public override Type StatType => _statType;
@@ -560,5 +565,44 @@ public class DynamicProcessMetricsTests
         Assert.False(okOuterInChild);
         Assert.NotNull(errOuterInChild);
         Assert.Contains("Unknown metric 'OuterOnlyProp' on FakeTracker", errOuterInChild!.Message);
+    }
+
+    // ── 10. Default FarmProcess returns null catalog ───────────────────────────
+
+    private sealed class PlainProcess : FarmProcess
+    {
+        public override Type StatType => typeof(RegisteredStat);
+        public override Type InputType => typeof(object);
+        protected override IEnumerable<object> EnumerateItems(FarmContext context) => Array.Empty<object>();
+    }
+
+    [Fact]
+    public void DefaultFarmProcess_GetDynamicMetricCatalog_ReturnsNull()
+    {
+        var process = new PlainProcess();
+        Assert.Null(process.GetDynamicMetricCatalog(typeof(RegisteredStat)));
+        Assert.Null(process.GetDynamicMetricCatalog(typeof(UnregisteredStat)));
+    }
+
+    // ── 11. Process-local catalog stability ───────────────────────────────────
+
+    [Fact]
+    public void ProcessLocalCatalog_ReturnsSameCatalogInstance()
+    {
+        var process = new DynamicMockProcess(typeof(UnregisteredStat));
+        process.AddDynamicMetric(typeof(UnregisteredStat), new MetricDescriptor
+        {
+            Type = MetricDescriptor.EType.Property,
+            Name = "StableProp",
+            ValueType = typeof(double),
+            Help = "Stable",
+            Getter = (ctx, o) => 1.0
+        });
+
+        var catalog1 = process.GetDynamicMetricCatalog(typeof(UnregisteredStat));
+        var catalog2 = process.GetDynamicMetricCatalog(typeof(UnregisteredStat));
+
+        Assert.NotNull(catalog1);
+        Assert.Same(catalog1, catalog2);
     }
 }

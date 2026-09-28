@@ -19,6 +19,7 @@ namespace TruthInTheFlip.Farm.Format;
 public sealed class ZipProcess : FarmProcess
 {
     private readonly IReadOnlyList<FarmProcess> _children;
+    private readonly MetricCatalog _dynamicMetricCatalog;
 
     /// <summary>
     /// Gets the ordered collection of child processes participating in the zip combinator.
@@ -42,6 +43,25 @@ public sealed class ZipProcess : FarmProcess
         }
 
         _children = list;
+
+        _dynamicMetricCatalog = new MetricCatalog();
+        for (int i = 0; i < list.Length; i++)
+        {
+            int capturedIndex = i;
+            var child = list[capturedIndex];
+            _dynamicMetricCatalog.Add(new MetricDescriptor
+            {
+                Type = MetricDescriptor.EType.Property,
+                Name = $"item_{capturedIndex}",
+                ValueType = child.StatType,
+                Help = $"Child process item at index {capturedIndex} ({child.StatType.Name})",
+                Getter = (ctx, row) =>
+                {
+                    var stats = (ProcessArrayStats)row;
+                    return stats.Items[capturedIndex];
+                }
+            });
+        }
     }
 
     public ZipProcess(params FarmProcess[] children)
@@ -67,34 +87,12 @@ public sealed class ZipProcess : FarmProcess
     public override Type InputType => typeof(object);
     public override FarmProcess? InputProcess => null;
 
-    public override bool TryGetDynamicMetric(Type type, string name, out MetricDescriptor? metric)
+    public override MetricCatalog? GetDynamicMetricCatalog(Type type)
     {
-        metric = null;
-        if (type != typeof(ProcessArrayStats))
-            return false;
+        if (type == typeof(ProcessArrayStats))
+            return _dynamicMetricCatalog;
 
-        if (name.StartsWith("item_", StringComparison.Ordinal) &&
-            int.TryParse(name.AsSpan(5), CultureInfo.InvariantCulture, out int index) &&
-            index >= 0 && index < _children.Count)
-        {
-            int capturedIndex = index;
-            var child = _children[capturedIndex];
-            metric = new MetricDescriptor
-            {
-                Type = MetricDescriptor.EType.Property,
-                Name = name,
-                ValueType = child.StatType,
-                Help = $"Child process item at index {capturedIndex} ({child.StatType.Name})",
-                Getter = (ctx, row) =>
-                {
-                    var stats = (ProcessArrayStats)row;
-                    return stats.Items[capturedIndex];
-                }
-            };
-            return true;
-        }
-
-        return false;
+        return null;
     }
 
     protected override IEnumerable<object> EnumerateItems(FarmContext context)
