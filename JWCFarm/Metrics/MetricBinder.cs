@@ -411,30 +411,132 @@ public class MetricBinder
 
         foreach (string field in fields)
         {
-            MetricPath path = new();
-            int this_offset = 0;
-
-            bool ok = ParseExpression(
-                process, catalogs, path,
-                type, inputType!,
-                field, ref this_offset, out MetricBindError? fieldError, bindCtx);
-
-            if (ok && this_offset != field.Length)
+            if (string.Equals(field, "#ALL", StringComparison.Ordinal) ||
+                field.EndsWith(".#ALL", StringComparison.Ordinal))
             {
-                ok = false;
-                fieldError = new MetricBindError(field, this_offset,
-                    field.Length - this_offset,
-                    $"Unexpected text after expression (starting at position {this_offset}).");
-            }
+                Type scopeType;
+                string prefix;
 
-            if (!ok)
+                if (string.Equals(field, "#ALL", StringComparison.Ordinal))
+                {
+                    scopeType = type;
+                    prefix = "";
+                }
+                else
+                {
+                    prefix = field[..^5];
+                    if (string.IsNullOrEmpty(prefix))
+                    {
+                        bindError = new MetricBindError(field, 0, field.Length,
+                            "Invalid scope path before '.#ALL'.");
+                        target = null;
+                        return false;
+                    }
+
+                    MetricPath prefixPath = new();
+                    int prefixOffset = 0;
+                    bool prefixOk = ParseExpression(
+                        process, catalogs, prefixPath,
+                        type, inputType!,
+                        prefix, ref prefixOffset, out MetricBindError? prefixError, bindCtx);
+
+                    if (prefixOk && prefixOffset != prefix.Length)
+                    {
+                        prefixOk = false;
+                        prefixError = new MetricBindError(field, prefixOffset,
+                            prefix.Length - prefixOffset,
+                            $"Unexpected text in scope path '{prefix}'.");
+                    }
+
+                    if (!prefixOk)
+                    {
+                        bindError = prefixError;
+                        target = null;
+                        return false;
+                    }
+
+                    scopeType = GetPathReturnType(prefixPath);
+                }
+
+                if (!catalogs.TryGet(scopeType, out var catalog) || catalog == null)
+                {
+                    int errOffset = field.Length - 4;
+                    bindError = new MetricBindError(field, errOffset, 4,
+                        $"No metric catalog for type '{scopeType?.Name ?? "null"}' to expand '#ALL'.");
+                    target = null;
+                    return false;
+                }
+
+                foreach (var descriptor in catalog.Metrics.Values)
+                {
+                    if (descriptor.Type != MetricDescriptor.EType.Property)
+                        continue;
+
+                    if (descriptor.ValueType != null &&
+                        catalogs.TryGet(descriptor.ValueType, out var nestedCatalog) &&
+                        nestedCatalog != null)
+                    {
+                        // Exclude intermediate metric-bearing object scopes
+                        continue;
+                    }
+
+                    string concreteExpr = string.IsNullOrEmpty(prefix)
+                        ? descriptor.Name
+                        : $"{prefix}.{descriptor.Name}";
+
+                    MetricPath path = new();
+                    int this_offset = 0;
+
+                    bool ok = ParseExpression(
+                        process, catalogs, path,
+                        type, inputType!,
+                        concreteExpr, ref this_offset, out MetricBindError? fieldError, bindCtx);
+
+                    if (ok && this_offset != concreteExpr.Length)
+                    {
+                        ok = false;
+                        fieldError = new MetricBindError(concreteExpr, this_offset,
+                            concreteExpr.Length - this_offset,
+                            $"Unexpected text after expression (starting at position {this_offset}).");
+                    }
+
+                    if (!ok)
+                    {
+                        bindError = fieldError;
+                        target = null;
+                        return false;
+                    }
+
+                    projection.Fields.Add(path);
+                }
+            }
+            else
             {
-                bindError = fieldError;
-                target = null;
-                return false;
-            }
+                MetricPath path = new();
+                int this_offset = 0;
 
-            projection.Fields.Add(path);
+                bool ok = ParseExpression(
+                    process, catalogs, path,
+                    type, inputType!,
+                    field, ref this_offset, out MetricBindError? fieldError, bindCtx);
+
+                if (ok && this_offset != field.Length)
+                {
+                    ok = false;
+                    fieldError = new MetricBindError(field, this_offset,
+                        field.Length - this_offset,
+                        $"Unexpected text after expression (starting at position {this_offset}).");
+                }
+
+                if (!ok)
+                {
+                    bindError = fieldError;
+                    target = null;
+                    return false;
+                }
+
+                projection.Fields.Add(path);
+            }
         }
 
         target = projection;
