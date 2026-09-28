@@ -30,6 +30,15 @@ public abstract class FarmProcess : FarmCommand
         return true;
     }
     
+    public virtual bool TryGetDynamicMetric(
+        Type type,
+        string name,
+        out MetricDescriptor? metric)
+    {
+        metric = null;
+        return false;
+    }
+
     public abstract Type StatType { get; }
     public abstract Type InputType { get; }
     

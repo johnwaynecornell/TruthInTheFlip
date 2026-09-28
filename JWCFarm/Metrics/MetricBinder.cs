@@ -60,7 +60,6 @@ public class MetricBinder
     {
         error = null;
         Type _currentType = currentType;
-        MetricCatalog? catalog;
         int this_offset = offset;
 
         // Scan forward for '#', stopping at ',' (which belongs to the caller's param loop).
@@ -72,21 +71,13 @@ public class MetricBinder
 
         if (i < field.Length) // found '#' → function-call branch
         {
-            if (!catalogs.TryGet(_currentType, out catalog))
-            {
-                offset = this_offset;
-                error = new MetricBindError(field, this_offset,
-                    $"No metric catalog for type '{_currentType?.Name ?? "null"}'.");
-                return false;
-            }
-
             string funcName = field[this_offset..i];
 
-            if (!catalog!.Metrics.TryGetValue(funcName, out var func))
+            if (!TryResolveMetric(process, catalogs, _currentType, funcName, out var func) || func == null)
             {
                 offset = this_offset;
                 error = new MetricBindError(field, this_offset, funcName.Length,
-                    $"Unknown metric function '{funcName}' on {_currentType!.Name}.");
+                    $"Unknown metric function '{funcName}' on {_currentType?.Name ?? "null"}.");
                 return false;
             }
 
@@ -270,19 +261,11 @@ public class MetricBinder
 
         foreach (string part in parts)
         {
-            if (!catalogs.TryGet(_currentType, out catalog))
+            if (!TryResolveMetric(process, catalogs, _currentType, part, out var metric) || metric == null)
             {
                 offset = segStart;
                 error = new MetricBindError(field, segStart, part.Length,
-                    $"No metric catalog for type '{_currentType?.Name ?? "null"}'.");
-                return false;
-            }
-
-            if (!catalog!.Metrics.TryGetValue(part, out var metric))
-            {
-                offset = segStart;
-                error = new MetricBindError(field, segStart, part.Length,
-                    $"Unknown metric '{part}' on {_currentType!.Name}.");
+                    $"Unknown metric '{part}' on {_currentType?.Name ?? "null"}.");
                 return false;
             }
 
@@ -311,6 +294,27 @@ public class MetricBinder
 
         offset = end;
         return true;
+    }
+
+    private static bool TryResolveMetric(
+        FarmProcess? process,
+        MetricCatalogs catalogs,
+        Type? type,
+        string name,
+        out MetricDescriptor? metric)
+    {
+        if (type != null && catalogs.TryGet(type, out var catalog) && catalog != null && catalog.Metrics.TryGetValue(name, out metric))
+        {
+            return true;
+        }
+
+        if (type != null && process != null && process.TryGetDynamicMetric(type, name, out metric))
+        {
+            return true;
+        }
+
+        metric = null;
+        return false;
     }
 
     // ── SourceExpressions binding ─────────────────────────────────────────────
