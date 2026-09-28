@@ -39,30 +39,17 @@ public sealed class WrapProcess : FarmProcess
     {
         var stats = new WrapStats();
         var session = Session ?? (Projection != null ? (Session = new MetricEvaluationSession(Projection)) : null);
-        var originalActions = _child.Actions;
 
-        try
-        {
-            _child.Actions = new ProcessActions(
-                begin: originalActions?.Begin,
-                process: (ctx, item) =>
+        ChildProcessObserver.Execute(
+            _child,
+            context,
+            (ctx, item) =>
+            {
+                if (session != null)
                 {
-                    if (session != null)
-                    {
-                        session.Inspect(this, stats, item);
-                    }
-                    originalActions?.Process?.Invoke(ctx, item);
-                },
-                end: originalActions?.End,
-                abort: originalActions?.Abort
-            );
-
-            _child.Execute(context);
-        }
-        finally
-        {
-            _child.Actions = originalActions;
-        }
+                    session.Inspect(this, stats, item);
+                }
+            });
 
         yield return stats;
     }

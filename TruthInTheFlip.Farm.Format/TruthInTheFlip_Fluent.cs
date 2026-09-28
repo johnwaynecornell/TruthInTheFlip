@@ -30,6 +30,7 @@ public class TruthInTheFlip_Fluent
         env.AddModule<NullTrialProcess>();
         env.AddModule<NullReportCommand>();
         env.AddModule<WrapProcess>();
+        env.AddModule<ZipProcess>();
 
         if (!env.Context.TryGet<MetricCatalogs>(out var catalogs))
         {
