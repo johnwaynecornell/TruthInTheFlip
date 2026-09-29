@@ -43,25 +43,7 @@ public sealed class ZipProcess : FarmProcess
         }
 
         _children = list;
-
-        _dynamicMetricCatalog = new MetricCatalog();
-        for (int i = 0; i < list.Length; i++)
-        {
-            int capturedIndex = i;
-            var child = list[capturedIndex];
-            _dynamicMetricCatalog.Add(new MetricDescriptor
-            {
-                Type = MetricDescriptor.EType.Property,
-                Name = $"item_{capturedIndex}",
-                ValueType = child.StatType,
-                Help = $"Child process item at index {capturedIndex} ({child.StatType.Name})",
-                Getter = (ctx, row) =>
-                {
-                    var stats = (ProcessArrayStats)row;
-                    return stats.Items[capturedIndex];
-                }
-            });
-        }
+        _dynamicMetricCatalog = ProcessArrayStats.CreateDynamicMetricCatalog(list);
     }
 
     public ZipProcess(params FarmProcess[] children)
