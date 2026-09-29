@@ -71,20 +71,86 @@ public class MetricBinder
 
         if (i < field.Length) // found '#' → function-call branch
         {
-            string funcName = field[this_offset..i];
+            string targetExpr = field[this_offset..i];
+            int lastDot = targetExpr.LastIndexOf('.');
+            string funcName;
+            int funcOffset;
+            FarmProcess? _currentProcess = process;
+            Type _currentInputType = inputType;
 
-            if (!TryResolveMetric(process, catalogs, _currentType, funcName, out var func) || func == null)
+            if (lastDot >= 0)
             {
-                offset = this_offset;
-                error = new MetricBindError(field, this_offset, funcName.Length,
+                string propPath = targetExpr[..lastDot];
+                funcName = targetExpr[(lastDot + 1)..];
+                string[] propParts = propPath.Split('.');
+                int propSegStart = this_offset;
+
+                foreach (string part in propParts)
+                {
+                    if (!TryResolveMetric(_currentProcess, catalogs, _currentType, part, out var propMetric) || propMetric == null)
+                    {
+                        offset = propSegStart;
+                        error = new MetricBindError(field, propSegStart, part.Length,
+                            $"Unknown metric '{part}' on {_currentType?.Name ?? "null"}.");
+                        return false;
+                    }
+
+                    if (propMetric.Type != MetricDescriptor.EType.Property)
+                    {
+                        offset = propSegStart;
+                        error = new MetricBindError(field, propSegStart, part.Length,
+                            $"Metric '{part}' on {_currentType!.Name} is a method and must be invoked with '#' (e.g., '{part}#').");
+                        return false;
+                    }
+
+                    if (!BindSourceExpressionsForDescriptor(
+                            _currentProcess, catalogs, _currentType, _currentInputType,
+                            propMetric, bindCtx, field, propSegStart, out error))
+                    {
+                        offset = propSegStart;
+                        return false;
+                    }
+
+                    path.Add(propMetric.CreateInstance(null));
+                    _currentType = propMetric.ValueType;
+
+                    if (_currentProcess?.Children != null &&
+                        part.StartsWith("item_", StringComparison.Ordinal) &&
+                        int.TryParse(part[5..], out int childIdx) &&
+                        childIdx >= 0 && childIdx < _currentProcess.Children.Count)
+                    {
+                        _currentProcess = _currentProcess.Children[childIdx];
+                        _currentInputType = _currentProcess.InputType;
+                    }
+                    else if (_currentProcess?.InputProcess != null)
+                    {
+                        _currentProcess = _currentProcess.InputProcess;
+                        _currentInputType = _currentProcess.InputType;
+                    }
+
+                    propSegStart += part.Length + 1;
+                }
+
+                funcOffset = propSegStart;
+            }
+            else
+            {
+                funcName = targetExpr;
+                funcOffset = this_offset;
+            }
+
+            if (!TryResolveMetric(_currentProcess, catalogs, _currentType, funcName, out var func) || func == null)
+            {
+                offset = funcOffset;
+                error = new MetricBindError(field, funcOffset, funcName.Length,
                     $"Unknown metric function '{funcName}' on {_currentType?.Name ?? "null"}.");
                 return false;
             }
 
             if (func.Type != MetricDescriptor.EType.Method)
             {
-                offset = this_offset;
-                error = new MetricBindError(field, this_offset, funcName.Length,
+                offset = funcOffset;
+                error = new MetricBindError(field, funcOffset, funcName.Length,
                     $"Metric '{funcName}' on {_currentType!.Name} is a property and cannot be invoked as a method with '#'.");
                 return false;
             }
@@ -93,7 +159,7 @@ public class MetricBinder
 
             // Bind any SourceExpressions declared by this function descriptor.
             if (!BindSourceExpressionsForDescriptor(
-                    process, catalogs, _currentType, inputType,
+                    _currentProcess, catalogs, _currentType, _currentInputType,
                     func, bindCtx, field, i, out error))
             {
                 offset = i;
@@ -101,6 +167,7 @@ public class MetricBinder
             }
 
             List<MetricPath> arguments = new();
+            Type targetReceiverType = _currentType;
 
             for (int pi = 0; pi < func.Parameters!.Count; pi++)
             {
@@ -120,24 +187,18 @@ public class MetricBinder
                 }
 
                 int paramStartOffset = this_offset;
-
-                if (p.Type == MetricParameterType.Aggregate) _currentType = inputType;
-                else _currentType = currentType;
-
                 MetricPath argumentPath = new();
                 bool paramOk;
 
                 if (p.Type == MetricParameterType.Aggregate)
                 {
-                    var inputProcess = process?.InputProcess;
+                    var inputProcess = _currentProcess?.InputProcess;
 
                     if (inputProcess != null)
                     {
-                        // Descend into the inner process.  Any SourceExpression
-                        // dependencies discovered here must land in
-                        // inputProcess.Projection — that is the projection the
-                        // Getter's context will carry at evaluation time.
-                        var innerCtx = bindCtx?.WithProjection(inputProcess.Projection);
+                        var innerCtx = (inputProcess.Projection != null && bindCtx != null)
+                            ? bindCtx.WithProjection(inputProcess.Projection)
+                            : bindCtx;
 
                         paramOk = ParseExpression(
                             inputProcess, catalogs, argumentPath,
@@ -159,10 +220,10 @@ public class MetricBinder
                                 return false;
                             }
 
-                            inputProcess.Projection.Fields.Add(argumentPath);
+                            inputProcess.Projection?.Fields.Add(argumentPath);
                         }
                     }
-                    else if (_currentType == null)
+                    else if (_currentInputType == null && _currentProcess == null)
                     {
                         offset = this_offset;
                         error = new MetricBindError(field, this_offset,
@@ -172,10 +233,17 @@ public class MetricBinder
                     }
                     else
                     {
+                        var argProcess = _currentProcess?.InputProcess ?? _currentProcess;
+                        Type argCurrentType = _currentProcess?.InputType ?? _currentInputType;
+                        Type argInputType = argProcess?.InputType ?? _currentInputType;
+                        var innerCtx = (argProcess?.Projection != null && bindCtx != null)
+                            ? bindCtx.WithProjection(argProcess.Projection)
+                            : bindCtx;
+
                         paramOk = ParseExpression(
-                            null, catalogs, argumentPath,
-                            _currentType, inputType,
-                            field, ref this_offset, out error, bindCtx);
+                            argProcess, catalogs, argumentPath,
+                            argCurrentType, argInputType,
+                            field, ref this_offset, out error, innerCtx);
 
                         if (paramOk)
                         {
@@ -191,6 +259,8 @@ public class MetricBinder
                                     $"Aggregate parameter '{p.Name}' of '{funcName}' expects elements of type '{expectedElementType.Name}', but argument is of incompatible type '{argReturnType.Name}'.");
                                 return false;
                             }
+
+                            argProcess?.Projection?.Fields.Add(argumentPath);
                         }
                     }
                 }
@@ -209,8 +279,8 @@ public class MetricBinder
                     else
                     {
                         paramOk = ParseExpression(
-                            process, catalogs, argumentPath,
-                            currentType, inputType,
+                            _currentProcess, catalogs, argumentPath,
+                            targetReceiverType, _currentInputType,
                             field, ref this_offset, out error, bindCtx);
 
                         if (paramOk && p.ReflectedType != null)
@@ -237,6 +307,12 @@ public class MetricBinder
             }
 
             path.Add(func.CreateInstance(arguments));
+
+            if (_currentProcess != null && _currentProcess != process)
+            {
+                _currentProcess.Projection?.Fields.Add(path);
+            }
+
             offset = this_offset;
             return true;
         }

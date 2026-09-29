@@ -15,6 +15,17 @@ public sealed class MetricEvaluationSession
     // ── session state store (for serial/stateful custom metrics) ──────────────
 
     private readonly Dictionary<object, object> _states = new();
+    private readonly List<MetricEvaluationSession> _childSessions = new();
+
+    public IReadOnlyList<MetricEvaluationSession> ChildSessions => _childSessions;
+
+    public void AddChildSession(MetricEvaluationSession childSession)
+    {
+        if (childSession != null && !_childSessions.Contains(childSession))
+        {
+            _childSessions.Add(childSession);
+        }
+    }
 
     public MetricEvaluationSession(MetricProjection projection)
     {
@@ -112,17 +123,49 @@ public sealed class MetricEvaluationSession
         MetricPath path,
         int parameterIndex)
     {
-        if (!_statValues.TryGetValue(stats, out var state) ||
-            !state.Values.TryGetValue(
-                (path.ToString(), parameterIndex),
-                out var values))
+        string fullPath = path.ToString();
+        string? subPath = null;
+        int poundIdx = fullPath.IndexOf('#');
+        int lastDot = poundIdx >= 0 ? fullPath[..poundIdx].LastIndexOf('.') : -1;
+        if (lastDot >= 0)
         {
-            throw new KeyNotFoundException(
-                $"Aggregate metric state was not found for parameter {parameterIndex} " +
-                $"of path '{path}'.");
+            subPath = fullPath[(lastDot + 1)..];
         }
 
-        return values;
+        if (TryFindStatValues(stats, fullPath, subPath, parameterIndex, out var values))
+        {
+            return values!;
+        }
+
+        throw new KeyNotFoundException(
+            $"Aggregate metric state was not found for parameter {parameterIndex} " +
+            $"of path '{path}'.");
+    }
+
+    private bool TryFindStatValues(
+        object stats,
+        string fullPath,
+        string? subPath,
+        int parameterIndex,
+        out IList? values)
+    {
+        if (_statValues.TryGetValue(stats, out var state))
+        {
+            if (state.Values.TryGetValue((fullPath, parameterIndex), out values))
+                return true;
+
+            if (subPath != null && state.Values.TryGetValue((subPath, parameterIndex), out values))
+                return true;
+        }
+
+        foreach (var childSession in _childSessions)
+        {
+            if (childSession.TryFindStatValues(stats, fullPath, subPath, parameterIndex, out values))
+                return true;
+        }
+
+        values = null;
+        return false;
     }
 
     // ── per-item inspection (aggregate-state accumulation) ─────────────────────

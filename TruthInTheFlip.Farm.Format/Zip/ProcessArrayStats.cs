@@ -9,7 +9,7 @@ namespace TruthInTheFlip.Farm.Format;
 /// containing one item from each child process.
 /// Process-local dynamic metrics (item_0, item_1, etc.) are bound dynamically to access individual child items.
 /// </summary>
-public sealed class ProcessArrayStats : MetricFunctions
+public sealed class ProcessArrayStats : MetricFunctionsAggregate
 {
     /// <summary>
     /// Gets the ordered items corresponding to each child process in the combinator operation.

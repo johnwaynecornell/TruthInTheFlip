@@ -33,6 +33,8 @@ public abstract class FarmProcess : FarmCommand
     public virtual MetricCatalog? GetDynamicMetricCatalog(Type type)
         => null;
 
+    public virtual IReadOnlyList<FarmProcess>? Children => null;
+
     public abstract Type StatType { get; }
     public abstract Type InputType { get; }
     

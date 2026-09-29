@@ -1239,4 +1239,47 @@ public class JoinProcessTests
         Assert.Contains("item_0.EndTotal =", output);
         Assert.Contains("item_1.EndTotal =", output);
     }
+
+    // ── 20. Higher-order dynamic metric dotted method invocations ─────────────
+
+    [Fact]
+    public void JoinProcess_BindsAndEvaluatesDottedChildMethodInvocations()
+    {
+        var env = new FluentEnvironment();
+        env.AddModule<TruthInTheFlip_Fluent>();
+        env.ServeTypes = new[] { typeof(FarmCommand) };
+
+        string quantPath = Path.GetFullPath("Artifacts/Trackers/Quant.tkr");
+        if (!File.Exists(quantPath))
+            return;
+
+        using var sw = new StringWriter();
+        var farmCtx = new FarmContext { Output = sw };
+
+        using var scope = FluentEnvironmentScope.Enter(env);
+
+        int cursor = 0;
+        var parsed = env.ParseOne(new[]
+        {
+            "pretty",
+            "join", "EndTotal",
+            "segment", "file", quantPath, "by_total", "1000000",
+            "segment", "file", quantPath, "by_total", "500000",
+            ".END.",
+            "item_0.EndTotal",
+            "item_0.mean#AnticipatedPercentage",
+            "item_1.mean#AnticipatedPercentage"
+        }, ref cursor);
+
+        Assert.NotNull(parsed);
+        var command = Assert.IsAssignableFrom<FarmCommand>(parsed.Result);
+        
+        // Execute and verify that binding and execution succeed without error
+        command.Execute(farmCtx);
+
+        string output = sw.ToString();
+        Assert.Contains("item_0.EndTotal =", output);
+        Assert.Contains("item_0.mean#AnticipatedPercentage =", output);
+        Assert.Contains("item_1.mean#AnticipatedPercentage =", output);
+    }
 }

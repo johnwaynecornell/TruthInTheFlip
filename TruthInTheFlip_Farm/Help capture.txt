@@ -110,6 +110,17 @@ Argument Types
             Wrap a child FarmProcess to expose its items as a population for outer metric aggregation.
     
             process               <FarmProcess>         Child FarmProcess to wrap.
+    
+        zip processes
+            Align multiple child FarmProcesses positionally into combined rows. End the child process list with .END.
+    
+            processes             <FarmProcess[]>       Child FarmProcesses to zip positionally. End with .END.
+    
+        join keyExpression processes
+            Join multiple child FarmProcesses on a metric key expression into combined rows. End the child process list with .END.
+    
+            keyExpression         <String>              Metric key expression to evaluate on each child.
+            processes             <FarmProcess[]>       Child FarmProcesses to join. End with .END.
 
 <AggSelector> — Definition for aggregating SegmentStats into larger segments
 

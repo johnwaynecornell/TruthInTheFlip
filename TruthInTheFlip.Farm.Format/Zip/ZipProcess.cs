@@ -24,7 +24,7 @@ public sealed class ZipProcess : FarmProcess
     /// <summary>
     /// Gets the ordered collection of child processes participating in the zip combinator.
     /// </summary>
-    public IReadOnlyList<FarmProcess> Children => _children;
+    public override IReadOnlyList<FarmProcess> Children => _children;
 
     public ZipProcess(IReadOnlyList<FarmProcess> children)
     {
@@ -88,6 +88,10 @@ public sealed class ZipProcess : FarmProcess
         {
             var items = new List<object>();
             ChildProcessObserver.Execute(child, context, (_, item) => items.Add(item));
+            if (child.Session != null)
+            {
+                Session?.AddChildSession(child.Session);
+            }
             populations.Add(items);
         }
 

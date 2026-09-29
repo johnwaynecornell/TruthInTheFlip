@@ -33,7 +33,7 @@ public sealed class JoinProcess : FarmProcess
     /// <summary>
     /// Gets the ordered collection of child processes participating in the join.
     /// </summary>
-    public IReadOnlyList<FarmProcess> Children => _children;
+    public override IReadOnlyList<FarmProcess> Children => _children;
 
     /// <summary>
     /// Gets the resolved canonical key type for comparison across all children, or null if not yet bound.
@@ -204,6 +204,11 @@ public sealed class JoinProcess : FarmProcess
             child0Items.Add((canonicalKey, item));
         });
 
+        if (_children[0].Session != null)
+        {
+            Session?.AddChildSession(_children[0].Session);
+        }
+
         if (child0Items.Count == 0)
             yield break;
 
@@ -242,6 +247,11 @@ public sealed class JoinProcess : FarmProcess
 
                 dict.Add(canonicalKey, item);
             });
+
+            if (_children[childIndex].Session != null)
+            {
+                Session?.AddChildSession(_children[childIndex].Session);
+            }
 
             if (dict.Count == 0)
                 yield break; // Inner join is empty if any child has 0 matching items

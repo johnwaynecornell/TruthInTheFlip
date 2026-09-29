@@ -605,4 +605,76 @@ public class DynamicProcessMetricsTests
         Assert.NotNull(catalog1);
         Assert.Same(catalog1, catalog2);
     }
+
+    // ── 12. Dotted method binding on dynamic child process properties ──────────
+
+    private sealed class MockCombinatorProcess : FarmProcess
+    {
+        private readonly IReadOnlyList<FarmProcess> _children;
+        private readonly MetricCatalog _catalog;
+
+        public override IReadOnlyList<FarmProcess> Children => _children;
+        public override Type StatType => typeof(JoinContainer);
+        public override Type InputType => typeof(object);
+
+        public MockCombinatorProcess(params FarmProcess[] children)
+        {
+            _children = children;
+            _catalog = new MetricCatalog();
+            for (int i = 0; i < children.Length; i++)
+            {
+                int captured = i;
+                _catalog.Add(new MetricDescriptor
+                {
+                    Type = MetricDescriptor.EType.Property,
+                    Name = $"item_{captured}",
+                    ValueType = children[captured].StatType,
+                    Help = $"Item {captured}",
+                    Getter = (ctx, row) => ((JoinContainer)row).TrackerItem
+                });
+            }
+        }
+
+        public override MetricCatalog? GetDynamicMetricCatalog(Type type)
+            => type == typeof(JoinContainer) ? _catalog : null;
+
+        protected override IEnumerable<object> EnumerateItems(FarmContext context) => Array.Empty<object>();
+    }
+
+    [Fact]
+    public void DottedMethodBinding_OnChildProperty_BindsAndResolvesCorrectly()
+    {
+        var catalogs = CreateBaseCatalogs();
+
+        catalogs.Catalogs[typeof(FakeTracker)]!.Metrics["scaleByTen"] = new MetricDescriptor(
+            "scaleByTen",
+            typeof(double),
+            new List<MetricParameterDescriptor>
+            {
+                new("value", MetricParameterType.Scalar)
+            },
+            "scaleByTen",
+            (ctx, inst, args) => (double)args[0] * 10.0
+        );
+
+        var child = new DynamicMockProcess(typeof(FakeTracker));
+        var combinator = new MockCombinatorProcess(child);
+
+        bool ok = MetricBinder.Bind(combinator, catalogs, typeof(JoinContainer), null,
+            out var projection, out var error, "item_0.scaleByTen#ZScore");
+
+        Assert.True(ok, error?.ToString());
+        Assert.NotNull(projection);
+        Assert.Single(projection.Fields);
+
+        var container = new JoinContainer
+        {
+            TrackerItem = new FakeTracker { ZScore = 3.5 }
+        };
+
+        var session = new MetricEvaluationSession(projection);
+        var result = projection.Fields[0].Get(session, container);
+
+        Assert.Equal(35.0, result);
+    }
 }
