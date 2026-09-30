@@ -16,6 +16,10 @@
    - [Empty Alternatives](#empty-alternatives)
 3. [Extensibility & Subclassing](#extensibility--subclassing)
    - [Virtual Resolution (`GetByKey`)](#virtual-resolution-getbykey)
+   - [Custom Token Splitting (`Split`)](#custom-token-splitting-split)
+   - [Custom Identifier Characters (`IsIdentifierStart` & `IsIdentifierPart`)](#custom-identifier-characters-isidentifierstart--isidentifierpart)
+   - [Configurable Syntax Tokens (`ExpandStartToken`, `ExpandEndToken`, `DelimiterToken`)](#configurable-syntax-tokens-expandstarttoken-expandendtoken-delimitertoken)
+   - [Token Splitting Control (`SplitAfterGetByKey`)](#token-splitting-control-splitaftergetbykey)
    - [Partial Matching Control (`MatchPartials`)](#partial-matching-control-matchpartials)
    - [Custom Expansion Pipeline (`Process`)](#custom-expansion-pipeline-process)
    - [Factory Delegate Support](#factory-delegate-support)
@@ -23,6 +27,13 @@
    - [CLIExpander.Process (Static)](#cliexpanderprocess-static)
    - [CLIExpander.Process (Instance)](#cliexpanderprocess-instance)
    - [CLIExpander.GetByKey (Instance)](#cliexpandergetbykey-instance)
+   - [CLIExpander.Split (Instance)](#cliexpandersplit-instance)
+   - [CLIExpander.IsIdentifierStart (Instance)](#cliexpanderisidentifierstart-instance)
+   - [CLIExpander.IsIdentifierPart (Instance)](#cliexpanderisidentifierpart-instance)
+   - [ExpandStartToken (Field)](#expandstarttoken-field)
+   - [ExpandEndToken (Field)](#expandendtoken-field)
+   - [DelimiterToken (Field)](#delimitertoken-field)
+   - [SplitAfterGetByKey (Field)](#splitaftergetbykey-field)
    - [MatchPartials (Field)](#matchpartials-field)
    - [CLReturn Struct](#clreturn-struct)
    - [Scope & Watermarks](#scope--watermarks)
@@ -183,6 +194,49 @@ public class EnvironmentExpander : CLIExpander
 }
 ```
 
+### Custom Token Splitting (`Split`)
+
+The `Split(string text)` method is `virtual` and returns an `IEnumerable<string>`. Subclasses can override it to customize how multi-value variable substitutions are partitioned into distinct tokens (for example, splitting by commas, custom delimiters, or implementing quote-preserving tokenization):
+
+```csharp
+public class CommaDelimitedExpander : CLIExpander
+{
+    public override IEnumerable<string> Split(string text)
+    {
+        return text.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    }
+}
+```
+
+### Custom Identifier Characters (`IsIdentifierStart` & `IsIdentifierPart`)
+
+The `IsIdentifierStart(char c)` and `IsIdentifierPart(char c)` methods are `virtual`. Subclasses can override them to customize what characters are treated as valid variable identifiers during embedded inner-token substitution (for instance, allowing `$` prefixes or kebab-case identifiers):
+
+```csharp
+public class CustomIdentifierExpander : CLIExpander
+{
+    public override bool IsIdentifierStart(char c) => base.IsIdentifierStart(c) || c == '$';
+    public override bool IsIdentifierPart(char c) => base.IsIdentifierPart(c) || c == '$' || c == '-';
+}
+```
+
+### Configurable Syntax Tokens (`ExpandStartToken`, `ExpandEndToken`, `DelimiterToken`)
+
+The block syntax delimiters are public assignable fields on `CLIExpander`, allowing callers and derived classes to reconfigure or adopt alternative template syntax conventions without modifying the parser logic:
+
+```csharp
+var expander = new CLIExpander
+{
+    ExpandStartToken = "@expand",
+    ExpandEndToken = "@end",
+    DelimiterToken = "in"
+};
+```
+
+### Token Splitting Control (`SplitAfterGetByKey`)
+
+The public field `SplitAfterGetByKey` (default `true`) controls whether full-token variable matches containing whitespace are automatically split into separate output tokens via whitespace delimiters. Setting `SplitAfterGetByKey = false` causes the resolved value string to be emitted directly as a single argument token.
+
 ### Partial Matching Control (`MatchPartials`)
 
 The public field `MatchPartials` (default `true`) controls whether `CLIExpander` resolves inner-token variable expressions (such as `prefix._var.suffix`). Setting `MatchPartials = false` disables inner token substitution so that only exact full-token matches are substituted.
@@ -238,6 +292,80 @@ public virtual string? GetByKey(string key)
 ```
 
 - Resolves a variable value from the scoped variable stack in LIFO order. Returns `null` if the variable is not found in active scopes. Can be overridden by subclasses to provide custom variable sources or fallbacks.
+
+---
+
+### `CLIExpander.Split (Instance)`
+
+```csharp
+public virtual IEnumerable<string> Split(string text)
+```
+
+- Splits a string value into an enumerable sequence of individual tokens. By default, splits on whitespace (`StringSplitOptions.RemoveEmptyEntries`).
+- Subclasses can override this method to provide custom token splitting semantics (e.g., custom delimiters, regex splits, or quote-aware tokenization).
+
+---
+
+### `CLIExpander.IsIdentifierStart (Instance)`
+
+```csharp
+public virtual bool IsIdentifierStart(char c)
+```
+
+- Determines whether the character `c` is valid as the initial character of an identifier for inner-token substitution.
+- Default implementation accepts ASCII letters (`a-z`, `A-Z`) and underscore (`_`).
+
+---
+
+### `CLIExpander.IsIdentifierPart (Instance)`
+
+```csharp
+public virtual bool IsIdentifierPart(char c)
+```
+
+- Determines whether the character `c` is valid as a continuation character in an identifier for inner-token substitution.
+- Default implementation accepts ASCII letters (`a-z`, `A-Z`), digits (`0-9`), and underscore (`_`).
+
+---
+
+### `ExpandStartToken (Field)`
+
+```csharp
+public string ExpandStartToken = ".expand.";
+```
+
+- Token identifying the start of an expansion block. Defaults to `".expand."`.
+
+---
+
+### `ExpandEndToken (Field)`
+
+```csharp
+public string ExpandEndToken = ".expand_end.";
+```
+
+- Token identifying the termination of an expansion block. Defaults to `".expand_end."`.
+
+---
+
+### `DelimiterToken (Field)`
+
+```csharp
+public string DelimiterToken = ":";
+```
+
+- Token separating the expansion variable alternative values from the block template body. Defaults to `":"`.
+
+---
+
+### `SplitAfterGetByKey (Field)`
+
+```csharp
+public bool SplitAfterGetByKey = true;
+```
+
+- When `true`, whitespace-separated values from full-token variable matches are split into individual tokens.
+- When `false`, the resolved variable string is emitted directly as a single argument token.
 
 ---
 

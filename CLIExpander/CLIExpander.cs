@@ -36,6 +36,21 @@ public class CLIExpander
     public List<(string, string)> Scope = new();
 
     /// <summary>
+    /// Token that marks the beginning of an expansion block. Defaults to <c>".expand."</c>.
+    /// </summary>
+    public string ExpandStartToken = ".expand.";
+
+    /// <summary>
+    /// Token that marks the end of an expansion block. Defaults to <c>".expand_end."</c>.
+    /// </summary>
+    public string ExpandEndToken = ".expand_end.";
+
+    /// <summary>
+    /// Token delimiter that separates the variable alternatives list from the block body template. Defaults to <c>":"</c>.
+    /// </summary>
+    public string DelimiterToken = ":";
+
+    /// <summary>
     /// Resolves a variable value by key from active scopes.
     /// Subclasses may override this method to provide custom or fallback variable resolution (e.g. environment variables or dynamic mappings).
     /// </summary>
@@ -56,6 +71,45 @@ public class CLIExpander
     public bool MatchPartials = true;
 
     /// <summary>
+    /// When true, splits whitespace-separated values from full-token variable matches into individual tokens.
+    /// When false, the resolved variable string is emitted directly as a single token. Defaults to true.
+    /// </summary>
+    public bool SplitAfterGetByKey = true;
+
+    /// <summary>
+    /// Splits a string value into individual tokens.
+    /// Subclasses may override this method to customize token splitting behavior (e.g. custom delimiters, quote-aware tokenization, or regex splitting).
+    /// </summary>
+    /// <param name="text">The string to split into tokens.</param>
+    /// <returns>An enumerable collection of string tokens.</returns>
+    public virtual IEnumerable<string> Split(string text)
+    {
+        return text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+    }
+
+    /// <summary>
+    /// Determines whether the specified character is valid as the start of an identifier for inner-token substitution.
+    /// Subclasses may override this method to customize valid identifier start characters.
+    /// </summary>
+    /// <param name="c">The character to test.</param>
+    /// <returns>True if the character can start an identifier; otherwise false.</returns>
+    public virtual bool IsIdentifierStart(char c)
+    {
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
+    }
+
+    /// <summary>
+    /// Determines whether the specified character is valid as a subsequent character in an identifier for inner-token substitution.
+    /// Subclasses may override this method to customize valid identifier continuation characters.
+    /// </summary>
+    /// <param name="c">The character to test.</param>
+    /// <returns>True if the character can be part of an identifier; otherwise false.</returns>
+    public virtual bool IsIdentifierPart(char c)
+    {
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_';
+    }
+
+    /// <summary>
     /// Recursively processes input tokens starting at <paramref name="index"/>, evaluating expansion blocks and variable substitutions.
     /// Subclasses may override this method to customize or intercept token evaluation.
     /// </summary>
@@ -71,7 +125,7 @@ public class CLIExpander
         again:
         CLReturn Return = new CLReturn();
 
-        while (index < input.Count && input[index] != ".expand." && input[index] != ".expand_end.")
+        while (index < input.Count && input[index] != ExpandStartToken && input[index] != ExpandEndToken)
         {
             string sourceText = input[index];
             
@@ -79,10 +133,14 @@ public class CLIExpander
             var sub = GetByKey(sourceText);
             if (sub != null)
             {
-                foreach (var item in sub.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
+                if (SplitAfterGetByKey)
                 {
-                    output.Add(item);
+                    foreach (var item in Split(sub))
+                    {
+                        output.Add(item);
+                    }
                 }
+                else output.Add(sub);
             }
             else if (MatchPartials) // attempt inner substitution
             {
@@ -92,10 +150,7 @@ public class CLIExpander
                 for (int i = 0; i < sourceText.Length; i++)
                 {
                     char c = sourceText[i];
-                    bool id_char = false;
-
-                    if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_') id_char = true;
-                    if ((!id_char) && identifier != null && (c >= '0' && c <= '9')) id_char = true;
+                    bool id_char = identifier == null ? IsIdentifierStart(c) : IsIdentifierPart(c);
 
                     if (id_char)
                     {
@@ -145,19 +200,19 @@ public class CLIExpander
             index++;
         }
 
-        if (index < input.Count && input[index] == ".expand.")
+        if (index < input.Count && input[index] == ExpandStartToken)
         {
             index++;
             if (index >= input.Count)
-                return new CLReturn() { Status = 1, Message = "CLIExpander: Expected variable name after .expand." };
+                return new CLReturn() { Status = 1, Message = $"CLIExpander: Expected variable name after {ExpandStartToken}" };
 
             string key = input[index];
             index++;
             if (index >= input.Count)
-                return new CLReturn() { Status = 1, Message = $"CLIExpander: Missing ':' after variable '{key}'" };
+                return new CLReturn() { Status = 1, Message = $"CLIExpander: Missing '{DelimiterToken}' after variable '{key}'" };
 
             List<String> inputs = new List<String>();
-            while (index < input.Count && input[index] != ":")
+            while (index < input.Count && input[index] != DelimiterToken)
             {
                 inputs.Add(input[index]);
                 index++;
@@ -165,7 +220,7 @@ public class CLIExpander
 
             if (index >= input.Count)
                 return new CLReturn()
-                    { Status = 1, Message = $"CLIExpander: Missing ':' delimiter for variable '{key}'" };
+                    { Status = 1, Message = $"CLIExpander: Missing '{DelimiterToken}' delimiter for variable '{key}'" };
 
             index++;
 
@@ -185,8 +240,8 @@ public class CLIExpander
                         return Return;
                     }
 
-                    if (index2 >= input.Count || input[index2] != ".expand_end.")
-                        return new CLReturn() { Status = 1, Message = "CLIExpander: Expected .expand_end." };
+                    if (index2 >= input.Count || input[index2] != ExpandEndToken)
+                        return new CLReturn() { Status = 1, Message = $"CLIExpander: Expected {ExpandEndToken}" };
                     if (end_position == -1) end_position = index2;
                 }
                 finally
@@ -202,8 +257,8 @@ public class CLIExpander
             }
             else
             {
-                if (index >= input.Count || input[index] != ".expand_end.")
-                    return new CLReturn() { Status = 1, Message = "CLIExpander: Expected .expand_end." };
+                if (index >= input.Count || input[index] != ExpandEndToken)
+                    return new CLReturn() { Status = 1, Message = $"CLIExpander: Expected {ExpandEndToken}" };
             }
 
             index++;
@@ -231,8 +286,8 @@ public class CLIExpander
         if (me.Status != 0) return me;
         if (position < input.Count)
         {
-            if (input[position] == ".expand_end.")
-                return new CLReturn() { Status = 1, Message = "CLIExpander: Unexpected .expand_end." };
+            if (input[position] == expand.ExpandEndToken)
+                return new CLReturn() { Status = 1, Message = $"CLIExpander: Unexpected {expand.ExpandEndToken}" };
             return new CLReturn()
                 { Status = 1, Message = $"CLIExpander: Incomplete parsing of input at '{input[position]}'" };
         }

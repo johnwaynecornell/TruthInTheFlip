@@ -414,4 +414,207 @@ public class CLIExpanderTests
         Assert.Equal(0, status.Status);
         Assert.Equal(new[] { "RUN", "FAST", "RUN", "SLOW" }, output);
     }
+
+    [Fact]
+    public void SplitAfterGetByKey_WhenFalse_PreservesWhitespaceInFullTokenMatch()
+    {
+        var expander = new CLIExpander { SplitAfterGetByKey = false };
+        expander.Scope.Add(("_flags", "--all --verbose --debug"));
+        int index = 0;
+        var output = new List<string>();
+        var input = new List<string> { "run", "_flags", "target" };
+
+        var status = expander.Process(input, ref index, output);
+
+        Assert.Equal(0, status.Status);
+        // With SplitAfterGetByKey = false, the entire string is emitted as a single token without splitting
+        Assert.Equal(new[] { "run", "--all --verbose --debug", "target" }, output);
+    }
+
+    [Fact]
+    public void SplitAfterGetByKey_WhenTrue_SplitsWhitespaceInFullTokenMatch()
+    {
+        var expander = new CLIExpander { SplitAfterGetByKey = true };
+        expander.Scope.Add(("_flags", "--all --verbose --debug"));
+        int index = 0;
+        var output = new List<string>();
+        var input = new List<string> { "run", "_flags", "target" };
+
+        var status = expander.Process(input, ref index, output);
+
+        Assert.Equal(0, status.Status);
+        Assert.Equal(new[] { "run", "--all", "--verbose", "--debug", "target" }, output);
+    }
+
+    private class CommaDelimitedExpander : CLIExpander
+    {
+        public override IEnumerable<string> Split(string text)
+        {
+            return text.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        }
+    }
+
+    [Fact]
+    public void Subclass_SplitOverride_CustomizesTokenSplitting()
+    {
+        var input = new List<string>
+        {
+            ".expand.", "_item", "itemA", "itemB", ":",
+            "process", "_item", "_metrics",
+            ".expand_end."
+        };
+
+        var globals = new Dictionary<string, string>
+        {
+            { "_metrics", "mean, stddev, min, max" }
+        };
+
+        var status = CLIExpander.Process(input, out var output, () => new CustomFallbackCommaExpander(globals));
+
+        Assert.Equal(0, status.Status);
+        Assert.Equal(new[]
+        {
+            "process", "itemA", "mean", "stddev", "min", "max",
+            "process", "itemB", "mean", "stddev", "min", "max"
+        }, output);
+    }
+
+    private class CustomFallbackCommaExpander : CommaDelimitedExpander
+    {
+        private readonly Dictionary<string, string> _globals;
+
+        public CustomFallbackCommaExpander(Dictionary<string, string> globals)
+        {
+            _globals = globals;
+        }
+
+        public override string? GetByKey(string key)
+        {
+            var scoped = base.GetByKey(key);
+            if (scoped != null) return scoped;
+            return _globals.TryGetValue(key, out var val) ? val : null;
+        }
+    }
+
+    [Fact]
+    public void CustomSyntaxTokens_AssignableProperties_ExpandsCustomBlockSyntax()
+    {
+        var expander = new CLIExpander
+        {
+            ExpandStartToken = "@expand",
+            ExpandEndToken = "@end",
+            DelimiterToken = "in"
+        };
+
+        int index = 0;
+        var output = new List<string>();
+        var input = new List<string>
+        {
+            "@expand", "_file", "a.txt", "b.txt", "in",
+            "process", "_file",
+            "@end"
+        };
+
+        var status = expander.Process(input, ref index, output);
+
+        Assert.Equal(0, status.Status);
+        Assert.Equal(new[] { "process", "a.txt", "process", "b.txt" }, output);
+    }
+
+    [Fact]
+    public void CustomSyntaxTokens_MissingDelimiter_ReportsConfiguredDelimiterInError()
+    {
+        var expander = new CLIExpander
+        {
+            ExpandStartToken = "@expand",
+            ExpandEndToken = "@end",
+            DelimiterToken = "in"
+        };
+
+        int index = 0;
+        var output = new List<string>();
+        var input = new List<string>
+        {
+            "@expand", "_file", "a.txt", "b.txt"
+        };
+
+        var status = expander.Process(input, ref index, output);
+
+        Assert.Equal(1, status.Status);
+        Assert.Equal("CLIExpander: Missing 'in' delimiter for variable '_file'", status.Message);
+    }
+
+    [Fact]
+    public void CustomSyntaxTokens_MissingEndToken_ReportsConfiguredEndTokenInError()
+    {
+        var expander = new CLIExpander
+        {
+            ExpandStartToken = "@expand",
+            ExpandEndToken = "@end",
+            DelimiterToken = "in"
+        };
+
+        int index = 0;
+        var output = new List<string>();
+        var input = new List<string>
+        {
+            "@expand", "_file", "a.txt", "in",
+            "process", "_file"
+        };
+
+        var status = expander.Process(input, ref index, output);
+
+        Assert.Equal(1, status.Status);
+        Assert.Equal("CLIExpander: Expected @end", status.Message);
+    }
+
+    [Fact]
+    public void CustomSyntaxTokens_StaticProcessWithFactoryDelegate_WorksSeamlessly()
+    {
+        var input = new List<string>
+        {
+            "[expand]", "_env", "dev", "prod", "->",
+            "deploy", "_env",
+            "[/expand]"
+        };
+
+        var status = CLIExpander.Process(input, out var output, () => new CLIExpander
+        {
+            ExpandStartToken = "[expand]",
+            ExpandEndToken = "[/expand]",
+            DelimiterToken = "->"
+        });
+
+        Assert.Equal(0, status.Status);
+        Assert.Equal(new[] { "deploy", "dev", "deploy", "prod" }, output);
+    }
+
+    private class DollarIdentifierExpander : CLIExpander
+    {
+        public override bool IsIdentifierStart(char c)
+        {
+            return base.IsIdentifierStart(c) || c == '$';
+        }
+
+        public override bool IsIdentifierPart(char c)
+        {
+            return base.IsIdentifierPart(c) || c == '$';
+        }
+    }
+
+    [Fact]
+    public void Subclass_IsIdentifierStartAndPartOverrides_AllowsCustomIdentifierCharacters()
+    {
+        var expander = new DollarIdentifierExpander();
+        expander.Scope.Add(("$VAR", "replaced"));
+
+        int index = 0;
+        var output = new List<string>();
+        var input = new List<string> { "prefix.$VAR.suffix" };
+
+        var status = expander.Process(input, ref index, output);
+
+        Assert.Equal(0, status.Status);
+        Assert.Equal(new[] { "prefix.replaced.suffix" }, output);
+    }
 }
