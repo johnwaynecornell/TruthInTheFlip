@@ -8,11 +8,12 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\FluentCommandLine\FluentCommandLine.csproj" />
-      <ProjectReference Include="..\JWCFarm\JWCFarm.csproj" />
-      <ProjectReference Include="..\TruthInTheFlip.Farm.Format\TruthInTheFlip.Farm.Format.csproj" />
-      <ProjectReference Include="..\TruthInTheFlip.Format\TruthInTheFlip.Format.csproj" />
-      <ProjectReference Include="..\TruthInTheFlip_Farm\TruthInTheFlip_Farm.csproj" />
+        <ProjectReference Include="..\CLIExpander\CLIExpander.csproj" />
+        <ProjectReference Include="..\FluentCommandLine\FluentCommandLine.csproj" />
+        <ProjectReference Include="..\JWCFarm\JWCFarm.csproj" />
+        <ProjectReference Include="..\TruthInTheFlip.Farm.Format\TruthInTheFlip.Farm.Format.csproj" />
+        <ProjectReference Include="..\TruthInTheFlip.Format\TruthInTheFlip.Format.csproj" />
+        <ProjectReference Include="..\TruthInTheFlip_Farm\TruthInTheFlip_Farm.csproj" />
     </ItemGroup>
 
 </Project>

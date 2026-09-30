@@ -2,6 +2,7 @@
 
 using System.Globalization;
 using System.Reflection;
+using CLIExpanderNs;
 using FluentCommandLine;
 using JWCFarm;
 using JWCFarm.Metrics;
@@ -91,7 +92,12 @@ cl = new List<string>
 cl = new List<String>("csv segment_agg window by_total 10B file /data/jwc/Documents/Trackers/crypto.tkr by_total 10B by_total 100B Index mean#median#AnticipatedPercentage".Split(' '));
 
 */
-cl = new List<String>(args);
+var status = CLIExpander.Process(cl, out cl);
+if (status.Status != 0)
+{
+    Console.Error.WriteLine(status.Message);
+    return status.Status;
+}
 
 int cl_index = 0;
 
