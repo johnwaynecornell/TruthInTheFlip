@@ -1,0 +1,289 @@
+# CLIExpand
+
+`CLIExpand` is a lightweight, standalone command-line host for the `CLIExpander` library. It provides fast, script-friendly argument expansion, Cartesian sweeps, and template substitution with shell-safe command serialization.
+
+---
+
+## Table of Contents
+
+1. [Overview & Purpose](#overview--purpose)
+2. [Command-Line Syntax](#command-line-syntax)
+   - [The Hard `--` Boundary](#the-hard----boundary)
+3. [Options Reference](#options-reference)
+4. [Shell Modes & Quoting Semantics](#shell-modes--quoting-semantics)
+   - [Bash Mode (`bash`)](#bash-mode-bash)
+   - [PowerShell Mode (`ps`)](#powershell-mode-ps)
+   - [Windows Command Prompt Mode (`cmd`)](#windows-command-prompt-mode-cmd)
+   - [Raw Mode (`raw`)](#raw-mode-raw)
+   - [Argument Composition vs. Command Composition](#argument-composition-vs-command-composition)
+5. [Settings File & Configuration Precedence](#settings-file--configuration-precedence)
+   - [Precedence Hierarchy](#precedence-hierarchy)
+   - [Default Settings Locations](#default-settings-locations)
+   - [JSON Settings Schema](#json-settings-schema)
+6. [Examples & Pipeline Workflows](#examples--pipeline-workflows)
+   - [Basic Expansion](#basic-expansion)
+   - [Nested Cartesian Sweeps](#nested-cartesian-sweeps)
+   - [PowerShell Script Generation](#powershell-script-generation)
+   - [Custom Syntax Tokens](#custom-syntax-tokens)
+   - [Shell Evaluation Pipelines](#shell-evaluation-pipelines)
+   - [Multi-Command Script Composition](#multi-command-script-composition)
+7. [Limitations & Shell Quirks](#limitations--shell-quirks)
+
+---
+
+## Overview & Purpose
+
+`CLIExpand` acts as a pure transformation bridge:
+1. Accepts ordinary command-line options and payload arguments.
+2. Isolates host configuration from payload tokens using a hard `--` boundary.
+3. Executes combinatorial expansion and variable substitution using the `CLIExpander` engine.
+4. Serializes the resulting token array using a designated shell argument renderer.
+5. Emits rendered text cleanly to `stdout` with zero status banners, directing diagnostics and error messages strictly to `stderr`.
+
+```text
+CLIExpand [options] -- <payload tokens...>
+       │
+       ▼
+┌─────────────────────────┐
+│     CLIOptionParser     │
+└────────────┬────────────┘
+             │ (before --)                   (after --)
+             ▼                                   ▼
+┌─────────────────────────┐             ┌─────────────────┐
+│   CLIExpandSettings     │             │ Payload Tokens  │
+│ (Merged via Precedence) │             └────────┬────────┘
+└────────────┬────────────┘                      │
+             │                                   │
+             ▼                                   ▼
+┌─────────────────────────────────────────────────────────┐
+│                       CLIExpander                       │
+│              (Expansion & Scoping Engine)               │
+└────────────────────────────┬────────────────────────────┘
+                             │
+                             ▼ Expanded Token Array
+┌─────────────────────────────────────────────────────────┐
+│                  ICLIArgumentRenderer                   │
+│             (Bash | PowerShell | Cmd | Raw)             │
+└────────────────────────────┬────────────────────────────┘
+                             │
+                             ▼
+                    stdout (Exit Code 0)
+```
+
+---
+
+## Command-Line Syntax
+
+```text
+CLIExpand [options] -- <payload tokens...>
+```
+
+### The Hard `--` Boundary
+
+The double-dash `--` token serves as an immutable boundary:
+- **Tokens before `--`**: Parsed as `CLIExpand` configuration flags (e.g. `-mode`, `-begin`, `-delim`, `-no-partials`, `-settings`).
+- **Tokens after `--`**: Owned entirely by `CLIExpander` and downstream tool semantics. Switch-like tokens (e.g. `-mode`, `--verbose`, `-f`) appearing after `--` are treated strictly as raw payload arguments and never parsed as host options.
+
+---
+
+## Options Reference
+
+| Option | Aliases | Description | Default |
+| :--- | :--- | :--- | :--- |
+| `-mode <mode>` | `--mode` | Target shell rendering mode (`bash`, `ps`, `cmd`, `raw`). | `raw` |
+| `-begin <token>` | `--begin`, `-start`, `--start` | Token marking the start of an expansion block. | `.expand.` |
+| `-end <token>` | `--end` | Token marking the end of an expansion block. | `.expand_end.` |
+| `-delim <token>` | `--delim`, `-delimiter`, `--delimiter` | Delimiter separating variable alternatives from template body. | `:` |
+| `-no-partials` | `--no-partials` | Disables inner-token substitutions (e.g. `prefix._var.suffix`). | Enabled (`true`) |
+| `-partials` | `--partials` | Explicitly enables inner-token substitutions. | Enabled (`true`) |
+| `-no-split` | `--no-split` | Preserves whitespace in full-token variable matches without splitting. | Splitting enabled (`true`) |
+| `-split` | `--split` | Enables splitting full-token variable matches by whitespace. | Enabled (`true`) |
+| `-settings <path>` | `--settings` | Path to a custom JSON configuration file. | `null` |
+| `-h`, `-help`, `--help` | `-?`, `/?`, `help` | Prints usage information to stderr and exits with code 0. | |
+
+---
+
+## Shell Modes & Quoting Semantics
+
+`CLIExpand` provides dedicated serializers designed to produce shell-safe command lines for downstream execution.
+
+### Bash Mode (`bash`)
+- **Safe Characters**: Tokens consisting purely of `[a-zA-Z0-9_./@:=+-]` remain unquoted.
+- **Quoting Strategy**: All other tokens (containing spaces, tabs, newlines, `$`, `"`, `'`, `;`, `&`, `|`, `<`, `>`, `*`, `?`, `~`, `!`, `(`, `)`, `{`, `}`, `[`, `]`, `\`, etc.) are wrapped in POSIX single quotes `'...'`.
+- **Single Quote Escaping**: Internal single quotes `'` are safely escaped via `'\''`.
+- **Empty String**: Serialized as `''`.
+
+### PowerShell Mode (`ps` / `powershell`)
+- **Safe Characters**: Safe alphanumeric and path identifiers matching `[a-zA-Z0-9_./\\:+-]` remain unquoted.
+- **Quoting Strategy**: Tokens containing whitespace or PowerShell special symbols (`$`, `@`, `` ` ``, `"`, `'`, `;`, `|`, `&`, `(`, `)`, `{`, `}`, `[`, `]`, `#`, etc.) are wrapped in single quotes `'...'`.
+- **Single Quote Escaping**: Internal single quotes `'` are escaped by doubling: `''`.
+- **Empty String**: Serialized as `''`.
+
+### Windows Command Prompt Mode (`cmd` / `bat`)
+- **Safe Characters**: Safe tokens matching `[a-zA-Z0-9_./\\:+-]` remain unquoted.
+- **Quoting Strategy**: Tokens containing whitespace or cmd metacharacters (`&`, `<`, `>`, `|`, `^`, `%`, `"`, `(`, `)`) are wrapped in double quotes `"..."`.
+- **CRT Escaping**: Conforms to standard Windows `CommandLineToArgvW` rules: internal double quotes are escaped as `\"`, and preceding backslashes are doubled.
+- **Empty String**: Serialized as `""`.
+
+### Raw Mode (`raw`)
+- Serializes tokens separated by a single space without shell quoting or escaping.
+- Essential for **command and script composition** (allowing shell operators like `;`, `&&`, `|`, and redirections to pass through unquoted).
+- Provides shell-neutral textual rendering, but is not lossless token transport when an argument itself contains whitespace or is empty. Shell-specific modes (`bash`, `ps`, `cmd`) preserve `argv` boundaries through quoting; `raw` intentionally does not.
+
+### Argument Composition vs. Command Composition
+
+Understanding whether you are composing **arguments for a single command** or **an entire multi-command script** determines which mode to select:
+
+- **Argument Composition (`-mode bash`, `-mode ps`, `-mode cmd`)**:
+  Guarantees literal data safety. Shell metacharacters (`;`, `&`, `|`, `$`, quotes, spaces) are automatically escaped/quoted so they are delivered verbatim to the target program as data arguments without triggering unintended shell control flow or subshells.
+- **Command & Script Composition (`-mode raw`)**:
+  Emits unquoted tokens directly, allowing shell control operators (`;`, `&&`, `||`, `|`, `>`) to retain their syntactic meaning so downstream evaluators (`eval`, `Invoke-Expression`, `cmd /c`, or shell subshells) interpret them as distinct sequential commands and pipelines.
+
+---
+
+## Settings File & Configuration Precedence
+
+`CLIExpand` supports persistent configuration through optional JSON settings files.
+
+### Precedence Hierarchy
+
+Settings are resolved in the following strict 4-tier hierarchy (highest priority wins):
+
+1. **Command-Line Arguments**: Explicit flags (`-mode`, `-begin`, etc.) passed on invocation.
+2. **Explicit Settings File**: Settings loaded via `-settings <path>`.
+3. **Default User Settings File**: Per-user `settings.json` located in standard OS directories.
+4. **Built-in Defaults**: Fallback defaults (`mode: raw`, `begin: .expand.`, `end: .expand_end.`, `delim: :`, `matchPartials: true`, `splitAfterGetByKey: true`).
+
+### Default Settings Locations
+
+When no `-settings <path>` is supplied, `CLIExpand` searches standard per-user configuration paths:
+
+- **Linux / Unix**: `$XDG_CONFIG_HOME/CLIExpand/settings.json` (or `~/.config/CLIExpand/settings.json`).
+- **Windows**: `%APPDATA%\CLIExpand\settings.json` (e.g. `C:\Users\<User>\AppData\Roaming\CLIExpand\settings.json`).
+- **macOS**: `~/Library/Application Support/CLIExpand/settings.json` (with fallback to `~/.config/CLIExpand/settings.json`).
+
+### JSON Settings Schema
+
+```json
+{
+  "mode": "raw",
+  "begin": ".expand.",
+  "end": ".expand_end.",
+  "delimiter": ":",
+  "matchPartials": true,
+  "splitAfterGetByKey": true
+}
+```
+
+*Note: Alternate property names such as `expandStartToken`, `expandEndToken`, and `delimiterToken` are also supported.*
+
+---
+
+## Examples & Pipeline Workflows
+
+### Basic Expansion
+
+```bash
+CLIExpand -- .expand. _text a b : echo _text .expand_end.
+```
+
+**Output:**
+```text
+echo a echo b
+```
+
+### Nested Cartesian Sweeps
+
+```bash
+CLIExpand -- .expand. _env dev prod : .expand. _region us-east us-west : deploy --env _env --region _region .expand_end. .expand_end.
+```
+
+**Output:**
+```text
+deploy --env dev --region us-east deploy --env dev --region us-west deploy --env prod --region us-east deploy --env prod --region us-west
+```
+
+### PowerShell Script Generation
+
+Target PowerShell syntax regardless of the operating system hosting `CLIExpand`:
+
+```bash
+CLIExpand -mode ps -- .expand. _file app1 app2 : Compress-Archive -Path _file -DestinationPath _file.zip .expand_end.
+```
+
+**Output:**
+```text
+Compress-Archive -Path app1 -DestinationPath app1.zip Compress-Archive -Path app2 -DestinationPath app2.zip
+```
+
+### Custom Syntax Tokens
+
+```bash
+CLIExpand -begin @expand -end @end -delim in -- @expand _tier standard premium in create-tier _tier @end
+```
+
+**Output:**
+```text
+create-tier standard create-tier premium
+```
+
+### Shell Evaluation Pipelines
+
+Because `CLIExpand` writes exclusively to `stdout` with no banners, it integrates directly with shell evaluation constructs:
+
+#### Bash / Zsh
+```bash
+eval "$(CLIExpand -mode bash -- .expand. _dir src bin docs : ls -la _dir .expand_end.)"
+```
+
+#### PowerShell
+```powershell
+Invoke-Expression (CLIExpand -mode ps -- .expand. _service auth payment : Start-Service _service .expand_end.)
+```
+
+### Multi-Command Script Composition
+
+When generating sequences of commands separated by shell operators (`;`, `&&`, `&`), use `-mode raw` so operators are not quote-wrapped:
+
+#### Bash / POSIX Multi-Command
+```bash
+CLIExpand -mode raw -- .expand. _dir src bin tests : mkdir -p _dir ';' touch _dir/.gitkeep ';' .expand_end.
+```
+**Output:**
+```text
+mkdir -p src ; touch src/.gitkeep ; mkdir -p bin ; touch bin/.gitkeep ; mkdir -p tests ; touch tests/.gitkeep ;
+```
+**Execution:**
+```bash
+eval "$(CLIExpand -mode raw -- .expand. _dir src bin tests : mkdir -p _dir ';' touch _dir/.gitkeep ';' .expand_end.)"
+```
+
+#### PowerShell Multi-Command
+```powershell
+CLIExpand -mode raw -- .expand. _svc auth billing : Write-Host "Restarting _svc" ';' Restart-Service _svc ';' .expand_end.
+```
+**Output:**
+```text
+Write-Host "Restarting auth" ; Restart-Service auth ; Write-Host "Restarting billing" ; Restart-Service billing ;
+```
+**Execution:**
+```powershell
+Invoke-Expression (CLIExpand -mode raw -- .expand. _svc auth billing : Write-Host "Restarting _svc" ';' Restart-Service _svc ';' .expand_end.)
+```
+
+#### Windows Command Prompt (cmd.exe) Batch
+```cmd
+CLIExpand -mode raw -- .expand. _dir logs backups : mkdir _dir "&" echo Initialized > _dir\init.txt "&" .expand_end.
+```
+**Output:**
+```text
+mkdir logs & echo Initialized > logs\init.txt & mkdir backups & echo Initialized > backups\init.txt &
+```
+
+---
+
+## Limitations & Shell Quirks
+
+- **cmd.exe Environment Variable Expansion**: In Windows `cmd.exe`, percent signs (`%VAR%`) may trigger variable expansion if evaluated in a batch file or command prompt, as cmd parses environment variables before quote interpretation.
+- **Control Characters**: Non-printable control characters or embedded raw null bytes (`\0`) cannot be reliably transported through standard shell command-line strings.
+- **Pipeline Execution**: `CLIExpand` is strictly a transformer and serializer; it does not invoke or execute commands automatically.
