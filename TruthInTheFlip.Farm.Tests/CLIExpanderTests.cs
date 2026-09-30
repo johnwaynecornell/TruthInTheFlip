@@ -617,4 +617,202 @@ public class CLIExpanderTests
         Assert.Equal(0, status.Status);
         Assert.Equal(new[] { "prefix.replaced.suffix" }, output);
     }
+
+    #region Join Block (.join. ... .join_end.) Tests
+
+    [Fact]
+    public void Join_BasicTwoTokens_ConcatenatesWithNoSeparator()
+    {
+        var input = new List<string> { ".join.", "hello", "world", ".join_end." };
+        var status = CLIExpander.Process(input, out var output);
+
+        Assert.Equal(0, status.Status);
+        Assert.Equal(new[] { "helloworld" }, output);
+    }
+
+    [Fact]
+    public void Join_FilenameAndPathConstruction_ConcatenatesAllTokens()
+    {
+        var input1 = new List<string> { ".join.", "Quant", ".", "tkr", ".join_end." };
+        var status1 = CLIExpander.Process(input1, out var output1);
+
+        Assert.Equal(0, status1.Status);
+        Assert.Equal(new[] { "Quant.tkr" }, output1);
+
+        var input2 = new List<string> { ".join.", "/tmp/", "report", ".", "csv", ".join_end." };
+        var status2 = CLIExpander.Process(input2, out var output2);
+
+        Assert.Equal(0, status2.Status);
+        Assert.Equal(new[] { "/tmp/report.csv" }, output2);
+    }
+
+    [Fact]
+    public void Join_PreservesWhitespaceInsideTokens()
+    {
+        var input = new List<string> { ".join.", "/home/jwc/", "my file", ".join_end." };
+        var status = CLIExpander.Process(input, out var output);
+
+        Assert.Equal(0, status.Status);
+        Assert.Single(output);
+        Assert.Equal("/home/jwc/my file", output[0]);
+    }
+
+    [Fact]
+    public void Join_EmptyBlock_EmitsSingleEmptyStringToken()
+    {
+        var input = new List<string> { ".join.", ".join_end." };
+        var status = CLIExpander.Process(input, out var output);
+
+        Assert.Equal(0, status.Status);
+        Assert.Single(output);
+        Assert.Equal("", output[0]);
+    }
+
+    [Fact]
+    public void Join_InsideExpandBlock_EvaluatesPerIteration()
+    {
+        var input = new List<string>
+        {
+            ".expand.", "_name", "Quant", "Quant2", ":",
+            ".join.", "/data/", "_name", ".tkr", ".join_end.",
+            ".expand_end."
+        };
+
+        var status = CLIExpander.Process(input, out var output);
+
+        Assert.Equal(0, status.Status);
+        Assert.Equal(new[] { "/data/Quant.tkr", "/data/Quant2.tkr" }, output);
+    }
+
+    [Fact]
+    public void Join_CartesianExpansionWithJoin_GeneratesAllCombinations()
+    {
+        var input = new List<string>
+        {
+            ".expand.", "_base", "Quant", "Quant2", ":",
+            ".expand.", "_ext", "tkr", "csv", ":",
+            ".join.", "_base", ".", "_ext", ".join_end.",
+            ".expand_end.",
+            ".expand_end."
+        };
+
+        var status = CLIExpander.Process(input, out var output);
+
+        Assert.Equal(0, status.Status);
+        Assert.Equal(new[] { "Quant.tkr", "Quant.csv", "Quant2.tkr", "Quant2.csv" }, output);
+    }
+
+    [Fact]
+    public void Join_ExpandInsideJoin_ConcatenatesAllBranchEmissionsIntoOneToken()
+    {
+        var input = new List<string>
+        {
+            ".join.",
+            "prefix-",
+            ".expand.", "_x", "a", "b", ":",
+            "_x",
+            ".expand_end.",
+            "suffix",
+            ".join_end."
+        };
+
+        var status = CLIExpander.Process(input, out var output);
+
+        Assert.Equal(0, status.Status);
+        Assert.Single(output);
+        Assert.Equal("prefix-absuffix", output[0]);
+    }
+
+    [Fact]
+    public void Join_NestedJoins_ConcatenatesRecursively()
+    {
+        var input = new List<string>
+        {
+            ".join.",
+            "root/",
+            ".join.", "child", "/", "leaf", ".join_end.",
+            ".txt",
+            ".join_end."
+        };
+
+        var status = CLIExpander.Process(input, out var output);
+
+        Assert.Equal(0, status.Status);
+        Assert.Single(output);
+        Assert.Equal("root/child/leaf.txt", output[0]);
+    }
+
+    [Fact]
+    public void Join_Substitutions_ExactAndInnerSubstitutionsInsideJoin()
+    {
+        var input = new List<string>
+        {
+            ".expand.", "_item", "item0", "item1", ":",
+            ".expand.", "_metric", "mean", "stddev", ":",
+            ".join.", "stat_", "_item._metric", ".dat", ".join_end.",
+            ".expand_end.",
+            ".expand_end."
+        };
+
+        var status = CLIExpander.Process(input, out var output);
+
+        Assert.Equal(0, status.Status);
+        Assert.Equal(new[]
+        {
+            "stat_item0.mean.dat",
+            "stat_item0.stddev.dat",
+            "stat_item1.mean.dat",
+            "stat_item1.stddev.dat"
+        }, output);
+    }
+
+    [Fact]
+    public void Join_CustomSyntaxTokens_ExpandsConfiguredTokens()
+    {
+        var input = new List<string>
+        {
+            "@join", "path/", "file", ".ext", "@endjoin"
+        };
+
+        var status = CLIExpander.Process(input, out var output, () => new CLIExpander
+        {
+            JoinStartToken = "@join",
+            JoinEndToken = "@endjoin"
+        });
+
+        Assert.Equal(0, status.Status);
+        Assert.Equal(new[] { "path/file.ext" }, output);
+    }
+
+    [Fact]
+    public void Join_MissingEndToken_ReturnsDescriptiveError()
+    {
+        var input = new List<string> { ".join.", "hello", "world" };
+        var status = CLIExpander.Process(input, out var output);
+
+        Assert.Equal(1, status.Status);
+        Assert.Equal("CLIExpander: Expected .join_end.", status.Message);
+    }
+
+    [Fact]
+    public void Join_UnexpectedEndTokenAtRoot_ReturnsDescriptiveError()
+    {
+        var input = new List<string> { "hello", ".join_end." };
+        var status = CLIExpander.Process(input, out var output);
+
+        Assert.Equal(1, status.Status);
+        Assert.Equal("CLIExpander: Unexpected .join_end.", status.Message);
+    }
+
+    [Fact]
+    public void Join_UnexpectedExpandEndInsideJoin_ReturnsDescriptiveError()
+    {
+        var input = new List<string> { ".join.", "hello", ".expand_end.", ".join_end." };
+        var status = CLIExpander.Process(input, out var output);
+
+        Assert.Equal(1, status.Status);
+        Assert.Equal("CLIExpander: Unexpected .expand_end.", status.Message);
+    }
+
+    #endregion
 }

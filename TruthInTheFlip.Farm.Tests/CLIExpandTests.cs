@@ -657,5 +657,160 @@ public class CLIExpandTests
         }
     }
 
+    [Theory]
+    [InlineData("-join", "-join-end")]
+    [InlineData("--join", "--join-end")]
+    [InlineData("-join-start", "-joinend")]
+    [InlineData("--join-start", "--joinend")]
+    public void OptionParser_JoinTokens_ParsesCorrectly(string startFlag, string endFlag)
+    {
+        string[] args = [startFlag, "@j", endFlag, "@je", "--", "@j", "a", "b", "@je"];
+        var result = CLIOptionParser.Parse(args);
+
+        Assert.False(result.HasErrors);
+        Assert.Equal("@j", result.JoinStartToken);
+        Assert.Equal("@je", result.JoinEndToken);
+        Assert.Equal(new[] { "@j", "a", "b", "@je" }, result.Payload);
+    }
+
+    [Fact]
+    public void SettingsLoader_JsonSettings_LoadsJoinTokens()
+    {
+        string json = """
+        {
+            "join": "[j]",
+            "joinEnd": "[/j]"
+        }
+        """;
+
+        var settings = new CLIExpandSettings();
+        bool success = SettingsLoader.TryLoadFromJson(json, settings, out var error);
+
+        Assert.True(success);
+        Assert.Null(error);
+        Assert.Equal("[j]", settings.JoinStartToken);
+        Assert.Equal("[/j]", settings.JoinEndToken);
+    }
+
+    [Fact]
+    public void SettingsLoader_JsonSettings_LoadsLongFormJoinTokens()
+    {
+        string json = """
+        {
+            "joinStartToken": "{join}",
+            "joinEndToken": "{/join}"
+        }
+        """;
+
+        var settings = new CLIExpandSettings();
+        bool success = SettingsLoader.TryLoadFromJson(json, settings, out var error);
+
+        Assert.True(success);
+        Assert.Null(error);
+        Assert.Equal("{join}", settings.JoinStartToken);
+        Assert.Equal("{/join}", settings.JoinEndToken);
+    }
+
+    [Fact]
+    public void Pipeline_JoinWithShellRenderers_PreservesSingleArgQuoting()
+    {
+        string[] payload = [".join.", "/home/jwc/", "my file", ".join_end."];
+
+        // Raw mode
+        using (var stdout = new StringWriter())
+        {
+            int code = Program.Run(["-mode", "raw", "--", .. payload], stdout, TextWriter.Null);
+            Assert.Equal(0, code);
+            Assert.Equal("/home/jwc/my file\n", stdout.ToString().Replace("\r\n", "\n"));
+        }
+
+        // Bash mode
+        using (var stdout = new StringWriter())
+        {
+            int code = Program.Run(["-mode", "bash", "--", .. payload], stdout, TextWriter.Null);
+            Assert.Equal(0, code);
+            Assert.Equal("'/home/jwc/my file'\n", stdout.ToString().Replace("\r\n", "\n"));
+        }
+
+        // PowerShell mode
+        using (var stdout = new StringWriter())
+        {
+            int code = Program.Run(["-mode", "ps", "--", .. payload], stdout, TextWriter.Null);
+            Assert.Equal(0, code);
+            Assert.Equal("'/home/jwc/my file'\n", stdout.ToString().Replace("\r\n", "\n"));
+        }
+
+        // Cmd mode
+        using (var stdout = new StringWriter())
+        {
+            int code = Program.Run(["-mode", "cmd", "--", .. payload], stdout, TextWriter.Null);
+            Assert.Equal(0, code);
+            Assert.Equal("\"/home/jwc/my file\"\n", stdout.ToString().Replace("\r\n", "\n"));
+        }
+    }
+
+    [Fact]
+    public void Pipeline_JoinCliOption_OverridesJsonSettings()
+    {
+        string settingsJson = """
+        {
+            "join": "[j]",
+            "joinEnd": "[/j]"
+        }
+        """;
+        string tempSettingsFile = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(tempSettingsFile, settingsJson);
+
+            string[] args =
+            [
+                "-settings", tempSettingsFile,
+                "-join", "@j",
+                "-join-end", "@je",
+                "--",
+                "@j", "foo", "bar", "@je"
+            ];
+
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
+
+            int exitCode = Program.Run(args, stdout, stderr);
+
+            Assert.Equal(0, exitCode);
+            Assert.Equal("foobar\n", stdout.ToString().Replace("\r\n", "\n"));
+            Assert.Empty(stderr.ToString());
+        }
+        finally
+        {
+            if (File.Exists(tempSettingsFile))
+                File.Delete(tempSettingsFile);
+        }
+    }
+
+    [Fact]
+    public void Pipeline_JoinInsideExpand_CartesianGeneration()
+    {
+        string[] args =
+        [
+            "-mode", "raw",
+            "--",
+            ".expand.", "_base", "Quant", "Quant2", ":",
+            ".expand.", "_ext", "tkr", "csv", ":",
+            ".join.", "_base", ".", "_ext", ".join_end.",
+            ".expand_end.",
+            ".expand_end."
+        ];
+
+        using var stdout = new StringWriter();
+        using var stderr = new StringWriter();
+
+        int exitCode = Program.Run(args, stdout, stderr);
+
+        Assert.Equal(0, exitCode);
+        Assert.Equal("Quant.tkr Quant.csv Quant2.tkr Quant2.csv\n", stdout.ToString().Replace("\r\n", "\n"));
+        Assert.Empty(stderr.ToString());
+    }
+
     #endregion
 }

@@ -11,6 +11,7 @@
    - [Basic Expansion Block](#basic-expansion-block)
    - [Cartesian Product (Nested Expansion)](#cartesian-product-nested-expansion)
    - [Sequential Expansion Blocks](#sequential-expansion-blocks)
+   - [Token Concatenation (`.join.` ... `.join_end.`)](#token-concatenation-join--join_end)
    - [Variable Scoping & Shadowing](#variable-scoping--shadowing)
    - [Full-Token (Fragment) vs. Inner-Token Substitution](#full-token-fragment-vs-inner-token-substitution)
    - [Empty Alternatives](#empty-alternatives)
@@ -18,7 +19,7 @@
    - [Virtual Resolution (`GetByKey`)](#virtual-resolution-getbykey)
    - [Custom Token Splitting (`Split`)](#custom-token-splitting-split)
    - [Custom Identifier Characters (`IsIdentifierStart` & `IsIdentifierPart`)](#custom-identifier-characters-isidentifierstart--isidentifierpart)
-   - [Configurable Syntax Tokens (`ExpandStartToken`, `ExpandEndToken`, `DelimiterToken`)](#configurable-syntax-tokens-expandstarttoken-expandendtoken-delimitertoken)
+   - [Configurable Syntax Tokens (`ExpandStartToken`, `ExpandEndToken`, `DelimiterToken`, `JoinStartToken`, `JoinEndToken`)](#configurable-syntax-tokens-expandstarttoken-expandendtoken-delimitertoken)
    - [Token Splitting Control (`SplitAfterGetByKey`)](#token-splitting-control-splitaftergetbykey)
    - [Partial Matching Control (`MatchPartials`)](#partial-matching-control-matchpartials)
    - [Custom Expansion Pipeline (`Process`)](#custom-expansion-pipeline-process)
@@ -33,6 +34,8 @@
    - [ExpandStartToken (Field)](#expandstarttoken-field)
    - [ExpandEndToken (Field)](#expandendtoken-field)
    - [DelimiterToken (Field)](#delimitertoken-field)
+   - [JoinStartToken (Field)](#joinstarttoken-field)
+   - [JoinEndToken (Field)](#joinendtoken-field)
    - [SplitAfterGetByKey (Field)](#splitaftergetbykey-field)
    - [MatchPartials (Field)](#matchpartials-field)
    - [CLReturn Struct](#clreturn-struct)
@@ -121,6 +124,88 @@ Multiple `.expand.` blocks can be placed in sequence across a command line, allo
 .expand. _metric mean#AnticipatedPercentage mean#ZScore :
     item_0._metric
 .expand_end.
+```
+
+---
+
+### Token Concatenation (`.join.` ... `.join_end.`)
+
+A token concatenation block begins with `.join.` and closes with `.join_end.`. It evaluates all body tokens according to standard `CLIExpander` expansion and substitution rules, and concatenates all emitted tokens into **one output token with no separator** ($N\text{ tokens} \to 1\text{ token}$):
+
+```text
+.join. <body_tokens...> .join_end.
+```
+
+#### Whitespace Semantics (Preserving Internal Spaces)
+
+`.join.` removes **token boundaries**, not characters inside tokens. Any whitespace that is part of a single token (such as `"my file"`) is preserved verbatim in the resulting joined token:
+
+```text
+.join. /home/jwc/ "my file" .join_end.
+```
+
+**Output Tokens:**
+```text
+["/home/jwc/my file"]  (1 token)
+```
+
+#### Empty Join Semantics
+
+An empty join block `.join. .join_end.` emits exactly one empty string token (`""`), providing a deliberate mechanism to manufacture empty argument values.
+
+#### Filename and Path Construction
+
+```text
+.join. Quant . tkr .join_end.
+.join. /tmp/ report . csv .join_end.
+```
+
+**Output Tokens:**
+```text
+["Quant.tkr", "/tmp/report.csv"]
+```
+
+#### Cartesian Expansion with Join (`.join.` inside `.expand.`)
+
+Nesting `.join.` inside `.expand.` blocks allows dynamic assembly of filenames, extensions, and paths across parameter sweeps:
+
+```text
+.expand. _base Quant Quant2 :
+    .expand. _ext tkr csv :
+        .join. _base . _ext .join_end.
+    .expand_end.
+.expand_end.
+```
+
+**Output Tokens:**
+```text
+Quant.tkr Quant.csv Quant2.tkr Quant2.csv
+```
+
+#### Multi-Branch Concatenation (`.expand.` inside `.join.`)
+
+When an `.expand.` block is nested inside a `.join.` block, all emissions from every branch of the expansion are evaluated into the join stream and assembled into a single continuous token:
+
+```text
+.join. prefix- .expand. _x a b : _x .expand_end. suffix .join_end.
+```
+
+**Output Tokens:**
+```text
+["prefix-absuffix"]
+```
+
+#### Nested Joins
+
+Nested `.join.` blocks evaluate recursively from inner to outer:
+
+```text
+.join. root/ .join. child / leaf .join_end. .txt .join_end.
+```
+
+**Output Tokens:**
+```text
+["root/child/leaf.txt"]
 ```
 
 ---
@@ -358,6 +443,26 @@ public string DelimiterToken = ":";
 
 ---
 
+### `JoinStartToken (Field)`
+
+```csharp
+public string JoinStartToken = ".join.";
+```
+
+- Token identifying the beginning of a token concatenation block. Defaults to `".join."`.
+
+---
+
+### `JoinEndToken (Field)`
+
+```csharp
+public string JoinEndToken = ".join_end.";
+```
+
+- Token identifying the termination of a token concatenation block. Defaults to `".join_end."`.
+
+---
+
 ### `SplitAfterGetByKey (Field)`
 
 ```csharp
@@ -410,7 +515,9 @@ public struct CLReturn
 | `CLIExpander: Missing ':' after variable '<name>'` | Variable declared after `.expand.` but the input ended before any colon `:` or values. |
 | `CLIExpander: Missing ':' delimiter for variable '<name>'` | Values provided after variable name, but reached end of input without a `:` delimiter. |
 | `CLIExpander: Expected .expand_end.` | An `.expand.` block body reached end of input or was not properly closed with `.expand_end.`. |
-| `CLIExpander: Unexpected .expand_end.` | Encountered an un-matched `.expand_end.` token at the root level. |
+| `CLIExpander: Unexpected .expand_end.` | Encountered an un-matched `.expand_end.` token at the root level or inside a join block. |
+| `CLIExpander: Expected .join_end.` | A `.join.` block reached end of input without being closed by `.join_end.`. |
+| `CLIExpander: Unexpected .join_end.` | Encountered an un-matched `.join_end.` token at the root level. |
 | `CLIExpander: Incomplete parsing of input at '<token>'` | Unparsed trailing tokens remaining after top-level block processing. |
 | `CLIExpander: Variable '<name>' contains whitespace` | Inner-token substitution variable value contained whitespace characters. |
 

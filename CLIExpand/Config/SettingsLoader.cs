@@ -36,6 +36,21 @@ public static class SettingsLoader
         [JsonPropertyName("delimiterToken")]
         public string? DelimiterToken { get; set; }
 
+        [JsonPropertyName("join")]
+        public string? Join { get; set; }
+
+        [JsonPropertyName("joinStart")]
+        public string? JoinStart { get; set; }
+
+        [JsonPropertyName("joinStartToken")]
+        public string? JoinStartToken { get; set; }
+
+        [JsonPropertyName("joinEnd")]
+        public string? JoinEnd { get; set; }
+
+        [JsonPropertyName("joinEndToken")]
+        public string? JoinEndToken { get; set; }
+
         [JsonPropertyName("matchPartials")]
         public bool? MatchPartials { get; set; }
 
@@ -181,6 +196,14 @@ public static class SettingsLoader
         string? delim = dto.Delim ?? dto.Delimiter ?? dto.DelimiterToken;
         if (delim != null)
             target.DelimiterToken = delim;
+
+        string? joinStart = dto.Join ?? dto.JoinStart ?? dto.JoinStartToken;
+        if (joinStart != null)
+            target.JoinStartToken = joinStart;
+
+        string? joinEnd = dto.JoinEnd ?? dto.JoinEndToken;
+        if (joinEnd != null)
+            target.JoinEndToken = joinEnd;
 
         if (dto.MatchPartials.HasValue)
             target.MatchPartials = dto.MatchPartials.Value;

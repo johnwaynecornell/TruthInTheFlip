@@ -51,6 +51,16 @@ public class CLIExpander
     public string DelimiterToken = ":";
 
     /// <summary>
+    /// Token that marks the beginning of a token concatenation block. Defaults to <c>".join."</c>.
+    /// </summary>
+    public string JoinStartToken = ".join.";
+
+    /// <summary>
+    /// Token that marks the end of a token concatenation block. Defaults to <c>".join_end."</c>.
+    /// </summary>
+    public string JoinEndToken = ".join_end.";
+
+    /// <summary>
     /// Resolves a variable value by key from active scopes.
     /// Subclasses may override this method to provide custom or fallback variable resolution (e.g. environment variables or dynamic mappings).
     /// </summary>
@@ -125,7 +135,7 @@ public class CLIExpander
         again:
         CLReturn Return = new CLReturn();
 
-        while (index < input.Count && input[index] != ExpandStartToken && input[index] != ExpandEndToken)
+        while (index < input.Count && input[index] != ExpandStartToken && input[index] != ExpandEndToken && input[index] != JoinStartToken && input[index] != JoinEndToken)
         {
             string sourceText = input[index];
             
@@ -265,6 +275,30 @@ public class CLIExpander
             if (index < input.Count)
                 goto again;
         }
+        else if (index < input.Count && input[index] == JoinStartToken)
+        {
+            index++;
+            List<string> tempTokens = new();
+
+            while (index < input.Count && input[index] != JoinEndToken)
+            {
+                if (input[index] == ExpandEndToken)
+                    return new CLReturn() { Status = 1, Message = $"CLIExpander: Unexpected {ExpandEndToken}" };
+
+                Return = Process(input, ref index, tempTokens);
+                if (Return.Status != 0)
+                    return Return;
+            }
+
+            if (index >= input.Count || input[index] != JoinEndToken)
+                return new CLReturn() { Status = 1, Message = $"CLIExpander: Expected {JoinEndToken}" };
+
+            index++;
+            output.Add(string.Concat(tempTokens));
+
+            if (index < input.Count)
+                goto again;
+        }
 
         return new();
     }
@@ -288,6 +322,8 @@ public class CLIExpander
         {
             if (input[position] == expand.ExpandEndToken)
                 return new CLReturn() { Status = 1, Message = $"CLIExpander: Unexpected {expand.ExpandEndToken}" };
+            if (input[position] == expand.JoinEndToken)
+                return new CLReturn() { Status = 1, Message = $"CLIExpander: Unexpected {expand.JoinEndToken}" };
             return new CLReturn()
                 { Status = 1, Message = $"CLIExpander: Incomplete parsing of input at '{input[position]}'" };
         }

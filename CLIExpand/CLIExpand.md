@@ -22,6 +22,7 @@
    - [JSON Settings Schema](#json-settings-schema)
 6. [Examples & Pipeline Workflows](#examples--pipeline-workflows)
    - [Basic Expansion](#basic-expansion)
+   - [Path and Filename Construction with Join](#path-and-filename-construction-with-join)
    - [Nested Cartesian Sweeps](#nested-cartesian-sweeps)
    - [PowerShell Script Generation](#powershell-script-generation)
    - [Custom Syntax Tokens](#custom-syntax-tokens)
@@ -94,6 +95,8 @@ The double-dash `--` token serves as an immutable boundary:
 | `-begin <token>` | `--begin`, `-start`, `--start` | Token marking the start of an expansion block. | `.expand.` |
 | `-end <token>` | `--end` | Token marking the end of an expansion block. | `.expand_end.` |
 | `-delim <token>` | `--delim`, `-delimiter`, `--delimiter` | Delimiter separating variable alternatives from template body. | `:` |
+| `-join <token>` | `--join`, `-join-start`, `--join-start` | Token marking the start of a token concatenation block. | `.join.` |
+| `-join-end <token>` | `--join-end`, `-joinend`, `--joinend` | Token marking the end of a token concatenation block. | `.join_end.` |
 | `-no-partials` | `--no-partials` | Disables inner-token substitutions (e.g. `prefix._var.suffix`). | Enabled (`true`) |
 | `-partials` | `--partials` | Explicitly enables inner-token substitutions. | Enabled (`true`) |
 | `-no-split` | `--no-split` | Preserves whitespace in full-token variable matches without splitting. | Splitting enabled (`true`) |
@@ -170,12 +173,14 @@ When no `-settings <path>` is supplied, `CLIExpand` searches standard per-user c
   "begin": ".expand.",
   "end": ".expand_end.",
   "delimiter": ":",
+  "join": ".join.",
+  "joinEnd": ".join_end.",
   "matchPartials": true,
   "splitAfterGetByKey": true
 }
 ```
 
-*Note: Alternate property names such as `expandStartToken`, `expandEndToken`, and `delimiterToken` are also supported.*
+*Note: Alternate property names such as `expandStartToken`, `expandEndToken`, `delimiterToken`, `joinStartToken`, and `joinEndToken` are also supported.*
 
 ---
 
@@ -190,6 +195,38 @@ CLIExpand -- .expand. _text a b : echo _text .expand_end.
 **Output:**
 ```text
 echo a echo b
+```
+
+### Path and Filename Construction with Join
+
+Use `.join.` to assemble filenames, paths, and compound arguments without separators:
+
+#### Assembling Dynamic Filenames
+```bash
+CLIExpand -- .expand. _base report summary : .join. _base .csv .join_end. .expand_end.
+```
+**Output:**
+```text
+report.csv summary.csv
+```
+
+#### Cartesian Expansion with Join
+```bash
+CLIExpand -- .expand. _base Quant Quant2 : .expand. _ext tkr csv : .join. _base . _ext .join_end. .expand_end. .expand_end.
+```
+**Output:**
+```text
+Quant.tkr Quant.csv Quant2.tkr Quant2.csv
+```
+
+#### Preserving Spaced Arguments Inside Joined Paths
+When generating shell-safe command lines (e.g. `-mode bash`), `.join.` preserves internal spaces within tokens while producing exactly one quoted argument:
+```bash
+CLIExpand -mode bash -- .join. /home/jwc/ "my file" .join_end.
+```
+**Output:**
+```text
+'/home/jwc/my file'
 ```
 
 ### Nested Cartesian Sweeps

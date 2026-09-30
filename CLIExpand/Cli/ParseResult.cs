@@ -28,6 +28,16 @@ public class ParseResult
     public string? DelimiterToken { get; set; }
 
     /// <summary>
+    /// Explicit join start token override, if supplied on CLI.
+    /// </summary>
+    public string? JoinStartToken { get; set; }
+
+    /// <summary>
+    /// Explicit join end token override, if supplied on CLI.
+    /// </summary>
+    public string? JoinEndToken { get; set; }
+
+    /// <summary>
     /// Explicit partial matching override, if supplied on CLI.
     /// </summary>
     public bool? MatchPartials { get; set; }

@@ -79,6 +79,12 @@ public static class Program
         if (parseResult.DelimiterToken != null)
             settings.DelimiterToken = parseResult.DelimiterToken;
 
+        if (parseResult.JoinStartToken != null)
+            settings.JoinStartToken = parseResult.JoinStartToken;
+
+        if (parseResult.JoinEndToken != null)
+            settings.JoinEndToken = parseResult.JoinEndToken;
+
         if (parseResult.MatchPartials.HasValue)
             settings.MatchPartials = parseResult.MatchPartials.Value;
 
@@ -91,6 +97,8 @@ public static class Program
             ExpandStartToken = settings.ExpandStartToken,
             ExpandEndToken = settings.ExpandEndToken,
             DelimiterToken = settings.DelimiterToken,
+            JoinStartToken = settings.JoinStartToken,
+            JoinEndToken = settings.JoinEndToken,
             MatchPartials = settings.MatchPartials,
             SplitAfterGetByKey = settings.SplitAfterGetByKey
         };
@@ -118,6 +126,8 @@ public static class Program
         writer.WriteLine("  -begin <token>            Block expansion start token (default: .expand.)");
         writer.WriteLine("  -end <token>              Block expansion end token (default: .expand_end.)");
         writer.WriteLine("  -delim <token>            Alternatives delimiter token (default: :)");
+        writer.WriteLine("  -join <token>             Block join start token (default: .join.)");
+        writer.WriteLine("  -join-end <token>         Block join end token (default: .join_end.)");
         writer.WriteLine("  -no-partials              Disable partial inner-token substitutions");
         writer.WriteLine("  -partials                 Enable partial inner-token substitutions (default)");
         writer.WriteLine("  -no-split                 Disable whitespace splitting on full token match");

@@ -106,6 +106,28 @@ public static class CLIOptionParser
                     result.DelimiterToken = args[i];
                     break;
 
+                case "-join" or "--join" or "-join-start" or "--join-start" or "-joinstart" or "--joinstart":
+                    if (i + 1 >= separatorIndex)
+                    {
+                        result.HasErrors = true;
+                        result.ErrorMessage = $"Missing value for option '{arg}'.";
+                        return result;
+                    }
+                    i++;
+                    result.JoinStartToken = args[i];
+                    break;
+
+                case "-join-end" or "--join-end" or "-joinend" or "--joinend":
+                    if (i + 1 >= separatorIndex)
+                    {
+                        result.HasErrors = true;
+                        result.ErrorMessage = $"Missing value for option '{arg}'.";
+                        return result;
+                    }
+                    i++;
+                    result.JoinEndToken = args[i];
+                    break;
+
                 case "-no-partials" or "--no-partials":
                     result.MatchPartials = false;
                     break;

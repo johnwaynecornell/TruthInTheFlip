@@ -28,6 +28,16 @@ public class CLIExpandSettings
     public string DelimiterToken { get; set; } = ":";
 
     /// <summary>
+    /// Token identifying the start of a token concatenation block. Defaults to <c>".join."</c>.
+    /// </summary>
+    public string JoinStartToken { get; set; } = ".join.";
+
+    /// <summary>
+    /// Token identifying the termination of a token concatenation block. Defaults to <c>".join_end."</c>.
+    /// </summary>
+    public string JoinEndToken { get; set; } = ".join_end.";
+
+    /// <summary>
     /// When true, allows matching and substituting embedded identifiers within compound tokens (e.g. 'prefix._var.suffix'). Defaults to true.
     /// </summary>
     public bool MatchPartials { get; set; } = true;
@@ -53,6 +63,8 @@ public class CLIExpandSettings
             ExpandStartToken = this.ExpandStartToken,
             ExpandEndToken = this.ExpandEndToken,
             DelimiterToken = this.DelimiterToken,
+            JoinStartToken = this.JoinStartToken,
+            JoinEndToken = this.JoinEndToken,
             MatchPartials = this.MatchPartials,
             SplitAfterGetByKey = this.SplitAfterGetByKey,
             SettingsPath = this.SettingsPath
