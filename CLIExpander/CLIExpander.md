@@ -14,14 +14,22 @@
    - [Variable Scoping & Shadowing](#variable-scoping--shadowing)
    - [Full-Token (Fragment) vs. Inner-Token Substitution](#full-token-fragment-vs-inner-token-substitution)
    - [Empty Alternatives](#empty-alternatives)
-3. [API Reference](#api-reference)
+3. [Extensibility & Subclassing](#extensibility--subclassing)
+   - [Virtual Resolution (`GetByKey`)](#virtual-resolution-getbykey)
+   - [Partial Matching Control (`MatchPartials`)](#partial-matching-control-matchpartials)
+   - [Custom Expansion Pipeline (`Process`)](#custom-expansion-pipeline-process)
+   - [Factory Delegate Support](#factory-delegate-support)
+4. [API Reference](#api-reference)
    - [CLIExpander.Process (Static)](#cliexpanderprocess-static)
    - [CLIExpander.Process (Instance)](#cliexpanderprocess-instance)
+   - [CLIExpander.GetByKey (Instance)](#cliexpandergetbykey-instance)
+   - [MatchPartials (Field)](#matchpartials-field)
    - [CLReturn Struct](#clreturn-struct)
    - [Scope & Watermarks](#scope--watermarks)
-4. [Error Handling & Diagnostic Messages](#error-handling--diagnostic-messages)
-5. [Usage Examples](#usage-examples)
+5. [Error Handling & Diagnostic Messages](#error-handling--diagnostic-messages)
+6. [Usage Examples](#usage-examples)
    - [C# Quickstart](#c-quickstart)
+   - [Custom Subclass Example (External Fallbacks)](#custom-subclass-example-external-fallbacks)
    - [Advanced CLI Pipeline Example](#advanced-cli-pipeline-example)
 
 ---
@@ -38,6 +46,7 @@
 - **Lexical Scoping & Shadowing**: Push and pop variable bindings cleanly with support for variable shadowing in nested blocks.
 - **Fragment Splitting on Exact Match**: Full-token variable values containing whitespace are automatically split into separate argument tokens.
 - **Strict Whitespace Validation on Inner Substitutions**: Embedded substitutions validate that variable values do not contain whitespace to prevent creating malformed arguments.
+- **Extensible via Subclassing**: Override `GetByKey()` or `Process()` and configure `MatchPartials` to inject custom variable resolution, external lookups, or output filters.
 - **Informative Diagnostics**: Clear, actionable error messages for syntax mistakes such as missing delimiters or unclosed blocks.
 
 ---
@@ -151,6 +160,47 @@ If an `.expand.` block contains zero alternatives (e.g. `.expand. _opt : .expand
 
 ---
 
+## Extensibility & Subclassing
+
+`CLIExpander` is designed to be easily extended via subclassing, allowing applications to customize variable lookup, configure partial matching behavior, or intercept token evaluation.
+
+### Virtual Resolution (`GetByKey`)
+
+The `GetByKey(string key)` method is `virtual`. Subclasses can override it to supply dynamic or external variables, such as environment variables, configuration settings, or fallback dictionaries:
+
+```csharp
+public class EnvironmentExpander : CLIExpander
+{
+    public override string? GetByKey(string key)
+    {
+        // Check scoped block variables first
+        var scoped = base.GetByKey(key);
+        if (scoped != null) return scoped;
+
+        // Fallback to environment variables
+        return Environment.GetEnvironmentVariable(key);
+    }
+}
+```
+
+### Partial Matching Control (`MatchPartials`)
+
+The public field `MatchPartials` (default `true`) controls whether `CLIExpander` resolves inner-token variable expressions (such as `prefix._var.suffix`). Setting `MatchPartials = false` disables inner token substitution so that only exact full-token matches are substituted.
+
+### Custom Expansion Pipeline (`Process`)
+
+The instance `Process(List<string> input, ref int index, List<string> output)` method is `virtual`. Subclasses can override it to preprocess, postprocess, or intercept tokens during parsing.
+
+### Factory Delegate Support
+
+The static `CLIExpander.Process` entry point accepts an optional factory delegate `Func<CLIExpander>? newExpander = null`, making it straightforward to invoke static expansion using a derived class:
+
+```csharp
+var status = CLIExpander.Process(input, out var output, () => new EnvironmentExpander());
+```
+
+---
+
 ## API Reference
 
 Namespace: `CLIExpanderNs`
@@ -158,11 +208,15 @@ Namespace: `CLIExpanderNs`
 ### `CLIExpander.Process (Static)`
 
 ```csharp
-public static CLReturn Process(List<string> input, out List<string> output)
+public static CLReturn Process(
+    List<string> input, 
+    out List<string> output, 
+    Func<CLIExpander>? newExpander = null)
 ```
 
 - **`input`**: The input list of tokens.
 - **`output`**: Receives the resulting expanded list of string tokens.
+- **`newExpander`**: Optional factory delegate returning a custom `CLIExpander` instance or subclass.
 - **Returns**: A `CLReturn` structure indicating status code (0 on success, non-zero on failure) and an optional error message.
 
 ---
@@ -170,10 +224,31 @@ public static CLReturn Process(List<string> input, out List<string> output)
 ### `CLIExpander.Process (Instance)`
 
 ```csharp
-public CLReturn Process(List<string> input, ref int index, List<string> output)
+public virtual CLReturn Process(List<string> input, ref int index, List<string> output)
 ```
 
-- Recursive worker method that processes input starting at `index` and appends expanded tokens to `output`.
+- Recursive worker method that processes input starting at `index` and appends expanded tokens to `output`. Can be overridden by subclasses.
+
+---
+
+### `CLIExpander.GetByKey (Instance)`
+
+```csharp
+public virtual string? GetByKey(string key)
+```
+
+- Resolves a variable value from the scoped variable stack in LIFO order. Returns `null` if the variable is not found in active scopes. Can be overridden by subclasses to provide custom variable sources or fallbacks.
+
+---
+
+### `MatchPartials (Field)`
+
+```csharp
+public bool MatchPartials = true;
+```
+
+- When `true`, enables embedded inner identifier substitution (`prefix._var.suffix`).
+- When `false`, only full-token exact matches (`_var`) are substituted.
 
 ---
 
@@ -193,7 +268,6 @@ public struct CLReturn
 
 - **`Scope`** (`List<(string, string)>`): Active variable bindings stack.
 - **`ScopeWaterMarks`** (`Stack<int>`): High-water marks for restoring scope when exiting blocks.
-- **`GetByKey(string key)`**: Returns the most recently scoped value matching `key`, or `null` if not bound.
 
 ---
 
@@ -240,6 +314,43 @@ if (status.Status != 0)
 }
 
 Console.WriteLine(string.Join(" ", output));
+```
+
+### Custom Subclass Example (External Fallbacks)
+
+```csharp
+using System;
+using System.Collections.Generic;
+using CLIExpanderNs;
+
+public class CustomConfigExpander : CLIExpander
+{
+    private readonly Dictionary<string, string> _globals;
+
+    public CustomConfigExpander(Dictionary<string, string> globals)
+    {
+        _globals = globals;
+    }
+
+    public override string? GetByKey(string key)
+    {
+        var scoped = base.GetByKey(key);
+        if (scoped != null) return scoped;
+
+        return _globals.TryGetValue(key, out var val) ? val : null;
+    }
+}
+
+// Usage with static factory overload:
+var globals = new Dictionary<string, string>
+{
+    { "_env", "production" },
+    { "_ext", "json" }
+};
+
+var input = new List<string> { ".expand.", "_svc", "auth", "api", ":", "deploy", "_svc", "_env", "config._ext", ".expand_end." };
+var result = CLIExpander.Process(input, out var output, () => new CustomConfigExpander(globals));
+// Output: ["deploy", "auth", "production", "config.json", "deploy", "api", "production", "config.json"]
 ```
 
 ### Advanced CLI Pipeline Example

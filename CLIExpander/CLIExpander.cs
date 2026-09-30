@@ -2,18 +2,46 @@ using System.Text;
 
 namespace CLIExpanderNs;
 
+/// <summary>
+/// Expands combinatorial template blocks (.expand. ... .expand_end.) and variables in command-line arguments.
+/// Supports extension and custom resolution via subclassing (e.g. overriding <see cref="GetByKey(string)"/>
+/// or <see cref="Process(List{string}, ref int, List{string})"/>).
+/// </summary>
 public class CLIExpander
 {
+    /// <summary>
+    /// Represents the status and diagnostic message resulting from an expansion operation.
+    /// </summary>
     public struct CLReturn
     {
+        /// <summary>
+        /// The result status code (0 for success, non-zero for error).
+        /// </summary>
         public int Status;
+
+        /// <summary>
+        /// A descriptive error message if an error occurred; otherwise null.
+        /// </summary>
         public string? Message;
     }
 
+    /// <summary>
+    /// Stack tracking the scope high-water marks for unwinding nested block variables.
+    /// </summary>
     public Stack<int> ScopeWaterMarks = new Stack<int>();
+
+    /// <summary>
+    /// Active scoped variable bindings as (key, value) pairs.
+    /// </summary>
     public List<(string, string)> Scope = new();
 
-    public string? GetByKey(string key)
+    /// <summary>
+    /// Resolves a variable value by key from active scopes.
+    /// Subclasses may override this method to provide custom or fallback variable resolution (e.g. environment variables or dynamic mappings).
+    /// </summary>
+    /// <param name="key">The variable identifier to look up.</param>
+    /// <returns>The bound variable string value, or null if not found.</returns>
+    public virtual string? GetByKey(string key)
     {
         for (int i = Scope.Count - 1; i >= 0; i--)
             if (Scope[i].Item1 == key)
@@ -21,8 +49,21 @@ public class CLIExpander
         return null;
     }
 
+    /// <summary>
+    /// When true, allows matching and substituting embedded identifiers within compound tokens (e.g. 'prefix._var.suffix').
+    /// When false, only exact full-token matches are substituted. Defaults to true.
+    /// </summary>
+    public bool MatchPartials = true;
 
-    public CLReturn Process(List<string> input, ref int index, List<String> output)
+    /// <summary>
+    /// Recursively processes input tokens starting at <paramref name="index"/>, evaluating expansion blocks and variable substitutions.
+    /// Subclasses may override this method to customize or intercept token evaluation.
+    /// </summary>
+    /// <param name="input">The tokenized input argument list.</param>
+    /// <param name="index">The current reading index in <paramref name="input"/>.</param>
+    /// <param name="output">The list receiving expanded output tokens.</param>
+    /// <returns>A <see cref="CLReturn"/> indicating success or error details.</returns>
+    public virtual CLReturn Process(List<string> input, ref int index, List<String> output)
     {
         if (index >= input.Count)
             return new CLReturn() { Status = 1, Message = "CLIExpander: Unexpected end of input" }; 
@@ -34,7 +75,7 @@ public class CLIExpander
         {
             string sourceText = input[index];
             
-            //epand by whitespace split on full string match
+            // Expand by whitespace split on full string match
             var sub = GetByKey(sourceText);
             if (sub != null)
             {
@@ -43,7 +84,7 @@ public class CLIExpander
                     output.Add(item);
                 }
             }
-            else // attempt inner substitution
+            else if (MatchPartials) // attempt inner substitution
             {
                 StringBuilder completed = new StringBuilder();
                 StringBuilder? identifier = null;
@@ -99,7 +140,7 @@ public class CLIExpander
                 }
 
                 output.Add(completed.ToString());
-            }
+            } else output.Add(sourceText);
             
             index++;
         }
@@ -173,9 +214,16 @@ public class CLIExpander
         return new();
     }
 
-    public static CLReturn Process(List<string> input, out List<String> output)
+    /// <summary>
+    /// Processes a full tokenized input list, expanding all blocks and variables.
+    /// </summary>
+    /// <param name="input">The tokenized input command line.</param>
+    /// <param name="output">The resulting expanded list of string tokens.</param>
+    /// <param name="newExpander">Optional factory delegate to create a custom <see cref="CLIExpander"/> instance/subclass.</param>
+    /// <returns>A <see cref="CLReturn"/> indicating success or error details.</returns>
+    public static CLReturn Process(List<string> input, out List<String> output, Func<CLIExpander>? newExpander = null)
     {
-        CLIExpander expand = new CLIExpander();
+        CLIExpander expand = (newExpander != null) ? newExpander() : new CLIExpander();
         int position = 0;
         output = new();
 

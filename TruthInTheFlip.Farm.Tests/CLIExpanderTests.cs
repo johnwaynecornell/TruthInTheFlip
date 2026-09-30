@@ -322,4 +322,96 @@ public class CLIExpanderTests
         Assert.Equal(0, status.Status);
         Assert.Equal(new[] { "prefix.value.suffix", "file.value" }, output);
     }
+
+    private class CustomFallbackExpander : CLIExpander
+    {
+        private readonly Dictionary<string, string> _customGlobals;
+
+        public CustomFallbackExpander(Dictionary<string, string> customGlobals)
+        {
+            _customGlobals = customGlobals;
+        }
+
+        public override string? GetByKey(string key)
+        {
+            var scoped = base.GetByKey(key);
+            if (scoped != null) return scoped;
+            return _customGlobals.TryGetValue(key, out var val) ? val : null;
+        }
+    }
+
+    [Fact]
+    public void Subclass_GetByKeyOverride_ProvidesFallbackVariableResolution()
+    {
+        var globals = new Dictionary<string, string>
+        {
+            { "_env", "production" },
+            { "_ext", "json" }
+        };
+
+        var input = new List<string>
+        {
+            ".expand.", "_name", "app1", "app2", ":",
+            "deploy", "_name", "_env", "config._ext",
+            ".expand_end."
+        };
+
+        var status = CLIExpander.Process(input, out var output, () => new CustomFallbackExpander(globals));
+
+        Assert.Equal(0, status.Status);
+        Assert.Equal(new[]
+        {
+            "deploy", "app1", "production", "config.json",
+            "deploy", "app2", "production", "config.json"
+        }, output);
+    }
+
+    [Fact]
+    public void Subclass_MatchPartialsFalse_DisablesInnerSubstitutions()
+    {
+        var expander = new CLIExpander { MatchPartials = false };
+        expander.Scope.Add(("_var", "val"));
+        int index = 0;
+        var output = new List<string>();
+        var input = new List<string> { "prefix._var.suffix", "_var" };
+
+        var status = expander.Process(input, ref index, output);
+
+        Assert.Equal(0, status.Status);
+        // "prefix._var.suffix" should remain unmodified since MatchPartials is false; "_var" should expand
+        Assert.Equal(new[] { "prefix._var.suffix", "val" }, output);
+    }
+
+    private class UppercaseTokenExpander : CLIExpander
+    {
+        public override CLReturn Process(List<string> input, ref int index, List<string> output)
+        {
+            var tempOutput = new List<string>();
+            var ret = base.Process(input, ref index, tempOutput);
+            if (ret.Status != 0) return ret;
+
+            foreach (var tok in tempOutput)
+            {
+                output.Add(tok.ToUpperInvariant());
+            }
+
+            return ret;
+        }
+    }
+
+    [Fact]
+    public void Subclass_ProcessOverride_CustomizesExpansionPipeline()
+    {
+        var input = new List<string>
+        {
+            ".expand.", "_mode", "fast", "slow", ":",
+            "run", "_mode",
+            ".expand_end."
+        };
+
+        var status = CLIExpander.Process(input, out var output, () => new UppercaseTokenExpander());
+
+        Assert.Equal(0, status.Status);
+        Assert.Equal(new[] { "RUN", "FAST", "RUN", "SLOW" }, output);
+    }
 }
