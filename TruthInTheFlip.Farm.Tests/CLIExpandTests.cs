@@ -436,11 +436,58 @@ public class CLIExpandTests
     public void RawRenderer_SpaceDelimitedWithoutEscaping()
     {
         var renderer = new RawArgumentRenderer();
-        var args = new[] { "echo", "it's", "hello world", "$VAR", "" };
+        var args = new[] { "echo", "it's", "hello world", "$VAR" };
 
         string result = renderer.Render(args);
 
-        Assert.Equal("echo it's hello world $VAR ", result);
+        Assert.Equal("echo it's hello world $VAR", result);
+    }
+
+    [Fact]
+    public void RawRenderer_BoundaryAwareWhitespace_InsertsSpaceOnlyWhenNeeded()
+    {
+        var renderer = new RawArgumentRenderer();
+
+        // Standard adjacent non-whitespace tokens
+        Assert.Equal("a b", renderer.Render(["a", "b"]));
+
+        // Newline token - no spaces inserted around it
+        Assert.Equal("a\nb", renderer.Render(["a", "\n", "b"]));
+
+        // Tab token - no spaces inserted around it
+        Assert.Equal("a\tb", renderer.Render(["a", "\t", "b"]));
+
+        // Carriage return + line feed
+        Assert.Equal("a\r\nb", renderer.Render(["a", "\r\n", "b"]));
+
+        // Token with trailing whitespace
+        Assert.Equal("a b", renderer.Render(["a ", "b"]));
+
+        // Token with leading whitespace
+        Assert.Equal("a b", renderer.Render(["a", " b"]));
+
+        // Both tokens having whitespace at boundary
+        Assert.Equal("a  b", renderer.Render(["a ", " b"]));
+
+        // Internal whitespace preserved
+        Assert.Equal("my  file", renderer.Render(["my  file"]));
+
+        // Real-world filename and newline sequence
+        Assert.Equal("apple_small.jpeg\napple_medium.jpeg",
+            renderer.Render(["apple_small.jpeg", "\n", "apple_medium.jpeg"]));
+    }
+
+    [Fact]
+    public void RawRenderer_EmptyStringBehavior()
+    {
+        var renderer = new RawArgumentRenderer();
+
+        Assert.Equal("", renderer.Render([]));
+        Assert.Equal("", renderer.Render([""]));
+        Assert.Equal("", renderer.Render(["", ""]));
+        Assert.Equal("a", renderer.Render(["a", ""]));
+        Assert.Equal("b", renderer.Render(["", "b"]));
+        Assert.Equal("ab", renderer.Render(["a", "", "b"]));
     }
 
     [Fact]
@@ -809,6 +856,32 @@ public class CLIExpandTests
 
         Assert.Equal(0, exitCode);
         Assert.Equal("Quant.tkr Quant.csv Quant2.tkr Quant2.csv\n", stdout.ToString().Replace("\r\n", "\n"));
+        Assert.Empty(stderr.ToString());
+    }
+
+    [Fact]
+    public void Pipeline_JoinWithNewlineToken_RendersCleanLinesInRawMode()
+    {
+        string[] args =
+        [
+            "-mode", "raw",
+            "--",
+            ".expand.", "Fruit", "apple", "orange", ":",
+            ".expand.", "Size", "small", "large", ":",
+            ".join.", "Fruit", "_", "Size", ".jpeg", ".join_end.",
+            "\n",
+            ".expand_end.",
+            ".expand_end."
+        ];
+
+        using var stdout = new StringWriter();
+        using var stderr = new StringWriter();
+
+        int exitCode = Program.Run(args, stdout, stderr);
+
+        Assert.Equal(0, exitCode);
+        string expected = "apple_small.jpeg\napple_large.jpeg\norange_small.jpeg\norange_large.jpeg\n\n";
+        Assert.Equal(expected, stdout.ToString().Replace("\r\n", "\n"));
         Assert.Empty(stderr.ToString());
     }
 

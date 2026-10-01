@@ -129,8 +129,8 @@ The double-dash `--` token serves as an immutable boundary:
 - **Empty String**: Serialized as `""`.
 
 ### Raw Mode (`raw`)
-- Serializes tokens separated by a single space without shell quoting or escaping.
-- Essential for **command and script composition** (allowing shell operators like `;`, `&&`, `|`, and redirections to pass through unquoted).
+- Renders tokens verbatim and normally inserts one space between adjacent tokens. If either side of a token boundary already contains whitespace (such as newlines `$'\n'`, tabs, or leading/trailing spaces), no additional separator is inserted.
+- Essential for **command and script composition** (allowing shell operators like `;`, `&&`, `|`, and line breaks to pass through unquoted).
 - Provides shell-neutral textual rendering, but is not lossless token transport when an argument itself contains whitespace or is empty. Shell-specific modes (`bash`, `ps`, `cmd`) preserve `argv` boundaries through quoting; `raw` intentionally does not.
 
 ### Argument Composition vs. Command Composition
@@ -227,6 +227,33 @@ CLIExpand -mode bash -- .join. /home/jwc/ "my file" .join_end.
 **Output:**
 ```text
 '/home/jwc/my file'
+```
+
+### Multi-Line Parameter Expansion (Boundary-Aware Spacing)
+
+In raw mode, newlines (such as `$'\n'` from shells) are preserved cleanly without artificial surrounding spaces:
+
+```bash
+CLIExpand -- \
+  .expand. Fruit apple orange grape : \
+    .expand. Size small medium large : \
+      .join. Fruit _ Size .jpeg .join_end. \
+      $'\n' \
+    .expand_end. \
+  .expand_end.
+```
+
+**Output:**
+```text
+apple_small.jpeg
+apple_medium.jpeg
+apple_large.jpeg
+orange_small.jpeg
+orange_medium.jpeg
+orange_large.jpeg
+grape_small.jpeg
+grape_medium.jpeg
+grape_large.jpeg
 ```
 
 ### Nested Cartesian Sweeps
