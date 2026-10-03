@@ -5614,3 +5614,205 @@ ___________________________________________________________________________
 </code></pre>
 
 <p>At aproximately 20260926_181102 SamePersistence Anticipation actived and ZHeads was sane.</p>
+
+___________________________________________________________________________
+╔═══════════════╗
+║20261003_145144║
+╚═══════════════╝
+
+20261002_215305 - SamePersistence.NET1.rep2.tkr mature at 8,951,200,000,000 flips  // -rsource NET1 -anticipation SamePersistence WindowByTotal 10000000000 
+SamePersistence.NET1.rep2 commited to Artifacts/Trackers 
+
+<h2>SamePersistence Replication — The Seam Does Not Repeat</h2>
+
+<p>
+The planned SamePersistence replication is complete.
+</p>
+
+<p>
+The second tracker,
+<code>SamePersistence.NET1.rep2.tkr</code>,
+was accumulated using the same source class, the same
+<code>SamePersistence</code> strategy, the same 10B strategy window,
+the same experiment horizon, and the same frozen analysis procedure as
+the original <code>SamePersistence.NET1.tkr</code>.
+</p>
+
+<p>
+The purpose of the replication was deliberately narrow:
+</p>
+
+<blockquote>
+Would the unusual SamePersistence separation seen in the first mature NET1
+record reproduce when the same experiment was run again from a fresh history?
+</blockquote>
+
+<p>
+The answer is no.
+</p>
+
+<p>
+The second record was evaluated against the same full algorithmic-null procedure:
+</p>
+
+<pre><code>trials:
+    10,000
+
+base seed:
+    897234
+
+strategy:
+    SamePersistence
+
+strategy window:
+    10B
+
+report window:
+    10B
+
+segmentation:
+    10B
+
+historical geometry:
+    SamePersistence.NET1.rep2.tkr
+</code></pre>
+
+<p>
+The algorithmic null reruns the SamePersistence strategy on fresh fair-source
+histories so that every trial generates its own strategy state and decision path.
+</p>
+
+<h3>Replication Result</h3>
+
+<p>
+Unlike the original record, the replication sits comfortably inside the
+algorithmic-null population on the frozen metrics.
+</p>
+
+<pre><code>Metric                         Original NET1   NET1 rep2
+
+EdgeExcursionScore                98.1%          84.9%
+EdgeSettlementScore               97.9%          67.5%
+EdgePersistenceIndex              88.4%          78.9%
+RetainedAnticipation              99.7%          21.8%
+SettlementAdjustedAnticipation    91.9%          31.1%
+AvgMeanA                          99.5%          41.2%
+AvgEndA                           99.5%          40.3%
+</code></pre>
+
+<p>
+The strongest statistic in the original experiment,
+<code>RetainedAnticipation</code>,
+did not merely weaken in the replication. It fell below the center of the
+algorithmic-null population:
+</p>
+
+<pre><code>RetainedAnticipation
+
+observed:
+    50+2.55866e-04%
+
+null mean:
+    50+2.66261e-04%
+
+null median:
+    50+2.66312e-04%
+
+observed percentile:
+    21.8%
+
+sample-corrected upper tail:
+    0.7818
+</code></pre>
+
+<p>
+The ordinary anticipation averages were similarly central:
+</p>
+
+<pre><code>AvgMeanA
+    observed:   50-3.40308e-06%
+    percentile: 41.2%
+
+AvgEndA
+    observed:   50-3.85008e-06%
+    percentile: 40.3%
+</code></pre>
+
+<h3>Interpretation</h3>
+
+<p>
+The first SamePersistence record remains unusual relative to both its
+conditional null and its full algorithmic null.
+</p>
+
+<p>
+However, that unusual behavior did not reproduce in an independently
+accumulated repetition using the same frozen procedure.
+</p>
+
+<blockquote>
+The original seam survived stronger null modeling, but it did not survive
+same-source replication.
+</blockquote>
+
+<p>
+This distinction matters.
+</p>
+
+<p>
+The first result was not simply an artifact of holding the historical predictor
+schedule fixed. The full algorithmic null already ruled out that simpler
+explanation.
+</p>
+
+<p>
+But the replication now shows that the effect cannot yet be treated as a
+persistent property of the SamePersistence procedure on NET1.
+</p>
+
+<p>
+The current evidence is therefore more consistent with an unusually favorable
+first realization than with a repeatable SamePersistence advantage.
+</p>
+
+<p>
+The 50% causal benchmark remains intact as the working null.
+</p>
+
+<h3>Methodological Consequence</h3>
+
+<p>
+The planned evidence ladder was:
+</p>
+
+<pre><code>original NET1 record
+    ↓
+same-source replication
+    ↓
+if replicated
+    ↓
+different-source replication
+</code></pre>
+
+<p>
+Because the same-source replication did not reproduce the seam, the next rung
+is not automatically justified as a confirmatory continuation.
+</p>
+
+<p>
+A different random source may still be worth studying, but it would now answer
+a new exploratory question rather than extend a successful replication chain.
+</p>
+
+<p>
+This is exactly why the replication was run before changing the source,
+threshold, strategy, or window.
+</p>
+
+<blockquote>
+A result worth taking seriously is also a result worth trying to make disappear.
+</blockquote>
+
+<p>
+This one did.
+</p>
