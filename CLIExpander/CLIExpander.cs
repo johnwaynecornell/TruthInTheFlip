@@ -36,6 +36,22 @@ public class CLIExpander
     public List<(string, string)> Scope = new();
 
     /// <summary>
+    /// Explicit known values dictionary consulted by the default <see cref="GetKnownValue(string)"/> implementation.
+    /// </summary>
+    public IDictionary<string, string> ValueStore { get; set; }
+
+    /// <summary>
+    /// Baseline macro bindings dictionary consulted by <see cref="GetByKey(string)"/>
+    /// when a variable is not found in the active lexical <see cref="Scope"/>.
+    /// </summary>
+    public IDictionary<string, string> MacroStore { get; set; }
+
+    /// <summary>
+    /// Captures the creation timestamp of this <see cref="CLIExpander"/> instance, used for stable timestamp generation.
+    /// </summary>
+    public DateTimeOffset StartedAt { get; }
+
+    /// <summary>
     /// Token that marks the beginning of an expansion block. Defaults to <c>".expand."</c>.
     /// </summary>
     public string ExpandStartToken = ".expand.";
@@ -61,7 +77,67 @@ public class CLIExpander
     public string JoinEndToken = ".join_end.";
 
     /// <summary>
-    /// Resolves a variable value by key from active scopes.
+    /// Token that retrieves an explicit known value by key as a single exact token. Defaults to <c>".get."</c>.
+    /// </summary>
+    public string GetToken = ".get.";
+
+    /// <summary>
+    /// Token that retrieves an explicit known value by key and splits it by whitespace into individual tokens. Defaults to <c>".split_get."</c>.
+    /// </summary>
+    public string SplitGetToken = ".split_get.";
+
+    /// <summary>
+    /// Initializes a new instance of <see cref="CLIExpander"/> capturing the current local timestamp.
+    /// </summary>
+    public CLIExpander() : this(DateTimeOffset.Now)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of <see cref="CLIExpander"/> with an explicit captured timestamp.
+    /// </summary>
+    /// <param name="startedAt">The timestamp instance to anchor time-based built-in values.</param>
+    public CLIExpander(DateTimeOffset startedAt)
+    {
+        StartedAt = startedAt;
+        ValueStore = new Dictionary<string, string>(StringComparer.Ordinal);
+        MacroStore = new Dictionary<string, string>(StringComparer.Ordinal);
+        InitializeValueStore();
+    }
+
+    /// <summary>
+    /// Seeds the built-in known values into <see cref="ValueStore"/>.
+    /// Subclasses may override this method to customize or extend the initial known values set.
+    /// </summary>
+    protected virtual void InitializeValueStore()
+    {
+        ValueStore["newline"] = Environment.NewLine;
+        ValueStore["space"] = " ";
+        ValueStore["tab"] = "\t";
+        ValueStore["empty"] = "";
+        ValueStore["now"] = StartedAt.ToString("O");
+        ValueStore["utc_now"] = StartedAt.ToUniversalTime().ToString("O");
+        ValueStore["timestamp"] = StartedAt.ToString("_yyyyMMdd_HHmmss_ff");
+        ValueStore["utimestamp"] = StartedAt.ToUniversalTime().ToString("_yyyyMMdd_HHmmss_ff");
+        ValueStore["dir_sep"] = Path.DirectorySeparatorChar.ToString();
+        ValueStore["path_sep"] = Path.PathSeparator.ToString();
+    }
+
+    /// <summary>
+    /// Resolves an explicit known value by key.
+    /// Subclasses may override this method to provide authoritative or dynamic known-value resolution (e.g. system properties, external lookups).
+    /// </summary>
+    /// <param name="key">The known-value identifier to look up.</param>
+    /// <returns>The resolved string value, or null if the key is unknown.</returns>
+    public virtual string? GetKnownValue(string key)
+    {
+        if (ValueStore != null && ValueStore.TryGetValue(key, out var val))
+            return val;
+        return null;
+    }
+
+    /// <summary>
+    /// Resolves a variable value by key from active scopes or fallback <see cref="MacroStore"/>.
     /// Subclasses may override this method to provide custom or fallback variable resolution (e.g. environment variables or dynamic mappings).
     /// </summary>
     /// <param name="key">The variable identifier to look up.</param>
@@ -71,6 +147,8 @@ public class CLIExpander
         for (int i = Scope.Count - 1; i >= 0; i--)
             if (Scope[i].Item1 == key)
                 return Scope[i].Item2;
+        if (MacroStore != null && MacroStore.TryGetValue(key, out var val))
+            return val;
         return null;
     }
 
@@ -135,7 +213,13 @@ public class CLIExpander
         again:
         CLReturn Return = new CLReturn();
 
-        while (index < input.Count && input[index] != ExpandStartToken && input[index] != ExpandEndToken && input[index] != JoinStartToken && input[index] != JoinEndToken)
+        while (index < input.Count 
+            && input[index] != ExpandStartToken 
+            && input[index] != ExpandEndToken 
+            && input[index] != JoinStartToken 
+            && input[index] != JoinEndToken
+            && input[index] != GetToken
+            && input[index] != SplitGetToken)
         {
             string sourceText = input[index];
             
@@ -295,6 +379,45 @@ public class CLIExpander
 
             index++;
             output.Add(string.Concat(tempTokens));
+
+            if (index < input.Count)
+                goto again;
+        }
+        else if (index < input.Count && input[index] == GetToken)
+        {
+            index++;
+            if (index >= input.Count)
+                return new CLReturn() { Status = 1, Message = $"CLIExpander: Expected key after {GetToken}" };
+
+            string key = input[index];
+            index++;
+
+            string? val = GetKnownValue(key);
+            if (val == null)
+                return new CLReturn() { Status = 1, Message = $"CLIExpander: Unknown value '{key}'" };
+
+            output.Add(val);
+
+            if (index < input.Count)
+                goto again;
+        }
+        else if (index < input.Count && input[index] == SplitGetToken)
+        {
+            index++;
+            if (index >= input.Count)
+                return new CLReturn() { Status = 1, Message = $"CLIExpander: Expected key after {SplitGetToken}" };
+
+            string key = input[index];
+            index++;
+
+            string? val = GetKnownValue(key);
+            if (val == null)
+                return new CLReturn() { Status = 1, Message = $"CLIExpander: Unknown value '{key}'" };
+
+            foreach (var item in Split(val))
+            {
+                output.Add(item);
+            }
 
             if (index < input.Count)
                 goto again;

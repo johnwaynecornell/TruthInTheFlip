@@ -38,22 +38,38 @@ public static class CLIOptionParser
             }
         }
 
-        if (separatorIndex == -1)
+        // Check if -list-values or -list-macros was requested
+        for (int i = 0; i < (separatorIndex >= 0 ? separatorIndex : args.Length); i++)
+        {
+            string arg = args[i].ToLowerInvariant();
+            if (arg is "-list-values" or "--list-values" or "-list" or "--list")
+            {
+                result.ListValuesRequested = true;
+            }
+            else if (arg is "-list-macros" or "--list-macros" or "-list-macro" or "--list-macro")
+            {
+                result.ListMacrosRequested = true;
+            }
+        }
+
+        if (separatorIndex == -1 && !result.ListValuesRequested && !result.ListMacrosRequested)
         {
             result.HasErrors = true;
             result.ErrorMessage = "Missing '--' payload separator. Usage: CLIExpand [options] -- <payload tokens...>";
             return result;
         }
 
-        // Parse options before '--'
-        for (int i = 0; i < separatorIndex; i++)
+        int optionsLimit = separatorIndex >= 0 ? separatorIndex : args.Length;
+
+        // Parse options before '--' (or all options if -list-values is active without '--')
+        for (int i = 0; i < optionsLimit; i++)
         {
             string arg = args[i];
 
             switch (arg.ToLowerInvariant())
             {
                 case "-mode" or "--mode":
-                    if (i + 1 >= separatorIndex)
+                    if (i + 1 >= optionsLimit)
                     {
                         result.HasErrors = true;
                         result.ErrorMessage = $"Missing value for option '{arg}'.";
@@ -74,7 +90,7 @@ public static class CLIOptionParser
                     break;
 
                 case "-begin" or "--begin" or "-start" or "--start":
-                    if (i + 1 >= separatorIndex)
+                    if (i + 1 >= optionsLimit)
                     {
                         result.HasErrors = true;
                         result.ErrorMessage = $"Missing value for option '{arg}'.";
@@ -85,7 +101,7 @@ public static class CLIOptionParser
                     break;
 
                 case "-end" or "--end":
-                    if (i + 1 >= separatorIndex)
+                    if (i + 1 >= optionsLimit)
                     {
                         result.HasErrors = true;
                         result.ErrorMessage = $"Missing value for option '{arg}'.";
@@ -96,7 +112,7 @@ public static class CLIOptionParser
                     break;
 
                 case "-delim" or "--delim" or "-delimiter" or "--delimiter":
-                    if (i + 1 >= separatorIndex)
+                    if (i + 1 >= optionsLimit)
                     {
                         result.HasErrors = true;
                         result.ErrorMessage = $"Missing value for option '{arg}'.";
@@ -107,7 +123,7 @@ public static class CLIOptionParser
                     break;
 
                 case "-join" or "--join" or "-join-start" or "--join-start" or "-joinstart" or "--joinstart":
-                    if (i + 1 >= separatorIndex)
+                    if (i + 1 >= optionsLimit)
                     {
                         result.HasErrors = true;
                         result.ErrorMessage = $"Missing value for option '{arg}'.";
@@ -118,7 +134,7 @@ public static class CLIOptionParser
                     break;
 
                 case "-join-end" or "--join-end" or "-joinend" or "--joinend":
-                    if (i + 1 >= separatorIndex)
+                    if (i + 1 >= optionsLimit)
                     {
                         result.HasErrors = true;
                         result.ErrorMessage = $"Missing value for option '{arg}'.";
@@ -126,6 +142,79 @@ public static class CLIOptionParser
                     }
                     i++;
                     result.JoinEndToken = args[i];
+                    break;
+
+                case "-get" or "--get" or "-get-token" or "--get-token":
+                    if (i + 1 >= optionsLimit)
+                    {
+                        result.HasErrors = true;
+                        result.ErrorMessage = $"Missing value for option '{arg}'.";
+                        return result;
+                    }
+                    i++;
+                    result.GetToken = args[i];
+                    break;
+
+                case "-split-get" or "--split-get" or "-splitget" or "--splitget" or "-split-get-token" or "--split-get-token":
+                    if (i + 1 >= optionsLimit)
+                    {
+                        result.HasErrors = true;
+                        result.ErrorMessage = $"Missing value for option '{arg}'.";
+                        return result;
+                    }
+                    i++;
+                    result.SplitGetToken = args[i];
+                    break;
+
+                case "-values" or "--values" or "-value" or "--value":
+                    if (i + 1 >= optionsLimit)
+                    {
+                        result.HasErrors = true;
+                        result.ErrorMessage = $"Missing value for option '{arg}'.";
+                        return result;
+                    }
+                    i++;
+                    result.ValueFiles.Add(args[i]);
+                    break;
+
+                case "-macros" or "--macros":
+                    if (i + 1 >= optionsLimit)
+                    {
+                        result.HasErrors = true;
+                        result.ErrorMessage = $"Missing value for option '{arg}'.";
+                        return result;
+                    }
+                    i++;
+                    result.MacroFiles.Add(args[i]);
+                    break;
+
+                case "-macro" or "--macro":
+                    if (i + 1 >= optionsLimit)
+                    {
+                        result.HasErrors = true;
+                        result.ErrorMessage = $"Missing value for option '{arg}'.";
+                        return result;
+                    }
+                    i++;
+                    string macroDef = args[i];
+                    int eqIdx = macroDef.IndexOf('=');
+                    if (eqIdx <= 0)
+                    {
+                        result.HasErrors = true;
+                        result.ErrorMessage = $"Invalid macro definition '{macroDef}'. Expected format: -macro <key>=<value>";
+                        return result;
+                    }
+                    string macroKey = macroDef.Substring(0, eqIdx);
+                    string macroVal = macroDef.Substring(eqIdx + 1);
+                    result.InlineMacros[macroKey] = macroVal;
+                    break;
+
+                case "-list-values" or "--list-values" or "-list" or "--list":
+                    result.ListValuesRequested = true;
+                    break;
+
+                case "-list-macros" or "--list-macros" or "-list-macro" or "--list-macro":
+                    result.ListMacrosRequested = true;
                     break;
 
                 case "-no-partials" or "--no-partials":
@@ -149,7 +238,7 @@ public static class CLIOptionParser
                     return result;
 
                 case "-settings" or "--settings":
-                    if (i + 1 >= separatorIndex)
+                    if (i + 1 >= optionsLimit)
                     {
                         result.HasErrors = true;
                         result.ErrorMessage = $"Missing value for option '{arg}'.";
@@ -166,17 +255,20 @@ public static class CLIOptionParser
             }
         }
 
-        // Add everything after '--' as literal payload tokens
-        for (int i = separatorIndex + 1; i < args.Length; i++)
+        if (separatorIndex >= 0)
         {
-            result.Payload.Add(args[i]);
-        }
+            // Add everything after '--' as literal payload tokens
+            for (int i = separatorIndex + 1; i < args.Length; i++)
+            {
+                result.Payload.Add(args[i]);
+            }
 
-        if (result.Payload.Count == 0)
-        {
-            result.HasErrors = true;
-            result.ErrorMessage = "No payload tokens provided after '--'.";
-            return result;
+            if (result.Payload.Count == 0 && !result.ListValuesRequested && !result.ListMacrosRequested)
+            {
+                result.HasErrors = true;
+                result.ErrorMessage = "No payload tokens provided after '--'.";
+                return result;
+            }
         }
 
         return result;

@@ -97,6 +97,13 @@ The double-dash `--` token serves as an immutable boundary:
 | `-delim <token>` | `--delim`, `-delimiter`, `--delimiter` | Delimiter separating variable alternatives from template body. | `:` |
 | `-join <token>` | `--join`, `-join-start`, `--join-start` | Token marking the start of a token concatenation block. | `.join.` |
 | `-join-end <token>` | `--join-end`, `-joinend`, `--joinend` | Token marking the end of a token concatenation block. | `.join_end.` |
+| `-get <token>` | `--get`, `-get-token`, `--get-token` | Token identifying explicit known-value retrieval. | `.get.` |
+| `-split-get <token>` | `--split-get`, `-splitget`, `--splitget` | Token identifying explicit known-value retrieval with whitespace splitting. | `.split_get.` |
+| `-values <path>` | `--values`, `-value`, `--value` | Path to a flat JSON value-map file (can be repeated to layer maps). | `none` |
+| `-list-values` | `--list-values`, `-list`, `--list` | Lists all active known values (built-ins + loaded maps) to stdout and exits. | |
+| `-macros <path>` | `--macros` | Path to a flat JSON macro-map file (can be repeated to layer macros). | `none` |
+| `-macro <key>=<value>` | `--macro` | Inline baseline macro definition (can be repeated). | `none` |
+| `-list-macros` | `--list-macros`, `-list-macro`, `--list-macro` | Lists all active baseline macros to stdout and exits. | |
 | `-no-partials` | `--no-partials` | Disables inner-token substitutions (e.g. `prefix._var.suffix`). | Enabled (`true`) |
 | `-partials` | `--partials` | Explicitly enables inner-token substitutions. | Enabled (`true`) |
 | `-no-split` | `--no-split` | Preserves whitespace in full-token variable matches without splitting. | Splitting enabled (`true`) |
@@ -144,18 +151,85 @@ Understanding whether you are composing **arguments for a single command** or **
 
 ---
 
-## Settings File & Configuration Precedence
+## Settings File, Value Maps, Macros & Configuration Precedence
 
-`CLIExpand` supports persistent configuration through optional JSON settings files.
+`CLIExpand` supports persistent configuration through JSON settings files, external JSON value maps, external JSON macro maps, and inline macro definitions.
 
 ### Precedence Hierarchy
 
-Settings are resolved in the following strict 4-tier hierarchy (highest priority wins):
+Settings, known values, and baseline macros are resolved through a deterministic 5-layer hierarchy (later layers override earlier layers):
 
-1. **Command-Line Arguments**: Explicit flags (`-mode`, `-begin`, etc.) passed on invocation.
-2. **Explicit Settings File**: Settings loaded via `-settings <path>`.
-3. **Default User Settings File**: Per-user `settings.json` located in standard OS directories.
-4. **Built-in Defaults**: Fallback defaults (`mode: raw`, `begin: .expand.`, `end: .expand_end.`, `delim: :`, `matchPartials: true`, `splitAfterGetByKey: true`).
+1. **Built-in Known Values & Defaults**: Default engine settings (`mode: raw`, `begin: .expand.`, `end: .expand_end.`, `delim: :`, `join: .join.`, `joinEnd: .join_end.`, `get: .get.`, `splitGet: .split_get.`) and built-in known values (`newline`, `space`, `tab`, `empty`, `now`, `utc_now`, `timestamp`, `utimestamp`, `dir_sep`, `path_sep`).
+2. **Default User Settings File**: Value maps (`values`, `valueStore`), macro maps (`macros`, `macroStore`), and configuration loaded from the user's standard `settings.json`.
+3. **Explicit Settings File (`-settings <path>`)**: Value maps (`values`, `valueStore`), macro maps (`macros`, `macroStore`), and configuration loaded from an explicitly designated settings JSON file.
+4. **Command-Line Maps & Inline Definitions**:
+   - Flat JSON value maps supplied on the CLI via repeated `-values <path>` options, evaluated in left-to-right order.
+   - Flat JSON macro maps supplied on the CLI via repeated `-macros <path>` options, evaluated in left-to-right order.
+   - Inline macro definitions supplied on the CLI via repeated `-macro <key>=<value>` options, evaluated in left-to-right order.
+5. **Command-Line Syntax & Mode Overrides**: Explicit CLI switches (`-mode`, `-begin`, `-end`, `-delim`, `-join`, `-join-end`, `-get`, `-split-get`, `-no-partials`, `-no-split`).
+
+### Relative Path Resolution Rules
+
+- **Settings Files (`"values": [ ... ]`, `"macros": [ ... ]`)**: File paths listed inside a JSON settings file resolve **relative to that settings file's directory**.
+- **CLI Options (`-values <path>`, `-macros <path>`)**: File paths supplied directly on the command line resolve **relative to the current working directory**.
+
+### Flat JSON Value Maps vs. Macro Maps
+
+| Feature | Known Value Maps (`-values` / `"values"`) | Baseline Macro Maps (`-macros` / `-macro` / `"macros"`) |
+|---|---|---|
+| **Syntax** | Explicit retrieval: `.get. <key>` or `.split_get. <key>` | Implicit lexical substitution: `<key>` or embedded `prefix.<key>.suffix` |
+| **Emission** | `.get.` is strictly one exact token; `.split_get.` splits whitespace | Splits whitespace into multiple tokens (subject to `SplitAfterGetByKey`) |
+| **Scope Interaction** | Independent of `.expand.` blocks | Shadowed dynamically by `.expand. <key> ...` blocks; restored after block ends |
+| **Use Case** | Shared data constants, platform separators, stable timestamps | Template parameterization without repetitive `.expand. VAR val : ...` boilerplate |
+
+### Flat JSON Macro Maps & Inline Macros
+
+Load external macro maps from flat JSON files containing string key-value mappings:
+
+```json
+{
+  "CONFIG": "Release",
+  "ARCH": "x64",
+  "OUT_DIR": "/var/builds"
+}
+```
+
+```bash
+# Load from macro files and provide ad-hoc inline macro overrides:
+CLIExpand \
+  -macros base-build.json \
+  -macro ARCH=arm64 \
+  -- dotnet publish -c CONFIG -a ARCH -o OUT_DIR
+```
+
+### Inspecting Active Known Values (`-list-values`)
+
+To inspect all active known values (including built-ins, settings maps, and CLI `-values` overrides) without executing an expansion payload:
+
+```bash
+# List default built-in values
+CLIExpand -list-values
+
+# List active values with layered settings and value maps
+CLIExpand -settings project.json -values overrides.json -list-values
+```
+
+### Inspecting Active Baseline Macros (`-list-macros`)
+
+To inspect all active baseline macros (including settings macros, `-macros` files, and inline `-macro` definitions) without executing an expansion payload:
+
+```bash
+# List active macros
+CLIExpand -settings project.json -macros env.json -macro REGION=us-east-1 -list-macros
+```
+
+**Example Output:**
+```text
+Active Macros (3 keys):
+  ARCH    = x64
+  CONFIG  = Release
+  REGION  = us-east-1
+```
 
 ### Default Settings Locations
 
@@ -175,12 +249,27 @@ When no `-settings <path>` is supplied, `CLIExpand` searches standard per-user c
   "delimiter": ":",
   "join": ".join.",
   "joinEnd": ".join_end.",
+  "get": ".get.",
+  "splitGet": ".split_get.",
   "matchPartials": true,
-  "splitAfterGetByKey": true
+  "splitAfterGetByKey": true,
+  "values": [
+    "common.json",
+    "project.json"
+  ],
+  "valueStore": {
+    "custom_root": "/opt/app"
+  },
+  "macros": [
+    "common-macros.json"
+  ],
+  "macroStore": {
+    "CONFIG": "Release"
+  }
 }
 ```
 
-*Note: Alternate property names such as `expandStartToken`, `expandEndToken`, `delimiterToken`, `joinStartToken`, and `joinEndToken` are also supported.*
+*Note: Alternate property names such as `expandStartToken`, `expandEndToken`, `delimiterToken`, `joinStartToken`, `joinEndToken`, `getToken`, and `splitGetToken` are also supported.*
 
 ---
 
@@ -197,48 +286,16 @@ CLIExpand -- .expand. _text a b : echo _text .expand_end.
 echo a echo b
 ```
 
-### Path and Filename Construction with Join
+### Portable Multi-Line Parameter Sweeps (`.get. newline`)
 
-Use `.join.` to assemble filenames, paths, and compound arguments without separators:
-
-#### Assembling Dynamic Filenames
-```bash
-CLIExpand -- .expand. _base report summary : .join. _base .csv .join_end. .expand_end.
-```
-**Output:**
-```text
-report.csv summary.csv
-```
-
-#### Cartesian Expansion with Join
-```bash
-CLIExpand -- .expand. _base Quant Quant2 : .expand. _ext tkr csv : .join. _base . _ext .join_end. .expand_end. .expand_end.
-```
-**Output:**
-```text
-Quant.tkr Quant.csv Quant2.tkr Quant2.csv
-```
-
-#### Preserving Spaced Arguments Inside Joined Paths
-When generating shell-safe command lines (e.g. `-mode bash`), `.join.` preserves internal spaces within tokens while producing exactly one quoted argument:
-```bash
-CLIExpand -mode bash -- .join. /home/jwc/ "my file" .join_end.
-```
-**Output:**
-```text
-'/home/jwc/my file'
-```
-
-### Multi-Line Parameter Expansion (Boundary-Aware Spacing)
-
-In raw mode, newlines (such as `$'\n'` from shells) are preserved cleanly without artificial surrounding spaces:
+Using `.get. newline` provides a portable, cross-shell method to generate multi-line output without relying on shell-specific escape syntax like Bash `$'\n'`:
 
 ```bash
 CLIExpand -- \
   .expand. Fruit apple orange grape : \
     .expand. Size small medium large : \
       .join. Fruit _ Size .jpeg .join_end. \
-      $'\n' \
+      .get. newline \
     .expand_end. \
   .expand_end.
 ```
@@ -254,6 +311,39 @@ orange_large.jpeg
 grape_small.jpeg
 grape_medium.jpeg
 grape_large.jpeg
+```
+
+### Path and Filename Construction with Join & Known Values
+
+Use `.join.` with `.get.` to assemble platform-neutral paths and captured timestamps:
+
+```bash
+CLIExpand -values config.json -- \
+  .join. .get. output_root .get. dir_sep report- .get. timestamp .get. extension .join_end.
+```
+
+**Output:**
+```text
+/tmp/results/report-_20261003_090929_00.tkr
+```
+
+#### Cartesian Expansion with Join
+```bash
+CLIExpand -- .expand. _base Quant Quant2 : .expand. _ext tkr csv : .join. _base . _ext .join_end. .expand_end. .expand_end.
+```
+**Output:**
+```text
+Quant.tkr Quant.csv Quant2.tkr Quant2.csv
+```
+
+#### Preserving Spaced Arguments Inside Joined Paths
+When generating shell-safe command lines (e.g. `-mode bash`), `.join.` and `.get.` preserve internal spaces within tokens while producing exactly one quoted argument:
+```bash
+CLIExpand -mode bash -- .join. /home/jwc/ "my file" .join_end.
+```
+**Output:**
+```text
+'/home/jwc/my file'
 ```
 
 ### Nested Cartesian Sweeps

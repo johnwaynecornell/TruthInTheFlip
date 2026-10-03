@@ -38,6 +38,16 @@ public class CLIExpandSettings
     public string JoinEndToken { get; set; } = ".join_end.";
 
     /// <summary>
+    /// Token identifying an explicit known-value retrieval operation. Defaults to <c>".get."</c>.
+    /// </summary>
+    public string GetToken { get; set; } = ".get.";
+
+    /// <summary>
+    /// Token identifying an explicit known-value retrieval with whitespace splitting. Defaults to <c>".split_get."</c>.
+    /// </summary>
+    public string SplitGetToken { get; set; } = ".split_get.";
+
+    /// <summary>
     /// When true, allows matching and substituting embedded identifiers within compound tokens (e.g. 'prefix._var.suffix'). Defaults to true.
     /// </summary>
     public bool MatchPartials { get; set; } = true;
@@ -53,6 +63,26 @@ public class CLIExpandSettings
     public string? SettingsPath { get; set; }
 
     /// <summary>
+    /// List of file paths to JSON value maps to be loaded into the known-values store.
+    /// </summary>
+    public List<string> ValueFiles { get; set; } = new();
+
+    /// <summary>
+    /// Inline known-values dictionary loaded directly from settings.
+    /// </summary>
+    public Dictionary<string, string> ValueStore { get; set; } = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// List of file paths to JSON macro maps to be loaded into the baseline macro store.
+    /// </summary>
+    public List<string> MacroFiles { get; set; } = new();
+
+    /// <summary>
+    /// Inline baseline macro dictionary loaded directly from settings.
+    /// </summary>
+    public Dictionary<string, string> MacroStore { get; set; } = new(StringComparer.Ordinal);
+
+    /// <summary>
     /// Creates a deep clone of the current settings.
     /// </summary>
     public CLIExpandSettings Clone()
@@ -65,9 +95,15 @@ public class CLIExpandSettings
             DelimiterToken = this.DelimiterToken,
             JoinStartToken = this.JoinStartToken,
             JoinEndToken = this.JoinEndToken,
+            GetToken = this.GetToken,
+            SplitGetToken = this.SplitGetToken,
             MatchPartials = this.MatchPartials,
             SplitAfterGetByKey = this.SplitAfterGetByKey,
-            SettingsPath = this.SettingsPath
+            SettingsPath = this.SettingsPath,
+            ValueFiles = new List<string>(this.ValueFiles),
+            ValueStore = new Dictionary<string, string>(this.ValueStore, StringComparer.Ordinal),
+            MacroFiles = new List<string>(this.MacroFiles),
+            MacroStore = new Dictionary<string, string>(this.MacroStore, StringComparer.Ordinal)
         };
     }
 }

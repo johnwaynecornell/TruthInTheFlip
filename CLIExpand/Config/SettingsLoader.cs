@@ -51,11 +51,41 @@ public static class SettingsLoader
         [JsonPropertyName("joinEndToken")]
         public string? JoinEndToken { get; set; }
 
+        [JsonPropertyName("get")]
+        public string? Get { get; set; }
+
+        [JsonPropertyName("getToken")]
+        public string? GetToken { get; set; }
+
+        [JsonPropertyName("splitGet")]
+        public string? SplitGet { get; set; }
+
+        [JsonPropertyName("splitGetToken")]
+        public string? SplitGetToken { get; set; }
+
         [JsonPropertyName("matchPartials")]
         public bool? MatchPartials { get; set; }
 
         [JsonPropertyName("splitAfterGetByKey")]
         public bool? SplitAfterGetByKey { get; set; }
+
+        [JsonPropertyName("values")]
+        public JsonElement? Values { get; set; }
+
+        [JsonPropertyName("valueFiles")]
+        public JsonElement? ValueFiles { get; set; }
+
+        [JsonPropertyName("valueStore")]
+        public Dictionary<string, string>? ValueStore { get; set; }
+
+        [JsonPropertyName("macros")]
+        public JsonElement? Macros { get; set; }
+
+        [JsonPropertyName("macroFiles")]
+        public JsonElement? MacroFiles { get; set; }
+
+        [JsonPropertyName("macroStore")]
+        public Dictionary<string, string>? MacroStore { get; set; }
     }
 
     /// <summary>
@@ -135,7 +165,8 @@ public static class SettingsLoader
         try
         {
             string json = File.ReadAllText(filePath);
-            return TryLoadFromJson(json, target, out errorMessage, filePath);
+            string baseDir = Path.GetDirectoryName(Path.GetFullPath(filePath)) ?? Directory.GetCurrentDirectory();
+            return TryLoadFromJson(json, target, out errorMessage, filePath, baseDir);
         }
         catch (Exception ex)
         {
@@ -147,7 +178,7 @@ public static class SettingsLoader
     /// <summary>
     /// Deserializes settings from a JSON string and updates <paramref name="target"/>.
     /// </summary>
-    public static bool TryLoadFromJson(string json, CLIExpandSettings target, out string? errorMessage, string? sourceIdentifier = null)
+    public static bool TryLoadFromJson(string json, CLIExpandSettings target, out string? errorMessage, string? sourceIdentifier = null, string? baseDirectory = null)
     {
         errorMessage = null;
         string sourceDesc = sourceIdentifier != null ? $" in '{sourceIdentifier}'" : string.Empty;
@@ -205,13 +236,255 @@ public static class SettingsLoader
         if (joinEnd != null)
             target.JoinEndToken = joinEnd;
 
+        string? get = dto.Get ?? dto.GetToken;
+        if (get != null)
+            target.GetToken = get;
+
+        string? splitGet = dto.SplitGet ?? dto.SplitGetToken;
+        if (splitGet != null)
+            target.SplitGetToken = splitGet;
+
         if (dto.MatchPartials.HasValue)
             target.MatchPartials = dto.MatchPartials.Value;
 
         if (dto.SplitAfterGetByKey.HasValue)
             target.SplitAfterGetByKey = dto.SplitAfterGetByKey.Value;
 
+        void ProcessValuesElement(JsonElement element)
+        {
+            if (element.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in element.EnumerateArray())
+                {
+                    if (item.ValueKind == JsonValueKind.String)
+                    {
+                        string path = item.GetString()!;
+                        string resolved = !string.IsNullOrEmpty(baseDirectory) && !Path.IsPathRooted(path)
+                            ? Path.GetFullPath(Path.Combine(baseDirectory, path))
+                            : Path.GetFullPath(path);
+                        target.ValueFiles.Add(resolved);
+                    }
+                }
+            }
+            else if (element.ValueKind == JsonValueKind.String)
+            {
+                string path = element.GetString()!;
+                string resolved = !string.IsNullOrEmpty(baseDirectory) && !Path.IsPathRooted(path)
+                    ? Path.GetFullPath(Path.Combine(baseDirectory, path))
+                    : Path.GetFullPath(path);
+                target.ValueFiles.Add(resolved);
+            }
+        }
+
+        if (dto.Values.HasValue)
+            ProcessValuesElement(dto.Values.Value);
+
+        if (dto.ValueFiles.HasValue)
+            ProcessValuesElement(dto.ValueFiles.Value);
+
+        if (dto.ValueStore != null)
+        {
+            foreach (var kvp in dto.ValueStore)
+            {
+                target.ValueStore[kvp.Key] = kvp.Value;
+            }
+        }
+
+        void ProcessMacroFilesElement(JsonElement element)
+        {
+            if (element.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in element.EnumerateArray())
+                {
+                    if (item.ValueKind == JsonValueKind.String)
+                    {
+                        string path = item.GetString()!;
+                        string resolved = !string.IsNullOrEmpty(baseDirectory) && !Path.IsPathRooted(path)
+                            ? Path.GetFullPath(Path.Combine(baseDirectory, path))
+                            : Path.GetFullPath(path);
+                        target.MacroFiles.Add(resolved);
+                    }
+                }
+            }
+            else if (element.ValueKind == JsonValueKind.String)
+            {
+                string path = element.GetString()!;
+                string resolved = !string.IsNullOrEmpty(baseDirectory) && !Path.IsPathRooted(path)
+                    ? Path.GetFullPath(Path.Combine(baseDirectory, path))
+                    : Path.GetFullPath(path);
+                target.MacroFiles.Add(resolved);
+            }
+        }
+
+        if (dto.Macros.HasValue)
+            ProcessMacroFilesElement(dto.Macros.Value);
+
+        if (dto.MacroFiles.HasValue)
+            ProcessMacroFilesElement(dto.MacroFiles.Value);
+
+        if (dto.MacroStore != null)
+        {
+            foreach (var kvp in dto.MacroStore)
+            {
+                target.MacroStore[kvp.Key] = kvp.Value;
+            }
+        }
+
         return true;
+    }
+
+    /// <summary>
+    /// Loads a flat JSON macro-map file into <paramref name="targetStore"/>.
+    /// </summary>
+    /// <param name="filePath">The path to the JSON macro-map file.</param>
+    /// <param name="targetStore">The target dictionary receiving the key-value mappings.</param>
+    /// <param name="errorMessage">Error diagnostic message if loading failed.</param>
+    /// <returns>True if loaded successfully; otherwise false.</returns>
+    public static bool TryLoadMacroMapFile(string filePath, IDictionary<string, string> targetStore, out string? errorMessage)
+    {
+        errorMessage = null;
+
+        if (!File.Exists(filePath))
+        {
+            errorMessage = $"Macro map file not found: {filePath}";
+            return false;
+        }
+
+        try
+        {
+            string json = File.ReadAllText(filePath);
+            return TryLoadMacroMapFromJson(json, targetStore, out errorMessage, filePath);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to read macro map file '{filePath}': {ex.Message}";
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Deserializes a flat JSON macro-map string into <paramref name="targetStore"/>.
+    /// Validates that all values are strings.
+    /// </summary>
+    /// <param name="json">The JSON text to deserialize.</param>
+    /// <param name="targetStore">The target dictionary receiving the key-value mappings.</param>
+    /// <param name="errorMessage">Error diagnostic message if parsing or validation failed.</param>
+    /// <param name="sourceIdentifier">Optional source file name/identifier for diagnostic messages.</param>
+    /// <returns>True if deserialized successfully; otherwise false.</returns>
+    public static bool TryLoadMacroMapFromJson(string json, IDictionary<string, string> targetStore, out string? errorMessage, string? sourceIdentifier = null)
+    {
+        errorMessage = null;
+        string sourceDesc = sourceIdentifier != null ? $" in '{sourceIdentifier}'" : string.Empty;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(json, new JsonDocumentOptions
+            {
+                CommentHandling = JsonCommentHandling.Skip,
+                AllowTrailingCommas = true
+            });
+
+            if (doc.RootElement.ValueKind != JsonValueKind.Object)
+            {
+                errorMessage = $"Invalid macro map JSON{sourceDesc}: Root element must be a JSON object.";
+                return false;
+            }
+
+            foreach (var prop in doc.RootElement.EnumerateObject())
+            {
+                if (prop.Value.ValueKind != JsonValueKind.String)
+                {
+                    errorMessage = $"Invalid macro map JSON{sourceDesc}: Property '{prop.Name}' must have a string value, but found {prop.Value.ValueKind.ToString().ToLowerInvariant()}.";
+                    return false;
+                }
+
+                targetStore[prop.Name] = prop.Value.GetString()!;
+            }
+
+            return true;
+        }
+        catch (JsonException ex)
+        {
+            errorMessage = $"Failed to parse macro map JSON{sourceDesc}: {ex.Message}";
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Loads a flat JSON value-map file into <paramref name="targetStore"/>.
+    /// </summary>
+    /// <param name="filePath">The path to the JSON value-map file.</param>
+    /// <param name="targetStore">The target dictionary receiving the key-value mappings.</param>
+    /// <param name="errorMessage">Error diagnostic message if loading failed.</param>
+    /// <returns>True if loaded successfully; otherwise false.</returns>
+    public static bool TryLoadValueMapFile(string filePath, IDictionary<string, string> targetStore, out string? errorMessage)
+    {
+        errorMessage = null;
+
+        if (!File.Exists(filePath))
+        {
+            errorMessage = $"Value map file not found: {filePath}";
+            return false;
+        }
+
+        try
+        {
+            string json = File.ReadAllText(filePath);
+            return TryLoadValueMapFromJson(json, targetStore, out errorMessage, filePath);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to read value map file '{filePath}': {ex.Message}";
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Deserializes a flat JSON value-map string into <paramref name="targetStore"/>.
+    /// Validates that all values are strings.
+    /// </summary>
+    /// <param name="json">The JSON text to deserialize.</param>
+    /// <param name="targetStore">The target dictionary receiving the key-value mappings.</param>
+    /// <param name="errorMessage">Error diagnostic message if parsing or validation failed.</param>
+    /// <param name="sourceIdentifier">Optional source file name/identifier for diagnostic messages.</param>
+    /// <returns>True if deserialized successfully; otherwise false.</returns>
+    public static bool TryLoadValueMapFromJson(string json, IDictionary<string, string> targetStore, out string? errorMessage, string? sourceIdentifier = null)
+    {
+        errorMessage = null;
+        string sourceDesc = sourceIdentifier != null ? $" in '{sourceIdentifier}'" : string.Empty;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(json, new JsonDocumentOptions
+            {
+                CommentHandling = JsonCommentHandling.Skip,
+                AllowTrailingCommas = true
+            });
+
+            if (doc.RootElement.ValueKind != JsonValueKind.Object)
+            {
+                errorMessage = $"Invalid value map JSON{sourceDesc}: Root element must be a JSON object.";
+                return false;
+            }
+
+            foreach (var prop in doc.RootElement.EnumerateObject())
+            {
+                if (prop.Value.ValueKind != JsonValueKind.String)
+                {
+                    errorMessage = $"Invalid value map JSON{sourceDesc}: Property '{prop.Name}' must have a string value, but found {prop.Value.ValueKind.ToString().ToLowerInvariant()}.";
+                    return false;
+                }
+
+                targetStore[prop.Name] = prop.Value.GetString()!;
+            }
+
+            return true;
+        }
+        catch (JsonException ex)
+        {
+            errorMessage = $"Failed to parse value map JSON{sourceDesc}: {ex.Message}";
+            return false;
+        }
     }
 
     /// <summary>

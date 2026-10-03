@@ -815,4 +815,323 @@ public class CLIExpanderTests
     }
 
     #endregion
+
+    #region Known Values (.get. and .split_get.) Tests
+
+    [Fact]
+    public void Get_BuiltInWhitespaceTokens_EmittedAsExactTokens()
+    {
+        var input = new List<string> { "a", ".get.", "space", "b", ".get.", "tab", "c", ".get.", "newline", "d", ".get.", "empty", "e" };
+        var status = CLIExpander.Process(input, out var output);
+
+        Assert.Equal(0, status.Status);
+        Assert.Equal(new[] { "a", " ", "b", "\t", "c", Environment.NewLine, "d", "", "e" }, output);
+    }
+
+    [Fact]
+    public void Get_BuiltInPlatformSeparators_EmitsNativeSeparators()
+    {
+        var input = new List<string> { ".get.", "dir_sep", ".get.", "path_sep" };
+        var status = CLIExpander.Process(input, out var output);
+
+        Assert.Equal(0, status.Status);
+        Assert.Equal(new[] { Path.DirectorySeparatorChar.ToString(), Path.PathSeparator.ToString() }, output);
+    }
+
+    [Fact]
+    public void Get_BuiltInTimestamps_DeriveFromCapturedStartedAt()
+    {
+        var fixedTime = new DateTimeOffset(2026, 10, 3, 9, 9, 29, 120, TimeSpan.FromHours(-4));
+        var expander = new CLIExpander(fixedTime);
+
+        Assert.Equal(fixedTime, expander.StartedAt);
+        Assert.Equal(fixedTime.ToString("O"), expander.GetKnownValue("now"));
+        Assert.Equal(fixedTime.ToUniversalTime().ToString("O"), expander.GetKnownValue("utc_now"));
+        Assert.Equal(fixedTime.ToString("_yyyyMMdd_HHmmss_ff"), expander.GetKnownValue("timestamp"));
+        Assert.Equal(fixedTime.ToUniversalTime().ToString("_yyyyMMdd_HHmmss_ff"), expander.GetKnownValue("utimestamp"));
+    }
+
+    [Fact]
+    public void Get_TimestampStability_RepeatedLookupsYieldIdenticalInstant()
+    {
+        var expander = new CLIExpander();
+        var input = new List<string>
+        {
+            ".expand.", "x", "1", "2", "3", ":",
+            ".get.", "now",
+            ".expand_end."
+        };
+
+        var status = CLIExpander.Process(input, out var output, () => expander);
+
+        Assert.Equal(0, status.Status);
+        Assert.Equal(3, output.Count);
+        Assert.Equal(output[0], output[1]);
+        Assert.Equal(output[1], output[2]);
+        Assert.Equal(expander.GetKnownValue("now"), output[0]);
+    }
+
+    [Fact]
+    public void Get_ScopeVsValueStoreSeparation_BareWordNotSubstituted()
+    {
+        var expander = new CLIExpander();
+        expander.ValueStore["project"] = "TruthInTheFlip";
+
+        // Plain token 'project' should not be substituted because it is in ValueStore, not Scope
+        var input = new List<string> { "project", ".get.", "project" };
+        var status = CLIExpander.Process(input, out var output, () => expander);
+
+        Assert.Equal(0, status.Status);
+        Assert.Equal(new[] { "project", "TruthInTheFlip" }, output);
+    }
+
+    [Fact]
+    public void Get_ScopeAndValueStoreCoexistWithSameKeyName()
+    {
+        var fixedTime = new DateTimeOffset(2026, 10, 3, 9, 9, 29, TimeSpan.Zero);
+        var expander = new CLIExpander(fixedTime);
+
+        // Binding 'now' in .expand. scope shadows the lexical variable, but .get. now still retrieves ValueStore["now"]
+        var input = new List<string>
+        {
+            ".expand.", "now", "yesterday", "tomorrow", ":",
+            "now", ".get.", "now",
+            ".expand_end."
+        };
+
+        var status = CLIExpander.Process(input, out var output, () => expander);
+
+        Assert.Equal(0, status.Status);
+        Assert.Equal(new[]
+        {
+            "yesterday", fixedTime.ToString("O"),
+            "tomorrow", fixedTime.ToString("O")
+        }, output);
+    }
+
+    [Fact]
+    public void Get_ExactTokenSemantics_DoesNotSplitWhitespace()
+    {
+        var expander = new CLIExpander();
+        expander.ValueStore["title"] = "My Project File";
+        expander.SplitAfterGetByKey = true; // Ensure SplitAfterGetByKey does not affect .get.
+
+        var input = new List<string> { "name", ".get.", "title" };
+        var status = CLIExpander.Process(input, out var output, () => expander);
+
+        Assert.Equal(0, status.Status);
+        Assert.Equal(new[] { "name", "My Project File" }, output);
+    }
+
+    [Fact]
+    public void SplitGet_SplitsValueOnWhitespace()
+    {
+        var expander = new CLIExpander();
+        expander.ValueStore["flags"] = "--verbose --debug --all";
+
+        var input = new List<string> { "run", ".split_get.", "flags", "target" };
+        var status = CLIExpander.Process(input, out var output, () => expander);
+
+        Assert.Equal(0, status.Status);
+        Assert.Equal(new[] { "run", "--verbose", "--debug", "--all", "target" }, output);
+    }
+
+    [Fact]
+    public void Get_InsideJoinBlock_ComposesIntoSingleToken()
+    {
+        var expander = new CLIExpander();
+        expander.ValueStore["project"] = "TruthInTheFlip";
+
+        var input = new List<string>
+        {
+            ".join.", "/tmp/", ".get.", "project", ".txt", ".join_end."
+        };
+
+        var status = CLIExpander.Process(input, out var output, () => expander);
+
+        Assert.Equal(0, status.Status);
+        Assert.Equal(new[] { "/tmp/TruthInTheFlip.txt" }, output);
+    }
+
+    [Fact]
+    public void Get_InsideJoinWithExpand_GeneratesSeparatedTokens()
+    {
+        var input = new List<string>
+        {
+            ".expand.", "Fruit", "apple", "orange", ":",
+            ".join.", "Fruit", ".png", ".join_end.",
+            ".get.", "newline",
+            ".expand_end."
+        };
+
+        var status = CLIExpander.Process(input, out var output);
+
+        Assert.Equal(0, status.Status);
+        Assert.Equal(new[] { "apple.png", Environment.NewLine, "orange.png", Environment.NewLine }, output);
+    }
+
+    private class CustomResolverExpander : CLIExpander
+    {
+        public override string? GetKnownValue(string key)
+        {
+            if (key == "dynamic_host")
+                return "server42.internal";
+            return base.GetKnownValue(key);
+        }
+    }
+
+    [Fact]
+    public void Get_VirtualGetKnownValueOverride_AuthoritativeResolution()
+    {
+        var input = new List<string> { "connect", ".get.", "dynamic_host", ".get.", "space" };
+        var status = CLIExpander.Process(input, out var output, () => new CustomResolverExpander());
+
+        Assert.Equal(0, status.Status);
+        Assert.Equal(new[] { "connect", "server42.internal", " " }, output);
+    }
+
+    [Fact]
+    public void Get_CustomGetAndSplitTokens_Configurable()
+    {
+        var expander = new CLIExpander
+        {
+            GetToken = "@get",
+            SplitGetToken = "@split_get"
+        };
+        expander.ValueStore["msg"] = "hello world";
+
+        var input = new List<string> { "@get", "msg", "@split_get", "msg" };
+        var status = CLIExpander.Process(input, out var output, () => expander);
+
+        Assert.Equal(0, status.Status);
+        Assert.Equal(new[] { "hello world", "hello", "world" }, output);
+    }
+
+    [Fact]
+    public void Get_MissingKey_ReturnsDescriptiveError()
+    {
+        var input = new List<string> { "echo", ".get." };
+        var status = CLIExpander.Process(input, out var output);
+
+        Assert.Equal(1, status.Status);
+        Assert.Equal("CLIExpander: Expected key after .get.", status.Message);
+    }
+
+    [Fact]
+    public void SplitGet_MissingKey_ReturnsDescriptiveError()
+    {
+        var input = new List<string> { "echo", ".split_get." };
+        var status = CLIExpander.Process(input, out var output);
+
+        Assert.Equal(1, status.Status);
+        Assert.Equal("CLIExpander: Expected key after .split_get.", status.Message);
+    }
+
+    [Fact]
+    public void Get_UnknownKey_ReturnsDescriptiveError()
+    {
+        var input = new List<string> { "echo", ".get.", "undefined_variable" };
+        var status = CLIExpander.Process(input, out var output);
+
+        Assert.Equal(1, status.Status);
+        Assert.Equal("CLIExpander: Unknown value 'undefined_variable'", status.Message);
+    }
+
+    [Fact]
+    public void SplitGet_UnknownKey_ReturnsDescriptiveError()
+    {
+        var input = new List<string> { "echo", ".split_get.", "undefined_variable" };
+        var status = CLIExpander.Process(input, out var output);
+
+        Assert.Equal(1, status.Status);
+        Assert.Equal("CLIExpander: Unknown value 'undefined_variable'", status.Message);
+    }
+
+    #endregion
+
+    #region MacroStore Baseline Tests
+
+    [Fact]
+    public void MacroStore_FullTokenSubstitution_SubstitutesAndSplits()
+    {
+        var expander = new CLIExpander();
+        expander.MacroStore["CONFIG"] = "Release";
+        expander.MacroStore["FLAGS"] = "-O3 --strip";
+
+        var input = new List<string> { "build", "CONFIG", "FLAGS" };
+        var status = CLIExpander.Process(input, out var output, () => expander);
+
+        Assert.Equal(0, status.Status);
+        Assert.Equal(new[] { "build", "Release", "-O3", "--strip" }, output);
+    }
+
+    [Fact]
+    public void MacroStore_DisabledSplitAfterGetByKey_EmitsSingleToken()
+    {
+        var expander = new CLIExpander
+        {
+            SplitAfterGetByKey = false
+        };
+        expander.MacroStore["FLAGS"] = "-O3 --strip";
+
+        var input = new List<string> { "build", "FLAGS" };
+        var status = CLIExpander.Process(input, out var output, () => expander);
+
+        Assert.Equal(0, status.Status);
+        Assert.Equal(new[] { "build", "-O3 --strip" }, output);
+    }
+
+    [Fact]
+    public void MacroStore_PartialSubstitution_EmbedsCorrectly()
+    {
+        var expander = new CLIExpander();
+        expander.MacroStore["ARCH"] = "x64";
+
+        var input = new List<string> { "app-ARCH-binary", "target" };
+        var status = CLIExpander.Process(input, out var output, () => expander);
+
+        Assert.Equal(0, status.Status);
+        Assert.Equal(new[] { "app-x64-binary", "target" }, output);
+    }
+
+    [Fact]
+    public void MacroStore_ScopeShadowing_BlockScopeShadowsMacroStoreAndRestoresAfterBlock()
+    {
+        var expander = new CLIExpander();
+        expander.MacroStore["TARGET"] = "default_target";
+
+        var input = new List<string>
+        {
+            "before", "TARGET",
+            ".expand.", "TARGET", "alpha", "beta", ":",
+                "in", "TARGET",
+            ".expand_end.",
+            "after", "TARGET"
+        };
+        var status = CLIExpander.Process(input, out var output, () => expander);
+
+        Assert.Equal(0, status.Status);
+        Assert.Equal(new[]
+        {
+            "before", "default_target",
+            "in", "alpha",
+            "in", "beta",
+            "after", "default_target"
+        }, output);
+    }
+
+    [Fact]
+    public void MacroStore_UnknownKey_RemainsLiteralText()
+    {
+        var expander = new CLIExpander();
+        expander.MacroStore["DEFINED_VAR"] = "val";
+
+        var input = new List<string> { "DEFINED_VAR", "UNDEFINED_VAR" };
+        var status = CLIExpander.Process(input, out var output, () => expander);
+
+        Assert.Equal(0, status.Status);
+        Assert.Equal(new[] { "val", "UNDEFINED_VAR" }, output);
+    }
+
+    #endregion
 }

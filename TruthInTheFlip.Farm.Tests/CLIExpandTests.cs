@@ -886,4 +886,1083 @@ public class CLIExpandTests
     }
 
     #endregion
+
+    #region 5. Known Values (.get., .split_get., -values, Settings) Tests
+
+    [Fact]
+    public void OptionParser_GetAndValuesOptions_ParsedCorrectly()
+    {
+        string[] args =
+        [
+            "-get", "@get",
+            "-split-get", "@sget",
+            "-values", "common.json",
+            "-values", "project.json",
+            "--",
+            "echo", "hello"
+        ];
+
+        var result = CLIOptionParser.Parse(args);
+
+        Assert.False(result.HasErrors);
+        Assert.Equal("@get", result.GetToken);
+        Assert.Equal("@sget", result.SplitGetToken);
+        Assert.Equal(["common.json", "project.json"], result.ValueFiles);
+        Assert.Equal(["echo", "hello"], result.Payload);
+    }
+
+    [Fact]
+    public void Pipeline_MotivatingExample_PlatformNeutralNewlines()
+    {
+        string[] args =
+        [
+            "-mode", "raw",
+            "--",
+            ".expand.", "Fruit", "apple", "orange", "grape", ":",
+                ".expand.", "Size", "small", "medium", "large", ":",
+                    ".join.", "Fruit", "_", "Size", ".jpeg", ".join_end.",
+                    ".get.", "newline",
+                ".expand_end.",
+            ".expand_end."
+        ];
+
+        using var stdout = new StringWriter();
+        using var stderr = new StringWriter();
+
+        int exitCode = Program.Run(args, stdout, stderr);
+
+        Assert.Equal(0, exitCode);
+        string expected = string.Join(Environment.NewLine, new[]
+        {
+            "apple_small.jpeg",
+            "apple_medium.jpeg",
+            "apple_large.jpeg",
+            "orange_small.jpeg",
+            "orange_medium.jpeg",
+            "orange_large.jpeg",
+            "grape_small.jpeg",
+            "grape_medium.jpeg",
+            "grape_large.jpeg",
+            "",
+            ""
+        });
+        Assert.Equal(expected, stdout.ToString());
+        Assert.Empty(stderr.ToString());
+    }
+
+    [Fact]
+    public void Pipeline_SingleValueMap_LoadsKnownValues()
+    {
+        string tempMap = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(tempMap, """
+            {
+                "project": "TruthInTheFlip",
+                "extension": ".tkr",
+                "output_root": "/tmp/results"
+            }
+            """);
+
+            string[] args =
+            [
+                "-mode", "raw",
+                "-values", tempMap,
+                "--",
+                ".join.", ".get.", "output_root", "/", ".get.", "project", ".get.", "extension", ".join_end."
+            ];
+
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
+
+            int exitCode = Program.Run(args, stdout, stderr);
+
+            Assert.Equal(0, exitCode);
+            Assert.Equal("/tmp/results/TruthInTheFlip.tkr\n", stdout.ToString().Replace("\r\n", "\n"));
+            Assert.Empty(stderr.ToString());
+        }
+        finally
+        {
+            if (File.Exists(tempMap)) File.Delete(tempMap);
+        }
+    }
+
+    [Fact]
+    public void Pipeline_MultipleValueMaps_LaterMapOverridesEarlierMap()
+    {
+        string baseMap = Path.GetTempFileName();
+        string overrideMap = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(baseMap, """
+            {
+                "project": "DefaultProject",
+                "env": "development",
+                "format": "json"
+            }
+            """);
+
+            File.WriteAllText(overrideMap, """
+            {
+                "project": "TruthInTheFlip",
+                "env": "production"
+            }
+            """);
+
+            string[] args =
+            [
+                "-mode", "raw",
+                "-values", baseMap,
+                "-values", overrideMap,
+                "--",
+                ".get.", "project", ".get.", "env", ".get.", "format"
+            ];
+
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
+
+            int exitCode = Program.Run(args, stdout, stderr);
+
+            Assert.Equal(0, exitCode);
+            Assert.Equal("TruthInTheFlip production json\n", stdout.ToString().Replace("\r\n", "\n"));
+            Assert.Empty(stderr.ToString());
+        }
+        finally
+        {
+            if (File.Exists(baseMap)) File.Delete(baseMap);
+            if (File.Exists(overrideMap)) File.Delete(overrideMap);
+        }
+    }
+
+    [Fact]
+    public void Pipeline_SettingsFileWithRelativeValueMaps_ResolvesRelativeToSettingsFile()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), "cli_test_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            string commonMap = Path.Combine(tempDir, "common.json");
+            File.WriteAllText(commonMap, """
+            {
+                "framework": "dotnet10",
+                "author": "JetBrains"
+            }
+            """);
+
+            string settingsFile = Path.Combine(tempDir, "settings.json");
+            File.WriteAllText(settingsFile, """
+            {
+                "mode": "raw",
+                "values": [ "common.json" ]
+            }
+            """);
+
+            string[] args =
+            [
+                "-settings", settingsFile,
+                "--",
+                "info", ".get.", "framework", "by", ".get.", "author"
+            ];
+
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
+
+            int exitCode = Program.Run(args, stdout, stderr);
+
+            Assert.Equal(0, exitCode);
+            Assert.Equal("info dotnet10 by JetBrains\n", stdout.ToString().Replace("\r\n", "\n"));
+            Assert.Empty(stderr.ToString());
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Fact]
+    public void Pipeline_Precedence_BuiltIn_Settings_CliValues_OverridesCorrectly()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), "cli_prec_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            // Settings map overrides built-in "dir_sep"
+            string settingsMap = Path.Combine(tempDir, "settings_map.json");
+            File.WriteAllText(settingsMap, """
+            {
+                "dir_sep": "#",
+                "tier": "settings"
+            }
+            """);
+
+            string settingsFile = Path.Combine(tempDir, "settings.json");
+            File.WriteAllText(settingsFile, """
+            {
+                "mode": "raw",
+                "values": [ "settings_map.json" ]
+            }
+            """);
+
+            // CLI map overrides "tier"
+            string cliMap = Path.Combine(tempDir, "cli_map.json");
+            File.WriteAllText(cliMap, """
+            {
+                "tier": "cli_override"
+            }
+            """);
+
+            string[] args =
+            [
+                "-settings", settingsFile,
+                "-values", cliMap,
+                "--",
+                ".get.", "dir_sep", ".get.", "tier", ".get.", "space", ".get.", "tab"
+            ];
+
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
+
+            int exitCode = Program.Run(args, stdout, stderr);
+
+            Assert.Equal(0, exitCode);
+            Assert.Equal("# cli_override \t\n", stdout.ToString().Replace("\r\n", "\n"));
+            Assert.Empty(stderr.ToString());
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Fact]
+    public void Pipeline_CustomGetToken_FromCliOption_ResolvesProperly()
+    {
+        string tempMap = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(tempMap, """
+            {
+                "var1": "value1"
+            }
+            """);
+
+            string[] args =
+            [
+                "-mode", "raw",
+                "-get", "%get%",
+                "-values", tempMap,
+                "--",
+                "output:", "%get%", "var1"
+            ];
+
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
+
+            int exitCode = Program.Run(args, stdout, stderr);
+
+            Assert.Equal(0, exitCode);
+            Assert.Equal("output: value1\n", stdout.ToString().Replace("\r\n", "\n"));
+            Assert.Empty(stderr.ToString());
+        }
+        finally
+        {
+            if (File.Exists(tempMap)) File.Delete(tempMap);
+        }
+    }
+
+    [Fact]
+    public void Pipeline_SplitGetToken_SplitsValuesOnWhitespace()
+    {
+        string tempMap = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(tempMap, """
+            {
+                "tags": "release prod v1.0"
+            }
+            """);
+
+            string[] args =
+            [
+                "-mode", "bash",
+                "-values", tempMap,
+                "--",
+                "deploy", ".split_get.", "tags"
+            ];
+
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
+
+            int exitCode = Program.Run(args, stdout, stderr);
+
+            Assert.Equal(0, exitCode);
+            Assert.Equal("deploy release prod v1.0\n", stdout.ToString().Replace("\r\n", "\n"));
+            Assert.Empty(stderr.ToString());
+        }
+        finally
+        {
+            if (File.Exists(tempMap)) File.Delete(tempMap);
+        }
+    }
+
+    [Fact]
+    public void Pipeline_MissingValueMapFile_ReturnsError()
+    {
+        string[] args =
+        [
+            "-values", "non_existent_map_12345.json",
+            "--",
+            "echo", "test"
+        ];
+
+        using var stdout = new StringWriter();
+        using var stderr = new StringWriter();
+
+        int exitCode = Program.Run(args, stdout, stderr);
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains("Value map file not found", stderr.ToString());
+    }
+
+    [Fact]
+    public void Pipeline_MalformedJsonValueMap_ReturnsError()
+    {
+        string tempMap = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(tempMap, "{ not valid json }");
+
+            string[] args =
+            [
+                "-values", tempMap,
+                "--",
+                "echo", "test"
+            ];
+
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
+
+            int exitCode = Program.Run(args, stdout, stderr);
+
+            Assert.Equal(1, exitCode);
+            Assert.Contains("Failed to parse value map JSON", stderr.ToString());
+        }
+        finally
+        {
+            if (File.Exists(tempMap)) File.Delete(tempMap);
+        }
+    }
+
+    [Fact]
+    public void Pipeline_NonStringJsonValueMap_ReturnsError()
+    {
+        string tempMap = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(tempMap, """
+            {
+                "number_value": 42
+            }
+            """);
+
+            string[] args =
+            [
+                "-values", tempMap,
+                "--",
+                "echo", "test"
+            ];
+
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
+
+            int exitCode = Program.Run(args, stdout, stderr);
+
+            Assert.Equal(1, exitCode);
+            Assert.Contains("must have a string value", stderr.ToString());
+        }
+        finally
+        {
+            if (File.Exists(tempMap)) File.Delete(tempMap);
+        }
+    }
+
+    [Fact]
+    public void Pipeline_MissingKeyAfterGet_ReturnsDescriptiveError()
+    {
+        string[] args =
+        [
+            "--",
+            "echo", ".get."
+        ];
+
+        using var stdout = new StringWriter();
+        using var stderr = new StringWriter();
+
+        int exitCode = Program.Run(args, stdout, stderr);
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains("Expected key after .get.", stderr.ToString());
+    }
+
+    [Fact]
+    public void Pipeline_UnknownKnownValueKey_ReturnsDescriptiveError()
+    {
+        string[] args =
+        [
+            "--",
+            "echo", ".get.", "undefined_key"
+        ];
+
+        using var stdout = new StringWriter();
+        using var stderr = new StringWriter();
+
+        int exitCode = Program.Run(args, stdout, stderr);
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains("Unknown value 'undefined_key'", stderr.ToString());
+    }
+
+    #endregion
+
+    #region 6. Known Values Help & List-Values Tests
+
+    [Theory]
+    [InlineData("-list-values")]
+    [InlineData("--list-values")]
+    [InlineData("-list")]
+    [InlineData("--list")]
+    public void OptionParser_ListValuesFlag_SetsListValuesRequestedWithoutPayloadBoundary(string flag)
+    {
+        string[] args = [flag];
+        var result = CLIOptionParser.Parse(args);
+
+        Assert.False(result.HasErrors);
+        Assert.True(result.ListValuesRequested);
+        Assert.Empty(result.Payload);
+    }
+
+    [Fact]
+    public void OptionParser_ListValuesWithBoundaryAndEmptyPayload_Allowed()
+    {
+        string[] args = ["-list-values", "--"];
+        var result = CLIOptionParser.Parse(args);
+
+        Assert.False(result.HasErrors);
+        Assert.True(result.ListValuesRequested);
+        Assert.Empty(result.Payload);
+    }
+
+    [Fact]
+    public void OptionParser_ListValuesWithOptionsAndWithoutBoundary_ParsesOptions()
+    {
+        string[] args = ["-values", "custom.json", "-list-values"];
+        var result = CLIOptionParser.Parse(args);
+
+        Assert.False(result.HasErrors);
+        Assert.True(result.ListValuesRequested);
+        Assert.Equal(["custom.json"], result.ValueFiles);
+    }
+
+    [Fact]
+    public void Pipeline_Help_IncludesBuiltInKnownValuesAndListValuesOption()
+    {
+        string[] args = ["--help"];
+        using var stdout = new StringWriter();
+        using var stderr = new StringWriter();
+
+        int exitCode = Program.Run(args, stdout, stderr);
+
+        Assert.Equal(0, exitCode);
+        string helpText = stderr.ToString();
+
+        Assert.Contains("-list-values", helpText);
+        Assert.Contains("Built-in Known Values (.get. <key>):", helpText);
+        Assert.Contains("newline", helpText);
+        Assert.Contains("space", helpText);
+        Assert.Contains("tab", helpText);
+        Assert.Contains("empty", helpText);
+        Assert.Contains("now", helpText);
+        Assert.Contains("utc_now", helpText);
+        Assert.Contains("timestamp", helpText);
+        Assert.Contains("utimestamp", helpText);
+        Assert.Contains("dir_sep", helpText);
+        Assert.Contains("path_sep", helpText);
+    }
+
+    [Fact]
+    public void Pipeline_ListValues_DefaultBuiltIns_PrintsActiveKnownValuesTable()
+    {
+        string[] args = ["-list-values"];
+        using var stdout = new StringWriter();
+        using var stderr = new StringWriter();
+
+        int exitCode = Program.Run(args, stdout, stderr);
+
+        Assert.Equal(0, exitCode);
+        Assert.Empty(stderr.ToString());
+
+        string output = stdout.ToString();
+        Assert.Contains("Active Known Values (10 keys):", output);
+        Assert.Contains("dir_sep", output);
+        Assert.Contains("empty", output);
+        Assert.Contains("newline", output);
+        Assert.Contains("now", output);
+        Assert.Contains("path_sep", output);
+        Assert.Contains("space", output);
+        Assert.Contains("tab", output);
+        Assert.Contains("timestamp", output);
+        Assert.Contains("utc_now", output);
+        Assert.Contains("utimestamp", output);
+    }
+
+    [Fact]
+    public void Pipeline_ListValues_WithLoadedValueMap_PrintsLoadedEntries()
+    {
+        string tempMap = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(tempMap, """
+            {
+                "project": "TruthInTheFlip",
+                "custom_dir": "/tmp/output"
+            }
+            """);
+
+            string[] args = ["-values", tempMap, "-list-values"];
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
+
+            int exitCode = Program.Run(args, stdout, stderr);
+
+            Assert.Equal(0, exitCode);
+            Assert.Empty(stderr.ToString());
+
+            string output = stdout.ToString();
+            Assert.Contains("Active Known Values (12 keys):", output);
+            Assert.Contains("project", output);
+            Assert.Contains("TruthInTheFlip", output);
+            Assert.Contains("custom_dir", output);
+            Assert.Contains("/tmp/output", output);
+        }
+        finally
+        {
+            if (File.Exists(tempMap)) File.Delete(tempMap);
+        }
+    }
+
+    [Fact]
+    public void Pipeline_ListValues_WithSettingsAndCLIOverride_RespectsPrecedence()
+    {
+        string tempSettings = Path.GetTempFileName();
+        string tempMap1 = Path.GetTempFileName();
+        string tempMap2 = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(tempMap1, """
+            {
+                "project": "BaseProject",
+                "env": "staging"
+            }
+            """);
+
+            File.WriteAllText(tempMap2, """
+            {
+                "project": "OverrideProject"
+            }
+            """);
+
+            File.WriteAllText(tempSettings, $$"""
+            {
+                "values": ["{{tempMap1.Replace("\\", "\\\\")}}"]
+            }
+            """);
+
+            string[] args = ["-settings", tempSettings, "-values", tempMap2, "-list-values"];
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
+
+            int exitCode = Program.Run(args, stdout, stderr);
+
+            Assert.Equal(0, exitCode);
+            string output = stdout.ToString();
+
+            Assert.Contains("project", output);
+            Assert.Contains("OverrideProject", output);
+            Assert.DoesNotContain("BaseProject", output);
+            Assert.Contains("env", output);
+            Assert.Contains("staging", output);
+        }
+        finally
+        {
+            if (File.Exists(tempSettings)) File.Delete(tempSettings);
+            if (File.Exists(tempMap1)) File.Delete(tempMap1);
+            if (File.Exists(tempMap2)) File.Delete(tempMap2);
+        }
+    }
+
+    [Fact]
+    public void Pipeline_ListValues_MissingValueFile_ReturnsError()
+    {
+        string[] args = ["-values", "missing_value_file_98765.json", "-list-values"];
+        using var stdout = new StringWriter();
+        using var stderr = new StringWriter();
+
+        int exitCode = Program.Run(args, stdout, stderr);
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains("Value map file not found", stderr.ToString());
+    }
+
+    #endregion
+
+    #region 7. Macros CLI & Settings Integration Tests
+
+    [Fact]
+    public void OptionParser_MacrosAndMacroFlags_PopulatesParseResult()
+    {
+        string[] args = ["-macros", "common.json", "-macros", "env.json", "-macro", "ARCH=x64", "-macro", "CONFIG=Release", "--", "echo", "ARCH"];
+        var result = CLIOptionParser.Parse(args);
+
+        Assert.False(result.HasErrors);
+        Assert.Equal(["common.json", "env.json"], result.MacroFiles);
+        Assert.Equal("x64", result.InlineMacros["ARCH"]);
+        Assert.Equal("Release", result.InlineMacros["CONFIG"]);
+        Assert.Equal(["echo", "ARCH"], result.Payload);
+    }
+
+    [Theory]
+    [InlineData("invalid_no_equals")]
+    [InlineData("=missing_key")]
+    public void OptionParser_MacroFlag_InvalidFormat_ReturnsError(string macroDef)
+    {
+        string[] args = ["-macro", macroDef, "--", "echo", "test"];
+        var result = CLIOptionParser.Parse(args);
+
+        Assert.True(result.HasErrors);
+        Assert.Contains("Invalid macro definition", result.ErrorMessage);
+    }
+
+    [Theory]
+    [InlineData("-list-macros")]
+    [InlineData("--list-macros")]
+    [InlineData("-list-macro")]
+    [InlineData("--list-macro")]
+    public void OptionParser_ListMacrosFlag_SetsListMacrosRequestedWithoutPayloadBoundary(string flag)
+    {
+        string[] args = [flag];
+        var result = CLIOptionParser.Parse(args);
+
+        Assert.False(result.HasErrors);
+        Assert.True(result.ListMacrosRequested);
+        Assert.Empty(result.Payload);
+    }
+
+    [Fact]
+    public void Pipeline_Help_IncludesMacroOptions()
+    {
+        string[] args = ["--help"];
+        using var stdout = new StringWriter();
+        using var stderr = new StringWriter();
+
+        int exitCode = Program.Run(args, stdout, stderr);
+
+        Assert.Equal(0, exitCode);
+        string helpText = stderr.ToString();
+
+        Assert.Contains("-macros <path>", helpText);
+        Assert.Contains("-macro <key>=<value>", helpText);
+        Assert.Contains("-list-macros", helpText);
+    }
+
+    [Fact]
+    public void Pipeline_ListMacros_DefaultEmpty_PrintsEmptyTable()
+    {
+        string[] args = ["-list-macros"];
+        using var stdout = new StringWriter();
+        using var stderr = new StringWriter();
+
+        int exitCode = Program.Run(args, stdout, stderr);
+
+        Assert.Equal(0, exitCode);
+        Assert.Empty(stderr.ToString());
+
+        string output = stdout.ToString();
+        Assert.Contains("Active Macros (0 keys):", output);
+    }
+
+    [Fact]
+    public void Pipeline_ListMacros_WithLoadedMacroMapAndInlineMacros_PrintsActiveMacrosTable()
+    {
+        string tempMap = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(tempMap, """
+            {
+                "OUT_DIR": "/var/builds",
+                "TARGET": "net10.0"
+            }
+            """);
+
+            string[] args = ["-macros", tempMap, "-macro", "CONFIG=Release", "-list-macros"];
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
+
+            int exitCode = Program.Run(args, stdout, stderr);
+
+            Assert.Equal(0, exitCode);
+            Assert.Empty(stderr.ToString());
+
+            string output = stdout.ToString();
+            Assert.Contains("Active Macros (3 keys):", output);
+            Assert.Contains("CONFIG", output);
+            Assert.Contains("Release", output);
+            Assert.Contains("OUT_DIR", output);
+            Assert.Contains("/var/builds", output);
+            Assert.Contains("TARGET", output);
+            Assert.Contains("net10.0", output);
+        }
+        finally
+        {
+            if (File.Exists(tempMap)) File.Delete(tempMap);
+        }
+    }
+
+    [Fact]
+    public void Pipeline_MacrosFile_LoadsAndSubstitutes()
+    {
+        string tempMap = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(tempMap, """
+            {
+                "APP": "TruthInTheFlip",
+                "ENV": "production"
+            }
+            """);
+
+            string[] args = ["-macros", tempMap, "--", "deploy", "APP", "--env", "ENV"];
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
+
+            int exitCode = Program.Run(args, stdout, stderr);
+
+            Assert.Equal(0, exitCode);
+            Assert.Equal("deploy TruthInTheFlip --env production\n", stdout.ToString().Replace("\r\n", "\n"));
+        }
+        finally
+        {
+            if (File.Exists(tempMap)) File.Delete(tempMap);
+        }
+    }
+
+    [Fact]
+    public void Pipeline_MultipleMacrosFiles_LaterFileOverridesEarlier()
+    {
+        string tempMap1 = Path.GetTempFileName();
+        string tempMap2 = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(tempMap1, """
+            {
+                "CONFIG": "Debug",
+                "ARCH": "x86"
+            }
+            """);
+
+            File.WriteAllText(tempMap2, """
+            {
+                "CONFIG": "Release"
+            }
+            """);
+
+            string[] args = ["-macros", tempMap1, "-macros", tempMap2, "--", "build", "CONFIG", "ARCH"];
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
+
+            int exitCode = Program.Run(args, stdout, stderr);
+
+            Assert.Equal(0, exitCode);
+            Assert.Equal("build Release x86\n", stdout.ToString().Replace("\r\n", "\n"));
+        }
+        finally
+        {
+            if (File.Exists(tempMap1)) File.Delete(tempMap1);
+            if (File.Exists(tempMap2)) File.Delete(tempMap2);
+        }
+    }
+
+    [Fact]
+    public void Pipeline_InlineMacro_OverridesMacrosFile()
+    {
+        string tempMap = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(tempMap, """
+            {
+                "REGION": "us-east-1",
+                "ZONE": "a"
+            }
+            """);
+
+            string[] args = ["-macros", tempMap, "-macro", "REGION=eu-west-1", "--", "cluster", "REGION", "ZONE"];
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
+
+            int exitCode = Program.Run(args, stdout, stderr);
+
+            Assert.Equal(0, exitCode);
+            Assert.Equal("cluster eu-west-1 a\n", stdout.ToString().Replace("\r\n", "\n"));
+        }
+        finally
+        {
+            if (File.Exists(tempMap)) File.Delete(tempMap);
+        }
+    }
+
+    [Fact]
+    public void Pipeline_Settings_MacrosFilesAndMacroStore_LoadsAndSubstitutes()
+    {
+        string tempSettings = Path.GetTempFileName();
+        string tempMap = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(tempMap, """
+            {
+                "BASE_PATH": "/opt/app"
+            }
+            """);
+
+            File.WriteAllText(tempSettings, $$"""
+            {
+                "macros": ["{{tempMap.Replace("\\", "\\\\")}}"],
+                "macroStore": {
+                    "PORT": "8080"
+                }
+            }
+            """);
+
+            string[] args = ["-settings", tempSettings, "--", "start", "BASE_PATH", "PORT"];
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
+
+            int exitCode = Program.Run(args, stdout, stderr);
+
+            Assert.Equal(0, exitCode);
+            Assert.Equal("start /opt/app 8080\n", stdout.ToString().Replace("\r\n", "\n"));
+        }
+        finally
+        {
+            if (File.Exists(tempSettings)) File.Delete(tempSettings);
+            if (File.Exists(tempMap)) File.Delete(tempMap);
+        }
+    }
+
+    [Fact]
+    public void Pipeline_Settings_Macros_RelativePathResolution()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), "cli_macro_rel_test_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            string mapPath = Path.Combine(tempDir, "shared_macros.json");
+            File.WriteAllText(mapPath, """
+            {
+                "HOST": "127.0.0.1"
+            }
+            """);
+
+            string settingsPath = Path.Combine(tempDir, "settings.json");
+            File.WriteAllText(settingsPath, """
+            {
+                "macros": ["shared_macros.json"]
+            }
+            """);
+
+            string[] args = ["-settings", settingsPath, "--", "connect", "HOST"];
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
+
+            int exitCode = Program.Run(args, stdout, stderr);
+
+            Assert.Equal(0, exitCode);
+            Assert.Equal("connect 127.0.0.1\n", stdout.ToString().Replace("\r\n", "\n"));
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Fact]
+    public void Pipeline_MacroPrecedence_UserSettings_ExplicitSettings_CliMacros_CliInlineMacro()
+    {
+        string userSettingsPath = Path.GetTempFileName();
+        string userMap = Path.GetTempFileName();
+        string explicitSettingsPath = Path.GetTempFileName();
+        string explicitMap = Path.GetTempFileName();
+        string cliMap = Path.GetTempFileName();
+
+        try
+        {
+            File.WriteAllText(userMap, """
+            {
+                "V1": "user_map",
+                "V2": "user_map",
+                "V3": "user_map",
+                "V4": "user_map"
+            }
+            """);
+            File.WriteAllText(userSettingsPath, $$"""
+            {
+                "macros": ["{{userMap.Replace("\\", "\\\\")}}"]
+            }
+            """);
+
+            File.WriteAllText(explicitMap, """
+            {
+                "V2": "explicit_map",
+                "V3": "explicit_map",
+                "V4": "explicit_map"
+            }
+            """);
+            File.WriteAllText(explicitSettingsPath, $$"""
+            {
+                "macros": ["{{explicitMap.Replace("\\", "\\\\")}}"]
+            }
+            """);
+
+            File.WriteAllText(cliMap, """
+            {
+                "V3": "cli_map",
+                "V4": "cli_map"
+            }
+            """);
+
+            string[] args =
+            [
+                "-settings", explicitSettingsPath,
+                "-macros", cliMap,
+                "-macro", "V4=cli_inline",
+                "--",
+                "V1", "V2", "V3", "V4"
+            ];
+
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
+
+            int exitCode = Program.Run(args, stdout, stderr, defaultSettingsOverridePath: userSettingsPath);
+
+            Assert.Equal(0, exitCode);
+            Assert.Equal("user_map explicit_map cli_map cli_inline\n", stdout.ToString().Replace("\r\n", "\n"));
+        }
+        finally
+        {
+            if (File.Exists(userSettingsPath)) File.Delete(userSettingsPath);
+            if (File.Exists(userMap)) File.Delete(userMap);
+            if (File.Exists(explicitSettingsPath)) File.Delete(explicitSettingsPath);
+            if (File.Exists(explicitMap)) File.Delete(explicitMap);
+            if (File.Exists(cliMap)) File.Delete(cliMap);
+        }
+    }
+
+    [Fact]
+    public void Pipeline_Macros_MissingFile_ReturnsError()
+    {
+        string[] args = ["-macros", "non_existent_macro_map_12345.json", "--", "echo", "test"];
+        using var stdout = new StringWriter();
+        using var stderr = new StringWriter();
+
+        int exitCode = Program.Run(args, stdout, stderr);
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains("Macro map file not found", stderr.ToString());
+    }
+
+    [Fact]
+    public void Pipeline_Macros_InvalidJson_ReturnsError()
+    {
+        string tempMap = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(tempMap, "{ not valid json }");
+
+            string[] args = ["-macros", tempMap, "--", "echo", "test"];
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
+
+            int exitCode = Program.Run(args, stdout, stderr);
+
+            Assert.Equal(1, exitCode);
+            Assert.Contains("Failed to parse macro map JSON", stderr.ToString());
+        }
+        finally
+        {
+            if (File.Exists(tempMap)) File.Delete(tempMap);
+        }
+    }
+
+    [Fact]
+    public void Pipeline_Macros_NonStringValue_ReturnsError()
+    {
+        string tempMap = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(tempMap, """
+            {
+                "KEY": 123
+            }
+            """);
+
+            string[] args = ["-macros", tempMap, "--", "echo", "test"];
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
+
+            int exitCode = Program.Run(args, stdout, stderr);
+
+            Assert.Equal(1, exitCode);
+            Assert.Contains("must have a string value", stderr.ToString());
+        }
+        finally
+        {
+            if (File.Exists(tempMap)) File.Delete(tempMap);
+        }
+    }
+
+    [Fact]
+    public void Pipeline_Macros_ComposedWithExpandAndJoin()
+    {
+        string tempMap = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(tempMap, """
+            {
+                "EXT": ".png",
+                "PREFIX": "img"
+            }
+            """);
+
+            string[] args =
+            [
+                "-macros", tempMap,
+                "-macro", "SEP=_",
+                "--",
+                ".expand.", "NAME", "banner", "icon", ":",
+                    ".join.", "PREFIX", "SEP", "NAME", "EXT", ".join_end.",
+                ".expand_end."
+            ];
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
+
+            int exitCode = Program.Run(args, stdout, stderr);
+
+            Assert.Equal(0, exitCode);
+            Assert.Equal("img_banner.png img_icon.png\n", stdout.ToString().Replace("\r\n", "\n"));
+        }
+        finally
+        {
+            if (File.Exists(tempMap)) File.Delete(tempMap);
+        }
+    }
+
+    #endregion
 }

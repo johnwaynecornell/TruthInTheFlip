@@ -12,14 +12,19 @@
    - [Cartesian Product (Nested Expansion)](#cartesian-product-nested-expansion)
    - [Sequential Expansion Blocks](#sequential-expansion-blocks)
    - [Token Concatenation (`.join.` ... `.join_end.`)](#token-concatenation-join--join_end)
+   - [Explicit Known Values (`.get.` and `.split_get.`)](#explicit-known-values-get-and-split_get)
+   - [Scope vs. MacroStore vs. ValueStore Distinction](#scope-vs-macrostore-vs-valuestore-distinction)
    - [Variable Scoping & Shadowing](#variable-scoping--shadowing)
+   - [Baseline Macros (`MacroStore`)](#baseline-macros-macrostore)
    - [Full-Token (Fragment) vs. Inner-Token Substitution](#full-token-fragment-vs-inner-token-substitution)
    - [Empty Alternatives](#empty-alternatives)
 3. [Extensibility & Subclassing](#extensibility--subclassing)
-   - [Virtual Resolution (`GetByKey`)](#virtual-resolution-getbykey)
+   - [Virtual Resolution (`GetByKey` vs `GetKnownValue`)](#virtual-resolution-getbykey-vs-getknownvalue)
+   - [MacroStore Configuration](#macrostore-configuration)
+   - [ValueStore Configuration & Seeding](#valuestore-configuration--seeding)
    - [Custom Token Splitting (`Split`)](#custom-token-splitting-split)
    - [Custom Identifier Characters (`IsIdentifierStart` & `IsIdentifierPart`)](#custom-identifier-characters-isidentifierstart--isidentifierpart)
-   - [Configurable Syntax Tokens (`ExpandStartToken`, `ExpandEndToken`, `DelimiterToken`, `JoinStartToken`, `JoinEndToken`)](#configurable-syntax-tokens-expandstarttoken-expandendtoken-delimitertoken)
+   - [Configurable Syntax Tokens (`ExpandStartToken`, `ExpandEndToken`, `DelimiterToken`, `JoinStartToken`, `JoinEndToken`, `GetToken`, `SplitGetToken`)](#configurable-syntax-tokens)
    - [Token Splitting Control (`SplitAfterGetByKey`)](#token-splitting-control-splitaftergetbykey)
    - [Partial Matching Control (`MatchPartials`)](#partial-matching-control-matchpartials)
    - [Custom Expansion Pipeline (`Process`)](#custom-expansion-pipeline-process)
@@ -28,14 +33,21 @@
    - [CLIExpander.Process (Static)](#cliexpanderprocess-static)
    - [CLIExpander.Process (Instance)](#cliexpanderprocess-instance)
    - [CLIExpander.GetByKey (Instance)](#cliexpandergetbykey-instance)
+   - [CLIExpander.GetKnownValue (Instance)](#cliexpandergetknownvalue-instance)
+   - [CLIExpander.InitializeValueStore (Instance)](#cliexpanderinitializevaluestore-instance)
    - [CLIExpander.Split (Instance)](#cliexpandersplit-instance)
    - [CLIExpander.IsIdentifierStart (Instance)](#cliexpanderisidentifierstart-instance)
    - [CLIExpander.IsIdentifierPart (Instance)](#cliexpanderisidentifierpart-instance)
+   - [StartedAt (Property)](#startedat-property)
+   - [MacroStore (Property)](#macrostore-property)
+   - [ValueStore (Property)](#valuestore-property)
    - [ExpandStartToken (Field)](#expandstarttoken-field)
    - [ExpandEndToken (Field)](#expandendtoken-field)
    - [DelimiterToken (Field)](#delimitertoken-field)
    - [JoinStartToken (Field)](#joinstarttoken-field)
    - [JoinEndToken (Field)](#joinendtoken-field)
+   - [GetToken (Field)](#gettoken-field)
+   - [SplitGetToken (Field)](#splitgettoken-field)
    - [SplitAfterGetByKey (Field)](#splitaftergetbykey-field)
    - [MatchPartials (Field)](#matchpartials-field)
    - [CLReturn Struct](#clreturn-struct)
@@ -43,6 +55,7 @@
 5. [Error Handling & Diagnostic Messages](#error-handling--diagnostic-messages)
 6. [Usage Examples](#usage-examples)
    - [C# Quickstart](#c-quickstart)
+   - [Known Values & Join Composition Example](#known-values--join-composition-example)
    - [Custom Subclass Example (External Fallbacks)](#custom-subclass-example-external-fallbacks)
    - [Advanced CLI Pipeline Example](#advanced-cli-pipeline-example)
 
@@ -210,11 +223,100 @@ Nested `.join.` blocks evaluate recursively from inner to outer:
 
 ---
 
+### Explicit Known Values (`.get.` and `.split_get.`)
+
+`CLIExpander` provides explicit known-value resolution via two dedicated tokens:
+- **`.get. <key>`**: Retrieves the known value mapped to `<key>` and emits it as **one exact token**, without splitting even if the value contains whitespace.
+- **`.split_get. <key>`**: Retrieves the known value mapped to `<key>` and splits it by whitespace into individual tokens using the virtual `Split()` method.
+
+```text
+.get. <key>
+.split_get. <key>
+```
+
+#### Example
+
+```text
+echo .get. newline .get. space hello
+```
+
+**Output Tokens:**
+```text
+["echo", "\n", " ", "hello"]
+```
+
+#### Built-In Known Values
+
+Every `CLIExpander` instance captures an invariant creation timestamp `StartedAt` and seeds the following default known values:
+
+| Key | Description | Value |
+|---|---|---|
+| `newline` | Platform-specific newline string | `Environment.NewLine` |
+| `space` | Single space string | `" "` |
+| `tab` | Single horizontal tab character | `"\t"` |
+| `empty` | Empty string | `""` |
+| `now` | Local instance timestamp in ISO-8601 round-trip format | `StartedAt.ToString("O")` |
+| `utc_now` | UTC instance timestamp in ISO-8601 round-trip format | `StartedAt.ToUniversalTime().ToString("O")` |
+| `timestamp` | Local timestamp in identifier/file format (`_yyyyMMdd_HHmmss_ff`) | `StartedAt.ToString("_yyyyMMdd_HHmmss_ff")` |
+| `utimestamp` | UTC timestamp in identifier/file format (`_yyyyMMdd_HHmmss_ff`) | `StartedAt.ToUniversalTime().ToString("_yyyyMMdd_HHmmss_ff")` |
+| `dir_sep` | Platform native directory separator character | `Path.DirectorySeparatorChar.ToString()` |
+| `path_sep` | Platform native path separator character | `Path.PathSeparator.ToString()` |
+
+#### Instance Timestamp Stability
+
+The `StartedAt` timestamp is captured **once** when the `CLIExpander` instance is created. All time-based lookups (`now`, `utc_now`, `timestamp`, `utimestamp`) in that expander instance resolve to the exact same captured instant:
+
+```text
+.expand. x a b c :
+    .get. now
+.expand_end.
+```
+All branches receive identical timestamp strings.
+
+#### Composition with `.join.`
+
+`.get.` integrates directly within `.join. ... .join_end.` concatenation blocks:
+
+```text
+.join. /var/log/app- .get. timestamp .log .join_end.
+```
+
+**Output Token:**
+```text
+["/var/log/app-_20261003_090929_00.log"]
+```
+
+---
+
+### Scope vs. MacroStore vs. ValueStore Distinction
+
+`CLIExpander` enforces a clean architectural separation across three tiers of binding and resolution:
+
+| Characteristic | Transient Scope (`Scope`) | Baseline Macros (`MacroStore`) | Known Values Store (`ValueStore`) |
+|---|---|---|---|
+| **Syntax** | `<name>` or embedded identifier | `<name>` or embedded identifier | `.get. <key>` / `.split_get. <key>` |
+| **Origin** | Created dynamically by `.expand.` blocks | Populated programmatically or via configuration | Stored in `ValueStore` or resolved dynamically |
+| **Resolution Method** | `GetByKey(string key)` | `GetByKey(string key)` (fallback) | `GetKnownValue(string key)` |
+| **Emission Mode** | Subject to `SplitAfterGetByKey` and `MatchPartials` | Subject to `SplitAfterGetByKey` and `MatchPartials` | `.get.` is strictly one token; `.split_get.` splits whitespace |
+| **Precedence** | Highest priority (shadows `MacroStore`) | Active across entire template when unbound in `Scope` | Independent of `.expand.` variable bindings |
+
+Bare words such as `now`, `newline`, or `project` appearing in the argument list remain untouched literal words unless they are bound in an `.expand.` block or defined in `MacroStore`. Conversely, `.get. now` explicitly looks up the known value in `ValueStore`.
+
+Even if a scope binding shares the name of a known value:
+```text
+.expand. now yesterday tomorrow :
+    now .get. now
+.expand_end.
+```
+`now` resolves to `yesterday` / `tomorrow` via lexical `GetByKey()`, while `.get. now` resolves to the captured `StartedAt` timestamp via `GetKnownValue()`.
+
+---
+
 ### Variable Scoping & Shadowing
 
 - Variables are resolved in a last-in, first-out (LIFO) scoped stack via `GetByKey()`.
-- If an inner `.expand.` block declares a variable with the same name as an outer block, the inner variable shadows the outer variable during inner block evaluation.
-- When the inner block finishes, the scope watermarks unwind and the outer variable binding is restored.
+- If an inner `.expand.` block declares a variable with the same name as an outer block (or a `MacroStore` baseline entry), the inner variable shadows the outer/baseline binding during inner block evaluation.
+- When the inner block finishes, the scope watermarks unwind and the outer/baseline binding is restored.
 
 #### Example
 
@@ -233,6 +335,22 @@ inner1 inner2 inner1 inner2
 
 ---
 
+### Baseline Macros (`MacroStore`)
+
+`CLIExpander` provides a `MacroStore` dictionary (`IDictionary<string, string>`) for baseline macro bindings that apply implicitly throughout the template without requiring outer `.expand.` boilerplate:
+
+```csharp
+var expander = new CLIExpander();
+expander.MacroStore["CONFIG"] = "Release";
+expander.MacroStore["ARCH"] = "x64";
+```
+
+When evaluating a token `CONFIG`, `GetByKey("CONFIG")` first checks the active `Scope` stack. If `CONFIG` is not currently bound in an active `.expand.` block, it retrieves `"Release"` from `MacroStore`.
+
+Full-token splitting (`SplitAfterGetByKey`) and embedded identifier substitutions (`MatchPartials`) apply to `MacroStore` values identically to `Scope` variables.
+
+---
+
 ### Full-Token (Fragment) vs. Inner-Token Substitution
 
 `CLIExpander` supports two modes of variable substitution depending on how the variable appears in the token:
@@ -240,9 +358,9 @@ inner1 inner2 inner1 inner2
 1. **Full-Token Match (Fragment Splitting)**:
    - When a token exactly matches a defined variable name (e.g. `_flags`), its bound value is looked up.
    - If the value contains whitespace (e.g. `"--all --verbose"`), it is automatically split into discrete argument tokens: `["--all", "--verbose"]`.
-2. **Inner-Token Match (Embedded Identifiers)**:
+2. **Inner-Ton Match (Embedded Identifiers)**:
    - When a token contains variable identifiers surrounded by other characters (e.g. `_item._metric`, `prefix._var.suffix`, `file._var`), `CLIExpander` parses each identifier (`[A-Za-z_][A-Za-z0-9_]*`) and substitutes its value in-place within the token.
-   - **Whitespace Safety Rule**: If a variable value used in an inner substitution contains whitespace, `CLIExpander` returns an error:
+     ke  - **Whitespace Safety Rule**: If a variable value used in an inner substitution contains whitespace, `CLIExpander` returns an error:
      ```text
      CLIExpander: Variable '<id>' contains whitespace
      ```
@@ -258,30 +376,61 @@ If an `.expand.` block contains zero alternatives (e.g. `.expand. _opt : .expand
 
 ## Extensibility & Subclassing
 
-`CLIExpander` is designed to be easily extended via subclassing, allowing applications to customize variable lookup, configure partial matching behavior, or intercept token evaluation.
+`CLIExpander` is designed to be easily extended via subclassing and configuration, allowing applications to customize variable lookup, configure known values, control partial matching behavior, or intercept token evaluation.
 
-### Virtual Resolution (`GetByKey`)
+### Virtual Resolution (`GetByKey` vs `GetKnownValue`)
 
-The `GetByKey(string key)` method is `virtual`. Subclasses can override it to supply dynamic or external variables, such as environment variables, configuration settings, or fallback dictionaries:
+`CLIExpander` provides two authoritative virtual lookup methods:
+
+1. **`GetByKey(string key)` (Lexical Macro Lookup)**:
+   - Consulted during `.expand.` macro and embedded identifier substitution.
+   - Default implementation queries the `Scope` stack in LIFO order.
+   - Subclasses can override it to supply dynamic fallback macro variables (e.g. environment variables).
+2. **`GetKnownValue(string key)` (Explicit Known-Value Lookup)**:
+   - Consulted exclusively during `.get. <key>` and `.split_get. <key>` evaluations.
+   - Default implementation queries the `ValueStore` dictionary.
+   - Subclasses can override it to provide dynamic, computed, or external known-value resolution with final behavioral authority.
 
 ```csharp
-public class EnvironmentExpander : CLIExpander
+public class CustomExpander : CLIExpander
 {
-    public override string? GetByKey(string key)
+    public override string? GetKnownValue(string key)
     {
-        // Check scoped block variables first
-        var scoped = base.GetByKey(key);
-        if (scoped != null) return scoped;
+        if (key == "machine")
+            return Environment.MachineName;
 
-        // Fallback to environment variables
-        return Environment.GetEnvironmentVariable(key);
+        return base.GetKnownValue(key);
     }
 }
 ```
 
+### MacroStore Configuration
+
+The `MacroStore` property (`IDictionary<string, string>`) holds baseline macro variable bindings that apply across the entire template whenever a variable is not bound in an active `.expand.` block.
+
+Callers can configure baseline macros directly without subclassing:
+
+```csharp
+var expander = new CLIExpander();
+expander.MacroStore["CONFIG"] = "Release";
+expander.MacroStore["ARCH"] = "x64";
+```
+
+### ValueStore Configuration & Seeding
+
+The `ValueStore` property (`IDictionary<string, string>`) holds explicit known values. It is seeded in `InitializeValueStore()` with default built-in values (`newline`, `space`, `tab`, `empty`, `now`, `utc_now`, `timestamp`, `utimestamp`, `dir_sep`, `path_sep`).
+
+Callers can configure or populate `ValueStore` directly without subclassing:
+
+```csharp
+var expander = new CLIExpander();
+expander.ValueStore["project"] = "TruthInTheFlip";
+expander.ValueStore["version"] = "1.0.0";
+```
+
 ### Custom Token Splitting (`Split`)
 
-The `Split(string text)` method is `virtual` and returns an `IEnumerable<string>`. Subclasses can override it to customize how multi-value variable substitutions are partitioned into distinct tokens (for example, splitting by commas, custom delimiters, or implementing quote-preserving tokenization):
+The `Split(string text)` method is `virtual` and returns an `IEnumerable<string>`. Subclasses can override it to customize how multi-value variable substitutions and `.split_get.` tokens are partitioned into distinct tokens (for example, splitting by commas, custom delimiters, or implementing quote-preserving tokenization):
 
 ```csharp
 public class CommaDelimitedExpander : CLIExpander
@@ -305,16 +454,20 @@ public class CustomIdentifierExpander : CLIExpander
 }
 ```
 
-### Configurable Syntax Tokens (`ExpandStartToken`, `ExpandEndToken`, `DelimiterToken`)
+### Configurable Syntax Tokens
 
-The block syntax delimiters are public assignable fields on `CLIExpander`, allowing callers and derived classes to reconfigure or adopt alternative template syntax conventions without modifying the parser logic:
+All block and operation syntax delimiters are public assignable fields on `CLIExpander`, allowing callers and derived classes to reconfigure template syntax conventions without modifying parser logic:
 
 ```csharp
 var expander = new CLIExpander
 {
     ExpandStartToken = "@expand",
     ExpandEndToken = "@end",
-    DelimiterToken = "in"
+    DelimiterToken = "in",
+    JoinStartToken = "@join",
+    JoinEndToken = "@endjoin",
+    GetToken = "@get",
+    SplitGetToken = "@split_get"
 };
 ```
 
@@ -380,6 +533,28 @@ public virtual string? GetByKey(string key)
 
 ---
 
+### `CLIExpander.GetKnownValue (Instance)`
+
+```csharp
+public virtual string? GetKnownValue(string key)
+```
+
+- Authoritative resolution seam for explicit known values requested via `.get. <key>` or `.split_get. <key>`.
+- Default implementation checks the `ValueStore` dictionary.
+- Subclasses can override this method to provide custom, external, or dynamic known-value resolution (e.g. system properties, machine names, runtime lookups).
+
+---
+
+### `CLIExpander.InitializeValueStore (Instance)`
+
+```csharp
+protected virtual void InitializeValueStore()
+```
+
+- Seeds the default known values into `ValueStore` upon instance instantiation. Subclasses can override this method to customize or seed initial known values.
+
+---
+
 ### `CLIExpander.Split (Instance)`
 
 ```csharp
@@ -410,6 +585,36 @@ public virtual bool IsIdentifierPart(char c)
 
 - Determines whether the character `c` is valid as a continuation character in an identifier for inner-token substitution.
 - Default implementation accepts ASCII letters (`a-z`, `A-Z`), digits (`0-9`), and underscore (`_`).
+
+---
+
+### `StartedAt (Property)`
+
+```csharp
+public DateTimeOffset StartedAt { get; }
+```
+
+- Captures the exact creation timestamp of the `CLIExpander` instance. All time-based built-ins (`now`, `utc_now`, `timestamp`, `utimestamp`) derive immutably from this instant.
+
+---
+
+### `MacroStore (Property)`
+
+```csharp
+public IDictionary<string, string> MacroStore { get; set; }
+```
+
+- Backing dictionary of baseline lexical macros consulted by `GetByKey()` when a variable is not found in the active lexical `Scope`. Case-sensitive (`StringComparer.Ordinal`).
+
+---
+
+### `ValueStore (Property)`
+
+```csharp
+public IDictionary<string, string> ValueStore { get; set; }
+```
+
+- Backing dictionary of known values consulted by the default `GetKnownValue()` implementation. Case-sensitive (`StringComparer.Ordinal`).
 
 ---
 
@@ -460,6 +665,26 @@ public string JoinEndToken = ".join_end.";
 ```
 
 - Token identifying the termination of a token concatenation block. Defaults to `".join_end."`.
+
+---
+
+### `GetToken (Field)`
+
+```csharp
+public string GetToken = ".get.";
+```
+
+- Token identifying an explicit known-value retrieval operation emitting a single exact token. Defaults to `".get."`.
+
+---
+
+### `SplitGetToken (Field)`
+
+```csharp
+public string SplitGetToken = ".split_get.";
+```
+
+- Token identifying an explicit known-value retrieval operation splitting the value on whitespace into multiple tokens. Defaults to `".split_get."`.
 
 ---
 
@@ -518,6 +743,9 @@ public struct CLReturn
 | `CLIExpander: Unexpected .expand_end.` | Encountered an un-matched `.expand_end.` token at the root level or inside a join block. |
 | `CLIExpander: Expected .join_end.` | A `.join.` block reached end of input without being closed by `.join_end.`. |
 | `CLIExpander: Unexpected .join_end.` | Encountered an un-matched `.join_end.` token at the root level. |
+| `CLIExpander: Expected key after .get.` | Encountered `.get.` at the end of input with no following key token. |
+| `CLIExpander: Expected key after .split_get.` | Encountered `.split_get.` at the end of input with no following key token. |
+| `CLIExpander: Unknown value '<key>'` | Explicit known-value lookup via `.get.` or `.split_get.` failed to resolve the specified key. |
 | `CLIExpander: Incomplete parsing of input at '<token>'` | Unparsed trailing tokens remaining after top-level block processing. |
 | `CLIExpander: Variable '<name>' contains whitespace` | Inner-token substitution variable value contained whitespace characters. |
 
@@ -549,6 +777,32 @@ if (status.Status != 0)
 }
 
 Console.WriteLine(string.Join(" ", output));
+```
+
+### Known Values & Join Composition Example
+
+```csharp
+using System;
+using System.Collections.Generic;
+using CLIExpanderNs;
+
+var expander = new CLIExpander();
+expander.ValueStore["output_dir"] = "/tmp/reports";
+expander.ValueStore["dataset"] = "quant_data";
+
+var input = new List<string>
+{
+    ".expand.", "fmt", "csv", "json", ":",
+        ".join.", ".get.", "output_dir", "/", ".get.", "dataset", "-", ".get.", "timestamp", ".", "fmt", ".join_end.",
+        ".get.", "newline",
+    ".expand_end."
+};
+
+var status = CLIExpander.Process(input, out var output, () => expander);
+if (status.Status == 0)
+{
+    Console.Write(string.Concat(output));
+}
 ```
 
 ### Custom Subclass Example (External Fallbacks)
