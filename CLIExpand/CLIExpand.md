@@ -359,15 +359,31 @@ deploy --env dev --region us-east deploy --env dev --region us-west deploy --env
 
 ### PowerShell Script Generation
 
-Target PowerShell syntax regardless of the operating system hosting `CLIExpand`:
+Generating multi-command PowerShell scripts using `.get. newline` in default/raw mode:
 
 ```bash
-CLIExpand -mode ps -- .expand. _file app1 app2 : Compress-Archive -Path _file -DestinationPath _file.zip .expand_end.
+CLIExpand -- \
+  .expand. _file app1 app2 : \
+    Compress-Archive -Path _file -DestinationPath _file.zip \
+    .get. newline \
+  .expand_end.
 ```
 
 **Output:**
-```text
-Compress-Archive -Path app1 -DestinationPath app1.zip Compress-Archive -Path app2 -DestinationPath app2.zip
+```powershell
+Compress-Archive -Path app1 -DestinationPath app1.zip
+Compress-Archive -Path app2 -DestinationPath app2.zip
+```
+
+When generating arguments for a single command call, `-mode ps` safely quotes parameters:
+
+```bash
+CLIExpand -mode ps -- deploy -Target "Production Server" -Config app.json
+```
+
+**Output:**
+```powershell
+deploy -Target 'Production Server' -Config app.json
 ```
 
 ### Custom Syntax Tokens
@@ -383,46 +399,62 @@ create-tier standard create-tier premium
 
 ### Shell Evaluation Pipelines
 
-Because `CLIExpand` writes exclusively to `stdout` with no banners, it integrates directly with shell evaluation constructs:
+Because `CLIExpand` writes exclusively to `stdout` with no banners, it integrates directly with shell evaluation constructs (`eval`, `Invoke-Expression`). When generating multiple commands for dynamic execution, separate iterations with `.get. newline` or command operators (`;`, `&&`) under default/raw mode:
 
 #### Bash / Zsh
 ```bash
-eval "$(CLIExpand -mode bash -- .expand. _dir src bin docs : ls -la _dir .expand_end.)"
+# Execute each expanded command on a new line
+eval "$(CLIExpand -- .expand. _dir src bin docs : ls -la _dir .get. newline .expand_end.)"
+```
+
+Or using semicolon statement delimiters:
+```bash
+eval "$(CLIExpand -mode raw -- .expand. _dir src bin docs : ls -la _dir ';' .expand_end.)"
 ```
 
 #### PowerShell
 ```powershell
-Invoke-Expression (CLIExpand -mode ps -- .expand. _service auth payment : Start-Service _service .expand_end.)
+# Execute each expanded command on a new line
+Invoke-Expression (CLIExpand -- .expand. _service auth payment : Start-Service _service .get. newline .expand_end.)
+```
+
+Or using semicolon statement delimiters:
+```powershell
+Invoke-Expression (CLIExpand -mode raw -- .expand. _service auth payment : Start-Service _service ';' .expand_end.)
 ```
 
 ### Multi-Command Script Composition
 
-When generating sequences of commands separated by shell operators (`;`, `&&`, `&`), use `-mode raw` so operators are not quote-wrapped:
+When generating sequences of commands separated by shell operators (`;`, `&&`, `&`) or line breaks, use `-mode raw` (or default mode) so operators and newlines retain their executable syntax rather than being quoted as data strings:
 
 #### Bash / POSIX Multi-Command
 ```bash
-CLIExpand -mode raw -- .expand. _dir src bin tests : mkdir -p _dir ';' touch _dir/.gitkeep ';' .expand_end.
+# Using newlines and semicolons
+CLIExpand -- .expand. _dir src bin tests : mkdir -p _dir ';' touch _dir/.gitkeep .get. newline .expand_end.
 ```
 **Output:**
 ```text
-mkdir -p src ; touch src/.gitkeep ; mkdir -p bin ; touch bin/.gitkeep ; mkdir -p tests ; touch tests/.gitkeep ;
+mkdir -p src ; touch src/.gitkeep
+mkdir -p bin ; touch bin/.gitkeep
+mkdir -p tests ; touch tests/.gitkeep
 ```
 **Execution:**
 ```bash
-eval "$(CLIExpand -mode raw -- .expand. _dir src bin tests : mkdir -p _dir ';' touch _dir/.gitkeep ';' .expand_end.)"
+eval "$(CLIExpand -- .expand. _dir src bin tests : mkdir -p _dir ';' touch _dir/.gitkeep .get. newline .expand_end.)"
 ```
 
 #### PowerShell Multi-Command
 ```powershell
-CLIExpand -mode raw -- .expand. _svc auth billing : Write-Host "Restarting _svc" ';' Restart-Service _svc ';' .expand_end.
+CLIExpand -- .expand. _svc auth billing : Write-Host "Restarting _svc" ';' Restart-Service _svc .get. newline .expand_end.
 ```
 **Output:**
 ```text
-Write-Host "Restarting auth" ; Restart-Service auth ; Write-Host "Restarting billing" ; Restart-Service billing ;
+Write-Host "Restarting auth" ; Restart-Service auth
+Write-Host "Restarting billing" ; Restart-Service billing
 ```
 **Execution:**
 ```powershell
-Invoke-Expression (CLIExpand -mode raw -- .expand. _svc auth billing : Write-Host "Restarting _svc" ';' Restart-Service _svc ';' .expand_end.)
+Invoke-Expression (CLIExpand -- .expand. _svc auth billing : Write-Host "Restarting _svc" ';' Restart-Service _svc .get. newline .expand_end.)
 ```
 
 #### Windows Command Prompt (cmd.exe) Batch
