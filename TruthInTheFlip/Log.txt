@@ -5816,3 +5816,47 @@ A result worth taking seriously is also a result worth trying to make disappear.
 <p>
 This one did.
 </p>
+
+___________________________________________________________________________
+╔═══════════════╗
+║20261009_095224║
+╚═══════════════╝
+
+<p>After observing long sign trends in the delta from the following command...</p>
+<pre><cpde>TruthInTheFlip_Farm json zip \
+             tracker window by_total 10B file Artifacts/Trackers/Quant.tkr \
+             tracker window by_total 100B file Artifacts/Trackers/Quant.tkr \
+             .END. \
+             item_0.absTotal \
+             item_1.absTotal \
+             sub#item_0.AnticipatedPercentage,item_1.AnticipatedPercentage
+</code></pre>
+<p>... Or then dense form ... </p>
+<pre><cpde>TruthInTheFlip_Farm json zip \
+             .expand. WS 10B 100B : \
+                tracker window by_total WS file Artifacts/Trackers/Quant.tkr \
+             .expand_end. \
+             .END. \
+             item_0.absTotal \
+             item_1.absTotal \
+             sub#item_0.AnticipatedPercentage,item_1.AnticipatedPercentage
+</code></pre>
+
+
+<p>Further analysis became desirable. And we decided on a null utilizing a replicable null TrackerSource 
+with a seed.</p>
+
+<strong>Window Scale-Delta Analysis.</strong> Generalized the exploratory <code>quant_scale_delta.py</code> into 
+<code>window_scale_delta.py</code> for reusable 10B-versus-100B observational-scale analysis. The analyzer now 
+validates coordinate alignment, infers record cadence, reports positive occupancy, signed and cumulative 
+area excursions, sign-run structure, and autocorrelation, and exposes the same frozen metric vector through 
+machine-readable JSON for null trials. Applied to <code>SamePersistence.NET1.rep2.tkr</code>, the 10B−100B 
+AnticipatedPercentage delta showed strong local persistence but near long-run cancellation: 49.541449% of nonzero 
+observations were positive, net area was −0.0499233, ACF(1) was 0.97907, correlation fell below 0.5 at approximately 
+5B and crossed zero near 10B. The cumulative scale-delta path ranged from approximately +0.09436 to −0.15358. 
+These metrics are now frozen before constructing the deterministic window-scale null.
+
+<p>This answeres the interesting question, whether <strong>structure persists across lenses beyond what the lens itself 
+manufactures</strong>. If there is a true directional bias, the current evidence says it is at least small enough to be 
+obscured by the stochastic variation at these scales. The null can now characterize the lens without us changing the 
+ruler after seeing the answer.</p>
