@@ -5952,3 +5952,53 @@ Ten largest runs by |area|:
 </code></pre>
 
 <p>Now preparing for the 100 trial population actual scale-delta null experiment.</p>
+
+___________________________________________________________________________
+╔═══════════════╗
+║20261009_172037║
+╚═══════════════╝
+
+<blockquote>
+    <p><strong>Window Scale-Delta Null Population.</strong> Completed the first empirical null population for the 
+    frozen 10B-versus-100B <code>AnticipatedPercentage</code> scale-delta analysis on 
+    <code>SamePersistence.NET1.rep2.tkr</code>. Farm now exposes deterministic <code>INullTrialSpec</code> realizations 
+    through the ordinary <code>synthetic &lt;seed&gt; &lt;spec&gt;</code> tracker-source path, allowing the 
+    same synthetic realization to be independently replayed through both observational windows without shared-stream 
+    state. A Python orchestration runner was added to derive Farm-compatible trial seeds, execute the paired-window 
+    synthetic experiment, invoke the frozen <code>window_scale_delta.py</code> analyzer, preserve provenance, and 
+    collect resumable NDJSON summaries. The initial five-trial development population validated deterministic replay, 
+    structural alignment, and resume behavior; the production population was then extended to 100 trials with base
+     seed <code>12345</code>.</p>
+     
+    <p>The 100-trial population strongly supports the interpretation that much of the striking local scale-delta 
+    persistence is produced by the observational lens itself. The observed rep2 result had 
+    <code>ACF1 = 0.979071536</code>, correlation below 0.5 at lag 25, and a zero crossing at lag 50; the null 
+    population centered extremely close to the same structure, with median half-correlation lag 25 and median 
+    zero-crossing lag 50. The observed <code>MaxAbsCumulativeArea = 0.153580155</code> was also ordinary 
+    within the synthetic population, landing around the 30th percentile, while 
+    <code>NetArea = -0.0499233</code>, <code>MeanDelta = -1.115e-6</code>, and 
+    <code>PctDeltaAbove0 = 49.541449%</code> all fell near the lower-middle of their empirical distributions 
+    rather than in an extreme tail.</p>
+    
+    <p>One frozen metric stood out modestly: the observed longest positive sign run was 287 records, approximately the 
+    94.5th empirical percentile. Its associated positive run-area statistic was less unusual, around the 80th 
+    percentile, and the remainder of the frozen metric vector was broadly ordinary. This is being retained as an 
+    observation rather than elevated into a separate finding.</p>
+    
+    <p>Added <code>scale_delta_null_compare.py</code> to make the observed-versus-null comparison reproducible. It 
+    reports null mean, median, 5th/25th/75th/95th percentiles, and mid-rank empirical percentile for the frozen metric 
+    vector while separately validating the shared experiment geometry. The script intentionally does not add 
+    significance labels or reinterpret the frozen measurements; it remains analytical equipment rather than a 
+    conclusion engine.</p>
+    
+    <p><strong>Interpretation:</strong> the scale-delta path can look highly structured while remaining compatible with 
+    the algorithmic null. The persistent local texture appears largely attributable to overlapping 10B/100B window 
+    geometry, while the longer cumulative wandering varies substantially between realizations. This shifts the question 
+    away from looking for a fixed percentage above 50% and toward understanding which structures belong to the process 
+    and which are introduced by the observational lens.</p>
+    
+</blockquote>
+
+<blockquote>
+    <p><em>Science is way more about looking at than it is about looking for.</em></p>
+</blockquote>

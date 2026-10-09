@@ -120,3 +120,18 @@ scripts.
 
 `Loader.py` contains shared tracker-loading support used by the Python
 analysis scripts.
+
+## Scale-Delta Analysis and Null Runner
+
+### window_scale_delta.py
+
+Frozen authoritative analyzer for rolling-window tracker scale-delta comparisons.
+Computes summary metrics (MeanDelta, NetArea, cumulative excursion bounds, run statistics, ACF lags)
+and provides optional visualization and `--summary-json` machine-readable output.
+
+### scale_delta_null_runner.py
+
+Orchestration runner for multi-trial empirical null populations.
+Drives `TruthInTheFlip_Farm` per trial with deterministic trial seeds matching C# `NullTrialProcess.DeriveTrialSeed`,
+pipes paired 10B/100B window NDJSON through `window_scale_delta.py --summary-json`, and collects summary records
+into population NDJSON with sidecar metadata and resume safety.
