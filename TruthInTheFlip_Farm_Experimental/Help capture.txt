@@ -171,6 +171,12 @@ Argument Types
     
             trackerPath           <String>              Path to the tracker file.
     
+        synthetic seed condition
+            Create a deterministic synthetic tracker source from a null specification and seed.
+    
+            seed                  <UInt64>              Deterministic 64-bit random seed.
+            condition             <INullTrialSpec>      Null specification with historical tracker source.
+    
         concat a b
             Sequentially combine two tracker selectors.
     

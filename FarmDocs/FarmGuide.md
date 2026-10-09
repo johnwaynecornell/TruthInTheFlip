@@ -60,18 +60,19 @@ process
     wrap <FarmProcess>
 
 null condition (INullTrialSpec)
-    same_persistence_algorithmic
+    conditioned <TrackerSelector>
+    same_persistence_algorithmic <TrackerSelector> <Count>
 
 tracker source / transformation
     file <path>
     files <path...>
+    synthetic <seed> <INullTrialSpec>
     concat <TrackerSelector> <TrackerSelector>
     rebase <TrackerSelector>
     window <TrackerWindow> <TrackerSelector>
     from <TrackerBoundary> <TrackerSelector>
     to <TrackerBoundary> <TrackerSelector>
     full <TrackerSelector>
-    conditioned <INullTrialSpec>
 
 segment selector (SegSelector)
     by_total <Count>
@@ -314,6 +315,7 @@ The current forms are:
 ```text
 file       acquire one tracker recording
 files      acquire and sequentially join raw compatible recordings
+synthetic  materialize a deterministic synthetic tracker from a null spec and seed
 concat     compositionally join compatible tracker selectors
 from / to  restrict a source by absolute boundaries
 rebase     establish a new accumulator origin from the first selected record
@@ -343,6 +345,43 @@ Example:
 
 ```text
 csv tracker file "/data/trackers/crypto3.tkr" Total ZScore
+```
+
+---
+
+### `synthetic`
+
+```text
+synthetic <seed> <null-spec>
+```
+
+Creates a deterministic synthetic `TrackerSelector` from an `INullTrialSpec` null specification and a 64-bit seed.
+
+The synthetic source materializes the null specification's simulation schedule and replays a deterministic, fair-source bit history while preserving the cadence, snapshot boundaries, and metadata geometry of the underlying historical tracker.
+
+Because `synthetic` returns an ordinary `TrackerSelector`, it participates directly in the tracker source algebra anywhere `file` would appear—including `window`, `from`, `to`, `full`, `tracker`, `segment`, and `zip`.
+
+Repeated constructions using the **same null spec, same geometry, and same seed** reproduce the exact same deterministic realization. This allows independent branches (such as paired observational windows in a `zip` combinator) to observe the same logical realization at different window scales without shared mutable stream state:
+
+```text
+csv tracker window by_total 10B synthetic 12345 same_persistence_algorithmic file "Artifacts/Trackers/SamePersistence.NET1.rep2.tkr" 10B absTotal heads tails anticipated
+```
+
+Paired-window `zip` composition:
+
+```text
+json zip \
+  .expand. WS 10B 100B : \
+    tracker window by_total WS \
+      synthetic 12345 \
+        same_persistence_algorithmic \
+          file "Artifacts/Trackers/SamePersistence.NET1.rep2.tkr" \
+          10B \
+  .expand_end. \
+  .END. \
+  item_0.absTotal \
+  item_1.absTotal \
+  sub#item_0.AnticipatedPercentage,item_1.AnticipatedPercentage
 ```
 
 ---

@@ -5860,3 +5860,95 @@ These metrics are now frozen before constructing the deterministic window-scale 
 manufactures</strong>. If there is a true directional bias, the current evidence says it is at least small enough to be 
 obscured by the stochastic variation at these scales. The null can now characterize the lens without us changing the 
 ruler after seeing the answer.</p>
+
+___________________________________________________________________________
+╔═══════════════╗
+║20261009_133639║
+╚═══════════════╝
+
+<p>Added "synthetic" TrackerSelecter to Farm and smoke tested.</p>
+
+<pre><code>
+TruthInTheFlip_Farm json zip \
+  .expand. WS 10B 100B : \
+    tracker window by_total WS \
+      synthetic 12345 \
+        same_persistence_algorithmic \
+          file "Artifacts/Trackers/SamePersistence.NET1.rep2.tkr" \
+          10B \
+  .expand_end. \
+  .END. \
+  item_0.absTotal \
+  item_1.absTotal \
+  sub#item_0.AnticipatedPercentage,item_1.AnticipatedPercentage \
+  > /tmp/samepersistence_rep2_scale_delta_synthetic.ndjson
+</code></pre>
+
+<p>With these results from python.</p>
+<pre><code>
+.venv/bin/python Scripts/window_scale_delta.py /tmp/samepersistence_rep2_scale_delta_synthetic.ndjson 
+Observations:       44,756
+Begin absTotal:     200,000,000
+End absTotal:       8,951,200,000,000
+Record cadence:     200,000,000
+
+Initial zeros:      50
+First divergence:   absTotal 10,200,000,000
+
+Positive points:    21,875
+Negative points:    22,831
+Zero points:        50
+Pct delta > 0:      48.930792%
+Mean delta:         4.88774631041381e-07
+
+Maximum delta:      0.00207200100000193 at absTotal 1,864,200,000,000
+Minimum delta:      -0.0023062889999963 at absTotal 5,984,200,000,000
+
+Positive area:      8.52534074354755
+Negative area:      -8.50346514616066
+Net area:           0.021875597386888
+
+Max cumulative area: 0.207197185386704 at absTotal 8,163,600,000,000
+Min cumulative area: -0.0568412066135835 at absTotal 6,028,400,000,000
+Max |cumulative|:    0.207197185386704 at absTotal 8,163,600,000,000
+
+Longest + run:      219 records (195,200,000,000 -> 238,800,000,000) area=0.114703987
+Longest - run:      245 records (8,163,800,000,000 -> 8,212,600,000,000) area=-0.109270374
+Largest + area:     0.147621092 over 179 records (1,847,400,000,000 -> 1,883,000,000,000)
+Largest - area:     -0.133249091 over 202 records (4,297,800,000,000 -> 4,338,000,000,000)
+
+Total nonzero runs: 2,763
+
+ACF lag 1:          0.979960089
+ACF below 0.5:      lag 26 (acf=0.483996)
+                     coordinate span ≈ 5,200,000,000
+ACF zero crossing:  lag 50 (acf=-0.002754)
+                     coordinate span ≈ 10,000,000,000
+
+Ten longest sign runs:
+  -    245 records  area=-0.109270374  8,163,800,000,000 -> 8,212,600,000,000
+  +    219 records  area= 0.114703987  195,200,000,000 -> 238,800,000,000
+  -    213 records  area=-0.120173177  7,783,400,000,000 -> 7,825,800,000,000
+  +    210 records  area= 0.137507134  6,076,200,000,000 -> 6,118,000,000,000
+  -    209 records  area=-0.105481271  5,051,400,000,000 -> 5,093,000,000,000
+  -    202 records  area=-0.133249091  4,297,800,000,000 -> 4,338,000,000,000
+  -    197 records  area=-0.09547498  739,400,000,000 -> 778,600,000,000
+  +    191 records  area= 0.096974588  5,452,400,000,000 -> 5,490,400,000,000
+  +    188 records  area= 0.142805189  8,080,800,000,000 -> 8,118,200,000,000
+  -    186 records  area=-0.096217957  1,944,600,000,000 -> 1,981,600,000,000
+
+Ten largest runs by |area|:
+  + area= 0.147621092     179 records  1,847,400,000,000 -> 1,883,000,000,000
+  + area= 0.142805189     188 records  8,080,800,000,000 -> 8,118,200,000,000
+  + area= 0.137507134     210 records  6,076,200,000,000 -> 6,118,000,000,000
+  - area=-0.133249091     202 records  4,297,800,000,000 -> 4,338,000,000,000
+  - area=-0.127998226     100 records  5,974,400,000,000 -> 5,994,200,000,000
+  + area= 0.120960559     149 records  3,877,200,000,000 -> 3,906,800,000,000
+  - area=-0.120173177     213 records  7,783,400,000,000 -> 7,825,800,000,000
+  + area= 0.115696344     118 records  554,800,000,000 -> 578,200,000,000
+  + area= 0.114703987     219 records  195,200,000,000 -> 238,800,000,000
+  - area=-0.109270374     245 records  8,163,800,000,000 -> 8,212,600,000,000
+
+</code></pre>
+
+<p>Now preparing for the 100 trial population actual scale-delta null experiment.</p>

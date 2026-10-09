@@ -394,6 +394,18 @@ public class TruthInTheFlip_Fluent
         return new TrackerSelector(() => OpenTrackerStream(trackerPath));
     }
 
+    [FluentMethod("synthetic")]
+    [KV_FA(FluentAttribute.Help, "Create a deterministic synthetic tracker source from a null specification and seed.")]
+    public static TrackerSelector Synthetic(
+        [KV_FA(FluentAttribute.Help, "Deterministic 64-bit random seed.")]
+        ulong seed,
+        [KV_FA(FluentAttribute.Help, "Null specification with historical tracker source.")]
+        INullTrialSpec condition)
+    {
+        ArgumentNullException.ThrowIfNull(condition);
+        return condition.CreateSyntheticSelector(seed);
+    }
+
     [FluentMethod("concat")]
     [KV_FA(FluentAttribute.Help, "Sequentially combine two tracker selectors.")]
     public static TrackerSelector Concat(
